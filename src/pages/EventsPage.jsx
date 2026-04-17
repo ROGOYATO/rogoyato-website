@@ -25,42 +25,42 @@ export default function EventsPage() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: 'easeOut' }}
-        className="rounded-3xl border border-white/10 bg-slate-900/75 p-6 sm:p-8"
+        className="rounded-3xl border border-slate-200/90 bg-white/90 p-6 dark:border-white/10 dark:bg-slate-900/75 sm:p-8"
       >
-        <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">Donem Takvimi</p>
-        <h1 className="mt-2 font-heading text-3xl text-white sm:text-4xl">Etkinlikler</h1>
-        <p className="mt-3 max-w-3xl text-slate-300">
+        <p className="text-xs uppercase tracking-[0.2em] text-cyan-700 dark:text-cyan-200">Donem Takvimi</p>
+        <h1 className="mt-2 font-heading text-3xl text-slate-900 dark:text-white sm:text-4xl">Etkinlikler</h1>
+        <p className="mt-3 max-w-3xl text-slate-600 dark:text-slate-300">
           Bu sayfa iki bolume ayrilir: yaklasan etkinlikler ve gecmis etkinlikler. Basvuru
           gereken etkinliklerde "Etkinlige basvur" aksiyonu dogrudan ilgili sayfaya gider.
         </p>
       </motion.header>
 
       <section className="space-y-3">
-        <h2 className="font-heading text-2xl text-white">Yaklasan Etkinlikler</h2>
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/65">
+        <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Yaklasan Etkinlikler</h2>
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-900/65">
           {upcomingEvents.map((event) => (
-            <article key={event.id} className="border-b border-white/10 p-4 last:border-b-0">
+            <article key={event.id} className="border-b border-slate-200/80 p-4 last:border-b-0 dark:border-white/10">
               <div className="flex flex-wrap items-center gap-2">
                 <span
                   className={`inline-flex rounded-full border px-2.5 py-1 text-xs ${statusClass(event.status)}`}
                 >
                   {statusLabel(event.status)}
                 </span>
-                <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-xs text-slate-200">
+                <span className="rounded-full border border-slate-300/70 bg-slate-100 px-2.5 py-1 text-xs text-slate-700 dark:border-white/15 dark:bg-white/5 dark:text-slate-200">
                   {event.type}
                 </span>
               </div>
 
-              <h3 className="mt-2 font-heading text-xl text-white">{event.title}</h3>
-              <p className="mt-1 text-sm text-slate-300">{event.summary}</p>
+              <h3 className="mt-2 font-heading text-xl text-slate-900 dark:text-white">{event.title}</h3>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{event.summary}</p>
 
-              <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-300">
+              <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-300">
                 <p className="inline-flex items-center gap-2">
-                  <CalendarClock size={16} className="text-cyan-200" />
+                  <CalendarClock size={16} className="text-cyan-700 dark:text-cyan-200" />
                   {event.date}
                 </p>
                 <p className="inline-flex items-center gap-2">
-                  <MapPin size={16} className="text-amber-200" />
+                  <MapPin size={16} className="text-amber-600 dark:text-amber-200" />
                   {event.location}
                 </p>
               </div>
@@ -68,7 +68,7 @@ export default function EventsPage() {
               <div className="mt-4 flex flex-wrap gap-3">
                 <Link
                   to={`/etkinlikler/${event.id}`}
-                  className="inline-flex items-center gap-2 text-sm font-medium text-cyan-200 hover:text-cyan-100"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-cyan-700 hover:text-cyan-800 dark:text-cyan-200 dark:hover:text-cyan-100"
                 >
                   Detay
                   <ArrowRight size={14} />
@@ -88,17 +88,17 @@ export default function EventsPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-heading text-2xl text-white">Gecmis Etkinlikler</h2>
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/65">
+        <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Gecmis Etkinlikler</h2>
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-900/65">
           {pastEvents.map((event) => (
-            <article key={event.id} className="border-b border-white/10 p-4 last:border-b-0">
-              <p className="font-medium text-slate-100">{event.title}</p>
-              <p className="mt-1 text-sm text-slate-300">
+            <article key={event.id} className="border-b border-slate-200/80 p-4 last:border-b-0 dark:border-white/10">
+              <p className="font-medium text-slate-900 dark:text-slate-100">{event.title}</p>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                 {event.date} • {event.location}
               </p>
               <Link
                 to={`/etkinlikler/${event.id}`}
-                className="mt-2 inline-flex items-center gap-2 text-sm text-cyan-200 hover:text-cyan-100"
+                className="mt-2 inline-flex items-center gap-2 text-sm text-cyan-700 hover:text-cyan-800 dark:text-cyan-200 dark:hover:text-cyan-100"
               >
                 Etkinlik detayini gor
                 <ArrowRight size={14} />

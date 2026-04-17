@@ -122,3 +122,36 @@ export const teamUnits = [
     focus: 'Etkinlik plani, is birlikleri, topluluk surecleri',
   },
 ]
+
+export const teamMembers = [
+  {
+    name: 'Elif Yilmaz',
+    role: 'Topluluk Baskani',
+    photo: 'https://api.dicebear.com/9.x/notionists/svg?seed=ElifYilmaz',
+  },
+  {
+    name: 'Berk Kara',
+    role: 'Gomulu Yazilim Lideri',
+    photo: 'https://api.dicebear.com/9.x/notionists/svg?seed=BerkKara',
+  },
+  {
+    name: 'Dila Aydin',
+    role: 'Elektronik Takim Sorumlusu',
+    photo: 'https://api.dicebear.com/9.x/notionists/svg?seed=DilaAydin',
+  },
+  {
+    name: 'Emir Can',
+    role: 'Mekanik Takim Sorumlusu',
+    photo: 'https://api.dicebear.com/9.x/notionists/svg?seed=EmirCan',
+  },
+  {
+    name: 'Nisa Demir',
+    role: 'Etkinlik ve Iletisim',
+    photo: 'https://api.dicebear.com/9.x/notionists/svg?seed=NisaDemir',
+  },
+  {
+    name: 'Ali Ozturk',
+    role: 'Yarisma Koordinatoru',
+    photo: 'https://api.dicebear.com/9.x/notionists/svg?seed=AliOzturk',
+  },
+]

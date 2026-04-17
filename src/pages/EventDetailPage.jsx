@@ -28,10 +28,10 @@ export default function EventDetailPage() {
 
   if (!event) {
     return (
-      <section className="rounded-3xl border border-white/10 bg-slate-900/75 p-6 sm:p-8">
-        <h1 className="font-heading text-3xl text-white">Etkinlik bulunamadi</h1>
-        <p className="mt-3 text-slate-300">Bu etkinlik arsivde degismis olabilir.</p>
-        <Link to="/etkinlikler" className="mt-5 inline-flex text-cyan-200 hover:text-cyan-100">
+      <section className="rounded-3xl border border-slate-200/90 bg-white/90 p-6 dark:border-white/10 dark:bg-slate-900/75 sm:p-8">
+        <h1 className="font-heading text-3xl text-slate-900 dark:text-white">Etkinlik bulunamadi</h1>
+        <p className="mt-3 text-slate-600 dark:text-slate-300">Bu etkinlik arsivde degismis olabilir.</p>
+        <Link to="/etkinlikler" className="mt-5 inline-flex text-cyan-700 hover:text-cyan-800 dark:text-cyan-200 dark:hover:text-cyan-100">
           Etkinlik listesine don
         </Link>
       </section>
@@ -47,17 +47,17 @@ export default function EventDetailPage() {
       transition={{ duration: 0.45, ease: 'easeOut' }}
       className="space-y-6"
     >
-      <Link to="/etkinlikler" className="inline-flex items-center gap-2 text-sm text-cyan-200 hover:text-cyan-100">
+      <Link to="/etkinlikler" className="inline-flex items-center gap-2 text-sm text-cyan-700 hover:text-cyan-800 dark:text-cyan-200 dark:hover:text-cyan-100">
         <ArrowLeft size={16} />
         Tum etkinliklere don
       </Link>
 
-      <section className="rounded-3xl border border-white/10 bg-slate-900/75 p-6 sm:p-8">
+      <section className="rounded-3xl border border-slate-200/90 bg-white/90 p-6 dark:border-white/10 dark:bg-slate-900/75 sm:p-8">
         <div className="flex flex-wrap items-center gap-2">
           <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs ${meta.classes}`}>
             {meta.label}
           </span>
-          <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-xs text-slate-200">
+          <span className="rounded-full border border-slate-300/70 bg-slate-100 px-2.5 py-1 text-xs text-slate-700 dark:border-white/15 dark:bg-white/5 dark:text-slate-200">
             {event.type}
           </span>
           {event.requiresApplication ? (
@@ -67,38 +67,38 @@ export default function EventDetailPage() {
           ) : null}
         </div>
 
-        <h1 className="mt-3 font-heading text-3xl text-white sm:text-4xl">{event.title}</h1>
-        <p className="mt-3 max-w-3xl text-slate-300">{event.summary}</p>
+        <h1 className="mt-3 font-heading text-3xl text-slate-900 dark:text-white sm:text-4xl">{event.title}</h1>
+        <p className="mt-3 max-w-3xl text-slate-600 dark:text-slate-300">{event.summary}</p>
 
-        <div className="mt-5 flex flex-wrap gap-4 text-sm text-slate-300">
+        <div className="mt-5 flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-300">
           <p className="inline-flex items-center gap-2">
-            <CalendarClock size={16} className="text-cyan-200" />
+            <CalendarClock size={16} className="text-cyan-700 dark:text-cyan-200" />
             {event.date}
           </p>
           <p className="inline-flex items-center gap-2">
-            <MapPin size={16} className="text-amber-200" />
+            <MapPin size={16} className="text-amber-600 dark:text-amber-200" />
             {event.location}
           </p>
         </div>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <article className="rounded-2xl border border-white/10 bg-slate-900/65 p-5">
-          <h2 className="font-heading text-2xl text-white">Program Akisi</h2>
-          <ul className="mt-4 space-y-3 text-slate-300">
+        <article className="rounded-2xl border border-slate-200/80 bg-white/85 p-5 dark:border-white/10 dark:bg-slate-900/65">
+          <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Program Akisi</h2>
+          <ul className="mt-4 space-y-3 text-slate-600 dark:text-slate-300">
             {event.agenda.map((item) => (
-              <li key={item} className="rounded-xl border border-white/10 bg-slate-950/60 p-3">
+              <li key={item} className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-slate-950/60">
                 {item}
               </li>
             ))}
           </ul>
         </article>
 
-        <article className="rounded-2xl border border-white/10 bg-slate-900/65 p-5">
-          <h2 className="font-heading text-2xl text-white">Kosullar ve Notlar</h2>
-          <ul className="mt-4 space-y-3 text-slate-300">
+        <article className="rounded-2xl border border-slate-200/80 bg-white/85 p-5 dark:border-white/10 dark:bg-slate-900/65">
+          <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Kosullar ve Notlar</h2>
+          <ul className="mt-4 space-y-3 text-slate-600 dark:text-slate-300">
             {event.notes.map((item) => (
-              <li key={item} className="rounded-xl border border-white/10 bg-slate-950/60 p-3">
+              <li key={item} className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-slate-950/60">
                 {item}
               </li>
             ))}

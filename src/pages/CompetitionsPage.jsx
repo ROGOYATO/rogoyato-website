@@ -10,28 +10,28 @@ export default function CompetitionsPage() {
       transition={{ duration: 0.45, ease: 'easeOut' }}
       className="space-y-6"
     >
-      <header className="rounded-3xl border border-white/10 bg-slate-900/75 p-6 sm:p-8">
-        <p className="text-xs uppercase tracking-[0.2em] text-fuchsia-200">Gecmis Basarilar</p>
-        <h1 className="mt-2 font-heading text-3xl text-white sm:text-4xl">Basarilar</h1>
-        <p className="mt-3 max-w-3xl text-slate-300">
+      <header className="rounded-3xl border border-slate-200/90 bg-white/90 p-6 dark:border-white/10 dark:bg-slate-900/75 sm:p-8">
+        <p className="text-xs uppercase tracking-[0.2em] text-fuchsia-700 dark:text-fuchsia-200">Gecmis Basarilar</p>
+        <h1 className="mt-2 font-heading text-3xl text-slate-900 dark:text-white sm:text-4xl">Basarilar</h1>
+        <p className="mt-3 max-w-3xl text-slate-600 dark:text-slate-300">
           Yarisma ve teknik programlardan elde edilen ciktilar bu sayfada arsivlenir.
         </p>
       </header>
 
       <div className="grid gap-4">
         {competitionHighlights.map((item) => (
-          <article key={item.title} className="rounded-2xl border border-white/10 bg-slate-900/65 p-5">
+          <article key={item.title} className="rounded-2xl border border-slate-200/80 bg-white/85 p-5 dark:border-white/10 dark:bg-slate-900/65">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/35 bg-fuchsia-400/10 px-3 py-1 text-xs text-fuchsia-100">
+              <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/45 bg-fuchsia-400/15 px-3 py-1 text-xs text-fuchsia-700 dark:border-fuchsia-300/35 dark:bg-fuchsia-400/10 dark:text-fuchsia-100">
                 <Trophy size={14} />
                 {item.year}
               </div>
-              <span className="rounded-full border border-amber-300/35 bg-amber-400/10 px-3 py-1 text-xs text-amber-100">
+              <span className="rounded-full border border-amber-300/55 bg-amber-300/20 px-3 py-1 text-xs text-amber-700 dark:border-amber-300/35 dark:bg-amber-400/10 dark:text-amber-100">
                 {item.result}
               </span>
             </div>
-            <h2 className="mt-3 font-heading text-2xl text-white">{item.title}</h2>
-            <p className="mt-2 text-slate-300">{item.detail}</p>
+            <h2 className="mt-3 font-heading text-2xl text-slate-900 dark:text-white">{item.title}</h2>
+            <p className="mt-2 text-slate-600 dark:text-slate-300">{item.detail}</p>
           </article>
         ))}
       </div>
