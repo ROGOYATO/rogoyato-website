@@ -1,13 +1,11 @@
 import { motion } from 'framer-motion'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import PageTitleHero from '../components/PageTitleHero'
 import { teamMembers } from '../utils/siteData'
 
 export default function TeamPage() {
   const sliderRef = useRef(null)
-  const isDraggingRef = useRef(false)
-  const startXRef = useRef(0)
-  const startScrollLeftRef = useRef(0)
   const [activeIndex, setActiveIndex] = useState(0)
 
   const updateActiveCard = () => {
@@ -54,50 +52,21 @@ export default function TeamPage() {
     }
   }, [])
 
-  useEffect(() => {
-    const stopDragging = () => {
-      isDraggingRef.current = false
-    }
-
-    window.addEventListener('mouseup', stopDragging)
-    return () => window.removeEventListener('mouseup', stopDragging)
-  }, [])
-
-  const handleMouseDown = (event) => {
+  const scrollToIndex = (targetIndex) => {
     const slider = sliderRef.current
     if (!slider) {
       return
     }
 
-    isDraggingRef.current = true
-    startXRef.current = event.pageX - slider.offsetLeft
-    startScrollLeftRef.current = slider.scrollLeft
-  }
-
-  const handleMouseMove = (event) => {
-    const slider = sliderRef.current
-    if (!slider || !isDraggingRef.current) {
+    const clampedIndex = Math.max(0, Math.min(targetIndex, teamMembers.length - 1))
+    const targetCard = slider.children[clampedIndex]
+    if (!targetCard) {
       return
     }
 
-    event.preventDefault()
-    const mouseX = event.pageX - slider.offsetLeft
-    const walk = (mouseX - startXRef.current) * 1.1
-    slider.scrollLeft = startScrollLeftRef.current - walk
-  }
-
-  const handleMouseUp = () => {
-    isDraggingRef.current = false
-  }
-
-  const handleWheel = (event) => {
-    const slider = sliderRef.current
-    if (!slider || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) {
-      return
-    }
-
-    event.preventDefault()
-    slider.scrollLeft += event.deltaY
+    const targetLeft = targetCard.offsetLeft - (slider.clientWidth - targetCard.clientWidth) / 2
+    slider.scrollTo({ left: targetLeft, behavior: 'smooth' })
+    setActiveIndex(clampedIndex)
   }
 
   return (
@@ -110,25 +79,34 @@ export default function TeamPage() {
       <PageTitleHero title="Ekibimiz" />
 
       <section className="rounded-3xl border border-slate-200/80 bg-white/85 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.14)] dark:border-white/10 dark:bg-slate-900/70 sm:p-8">
-        <p className="text-xs uppercase tracking-[0.18em] text-amber-700 dark:text-amber-200">Çekirdek Kadro</p>
-        <h2 className="mt-2 font-heading text-3xl text-slate-900 dark:text-white sm:text-4xl">Takımı kaydırarak keşfet</h2>
-        <p className="mt-3 max-w-3xl text-slate-600 dark:text-slate-300">
-          Fare ile kartların üzerinde tutup sürükleyebilirsin. Merkezdeki üyeler net kalır,
-          kenardakiler yumuşak blur alarak odağı güçlendirir.
-        </p>
+        <div className="mb-5 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => scrollToIndex(activeIndex - 1)}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300/80 bg-white text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:bg-slate-950/60 dark:text-slate-100 dark:hover:bg-slate-800"
+            aria-label="Önceki üye"
+            disabled={activeIndex === 0}
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollToIndex(activeIndex + 1)}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300/80 bg-white text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:bg-slate-950/60 dark:text-slate-100 dark:hover:bg-slate-800"
+            aria-label="Sonraki üye"
+            disabled={activeIndex === teamMembers.length - 1}
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
 
-        <div className="relative mt-7">
+        <div className="relative">
           <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-white via-white/70 to-transparent dark:from-slate-900 dark:via-slate-900/75" />
           <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-gradient-to-l from-white via-white/70 to-transparent dark:from-slate-900 dark:via-slate-900/75" />
 
           <div
             ref={sliderRef}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            onWheel={handleWheel}
-            className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-4 pt-1 scroll-smooth cursor-grab active:cursor-grabbing"
+            className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-4 pt-1 scroll-smooth"
           >
             {teamMembers.map((member, index) => {
               const distance = Math.abs(index - activeIndex)
