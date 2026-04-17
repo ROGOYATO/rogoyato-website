@@ -1,12 +1,11 @@
 import { motion } from 'framer-motion'
-import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const primaryLinks = [
-  { to: '/etkinlikler', label: 'Etkinlikler', desc: 'Yaklasan ve gecmis etkinlikler' },
-  { to: '/ekip', label: 'Ekibimiz', desc: 'Birimler ve ekip yapisi' },
-  { to: '/hakkimizda', label: 'Hakkimizda', desc: 'Topluluk modeli ve kurumsal kimlik' },
-  { to: '/basarilar', label: 'Basarilar', desc: 'Yarisma ve proje ciktisi arsivi' },
+  { to: '/etkinlikler', label: 'Etkinlikler', image: '/nav-events.svg' },
+  { to: '/ekip', label: 'Ekibimiz', image: '/nav-team.svg' },
+  { to: '/hakkimizda', label: 'Hakkımızda', image: '/nav-about.svg' },
+  { to: '/basarilar', label: 'Başarılar', image: '/nav-achievements.svg' },
 ]
 
 export default function HomePage() {
@@ -28,30 +27,27 @@ export default function HomePage() {
             TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu
           </h1>
         </div>
-        <p className="mt-4 max-w-3xl text-slate-600 dark:text-slate-300 sm:text-lg">
-          Bu sayfa sade bir yonlendirme alanidir. Etkinlik, ekip, hakkimizda ve basarilar
-          icerikleri ayri sayfalarda yonetilir. Basvuru gerektiren etkinliklerde "Etkinlige basvur"
-          adimi etkinlik detayindan acilir.
-        </p>
       </motion.section>
 
-      <section className="rounded-3xl border border-slate-200/90 bg-white/85 p-6 dark:border-white/10 dark:bg-slate-900/70 sm:p-8">
-        <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Sayfa yonlendirmeleri</h2>
-        <div className="mt-4 divide-y divide-slate-200/80 rounded-2xl border border-slate-200/80 bg-slate-50/80 dark:divide-white/10 dark:border-white/10 dark:bg-slate-950/60">
-          {primaryLinks.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className="flex items-center justify-between gap-3 px-4 py-4 transition hover:bg-slate-100/90 dark:hover:bg-white/5"
-            >
-              <div>
-                <p className="font-medium text-slate-900 dark:text-white">{item.label}</p>
-                <p className="text-sm text-slate-600 dark:text-slate-300">{item.desc}</p>
-              </div>
-              <ArrowRight size={16} className="text-cyan-700 dark:text-cyan-200" />
-            </Link>
-          ))}
-        </div>
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {primaryLinks.map((item) => (
+          <Link
+            key={item.to}
+            to={item.to}
+            className="group relative h-32 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-900"
+          >
+            <img
+              src={item.image}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-slate-900/35 transition group-hover:bg-slate-900/45 dark:bg-slate-950/45" />
+            <div className="relative flex h-full items-center justify-center px-3 text-center">
+              <span className="font-heading text-xl font-semibold text-white">{item.label}</span>
+            </div>
+          </Link>
+        ))}
       </section>
     </div>
   )

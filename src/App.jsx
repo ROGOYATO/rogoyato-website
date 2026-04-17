@@ -15,8 +15,6 @@ function App() {
 
   return (
     <div className="relative min-h-screen overflow-hidden text-slate-800 dark:text-slate-100">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_15%,rgba(56,189,248,0.2),transparent_45%),radial-gradient(circle_at_85%_80%,rgba(251,191,36,0.22),transparent_40%)] dark:bg-[radial-gradient(circle_at_10%_15%,rgba(14,165,233,0.16),transparent_45%),radial-gradient(circle_at_85%_80%,rgba(245,158,11,0.2),transparent_40%)]" />
-
       <header className="sticky top-0 z-30 border-b border-slate-200/90 bg-white/85 backdrop-blur-xl dark:border-cyan-500/20 dark:bg-slate-950/80">
         <div className="mx-auto flex w-full max-w-6xl justify-center px-4 py-4 sm:px-6 lg:px-8">
           <nav className="flex flex-wrap items-center justify-center gap-2 text-sm sm:text-[0.95rem]">
