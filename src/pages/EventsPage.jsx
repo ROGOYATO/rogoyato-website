@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { CalendarClock, MapPin } from 'lucide-react'
+import { ArrowRight, CalendarClock, MapPin } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { events } from '../utils/siteData'
 
@@ -16,6 +16,9 @@ function statusLabel(status) {
 }
 
 export default function EventsPage() {
+  const upcomingEvents = events.filter((event) => event.status === 'open' || event.status === 'upcoming')
+  const pastEvents = events.filter((event) => event.status === 'closed')
+
   return (
     <div className="space-y-6">
       <motion.header
@@ -27,52 +30,82 @@ export default function EventsPage() {
         <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">Donem Takvimi</p>
         <h1 className="mt-2 font-heading text-3xl text-white sm:text-4xl">Etkinlikler</h1>
         <p className="mt-3 max-w-3xl text-slate-300">
-          Okul ici ve universitelerarasi programlar ayni takvimde gorunur. Basvuru gerektiren
-          etkinlikler kart uzerinde acikca isaretlenir.
+          Bu sayfa iki bolume ayrilir: yaklasan etkinlikler ve gecmis etkinlikler. Basvuru
+          gereken etkinliklerde "Etkinlige basvur" aksiyonu dogrudan ilgili sayfaya gider.
         </p>
       </motion.header>
 
-      <section className="grid gap-4">
-        {events.map((event) => (
-          <article key={event.id} className="rounded-2xl border border-white/10 bg-slate-900/65 p-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className={`inline-flex rounded-full border px-2.5 py-1 text-xs ${statusClass(event.status)}`}
-              >
-                {statusLabel(event.status)}
-              </span>
-              <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-xs text-slate-200">
-                {event.type}
-              </span>
-              {event.requiresApplication ? (
-                <span className="rounded-full border border-cyan-300/25 bg-cyan-400/10 px-2.5 py-1 text-xs text-cyan-100">
-                  Basvuru Gerekli
+      <section className="space-y-3">
+        <h2 className="font-heading text-2xl text-white">Yaklasan Etkinlikler</h2>
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/65">
+          {upcomingEvents.map((event) => (
+            <article key={event.id} className="border-b border-white/10 p-4 last:border-b-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={`inline-flex rounded-full border px-2.5 py-1 text-xs ${statusClass(event.status)}`}
+                >
+                  {statusLabel(event.status)}
                 </span>
-              ) : null}
-            </div>
+                <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-xs text-slate-200">
+                  {event.type}
+                </span>
+              </div>
 
-            <h2 className="mt-3 font-heading text-2xl text-white">{event.title}</h2>
-            <p className="mt-2 text-slate-300">{event.summary}</p>
+              <h3 className="mt-2 font-heading text-xl text-white">{event.title}</h3>
+              <p className="mt-1 text-sm text-slate-300">{event.summary}</p>
 
-            <div className="mt-4 flex flex-wrap gap-4 text-sm text-slate-300">
-              <p className="inline-flex items-center gap-2">
-                <CalendarClock size={16} className="text-cyan-200" />
-                {event.date}
+              <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-300">
+                <p className="inline-flex items-center gap-2">
+                  <CalendarClock size={16} className="text-cyan-200" />
+                  {event.date}
+                </p>
+                <p className="inline-flex items-center gap-2">
+                  <MapPin size={16} className="text-amber-200" />
+                  {event.location}
+                </p>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Link
+                  to={`/etkinlikler/${event.id}`}
+                  className="inline-flex items-center gap-2 text-sm font-medium text-cyan-200 hover:text-cyan-100"
+                >
+                  Detay
+                  <ArrowRight size={14} />
+                </Link>
+                {event.requiresApplication && event.status !== 'closed' ? (
+                  <Link
+                    to={`/etkinlikler/${event.id}/basvuru`}
+                    className="inline-flex rounded-full border border-emerald-300/40 bg-emerald-300/15 px-3 py-1 text-xs font-medium text-emerald-100 transition hover:bg-emerald-300/25"
+                  >
+                    Etkinlige basvur
+                  </Link>
+                ) : null}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-heading text-2xl text-white">Gecmis Etkinlikler</h2>
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/65">
+          {pastEvents.map((event) => (
+            <article key={event.id} className="border-b border-white/10 p-4 last:border-b-0">
+              <p className="font-medium text-slate-100">{event.title}</p>
+              <p className="mt-1 text-sm text-slate-300">
+                {event.date} • {event.location}
               </p>
-              <p className="inline-flex items-center gap-2">
-                <MapPin size={16} className="text-amber-200" />
-                {event.location}
-              </p>
-            </div>
-
-            <Link
-              to={`/etkinlikler/${event.id}`}
-              className="mt-5 inline-flex rounded-full border border-cyan-300/35 bg-cyan-300/15 px-4 py-2 text-sm font-medium text-cyan-100 transition hover:bg-cyan-300/25"
-            >
-              Etkinlik detayini ac
-            </Link>
-          </article>
-        ))}
+              <Link
+                to={`/etkinlikler/${event.id}`}
+                className="mt-2 inline-flex items-center gap-2 text-sm text-cyan-200 hover:text-cyan-100"
+              >
+                Etkinlik detayini gor
+                <ArrowRight size={14} />
+              </Link>
+            </article>
+          ))}
+        </div>
       </section>
     </div>
   )

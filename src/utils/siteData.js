@@ -18,6 +18,8 @@ export const events = [
       'Kontenjan 40 kisi ile sinirlidir.',
       'Laptop getirilmesi onerilir.',
     ],
+    applicationDeadline: '20 Nisan 2026',
+    applicationNote: 'Basvuru sonuc listesi etkinlikten 1 gun once paylasilir.',
   },
   {
     id: 'gomulu-yazilim-gecesi',
@@ -35,6 +37,8 @@ export const events = [
       'Soru cevap ve networking',
     ],
     notes: ['Basvuru gerektirmez, herkese aciktir.'],
+    applicationDeadline: null,
+    applicationNote: null,
   },
   {
     id: 'anadolu-embedded-challenge',
@@ -56,6 +60,8 @@ export const events = [
       'Her takim bir teknik lider belirtmelidir.',
       'Finalistler etkinlikten 7 gun once aciklanir.',
     ],
+    applicationDeadline: '18 Mayis 2026',
+    applicationNote: 'Takim listesi ve niyet mektubu zorunludur.',
   },
   {
     id: 'mikrodenetleyici-bootcamp',
@@ -69,6 +75,8 @@ export const events = [
       'STM32 temelli hizlandirilmis kamp. Gecmis donem etkinligi olarak arsivde tutuluyor.',
     agenda: ['Kurulum gunu', 'Driver katmani calismasi', 'Mini proje teslimi'],
     notes: ['Etkinlik tamamlandi. Sonraki donem tekrarlanabilir.'],
+    applicationDeadline: null,
+    applicationNote: null,
   },
 ]
 
@@ -112,17 +120,5 @@ export const teamUnits = [
   {
     name: 'Organizasyon ve Iletisim',
     focus: 'Etkinlik plani, is birlikleri, topluluk surecleri',
-  },
-]
-
-export const openApplicationTypes = [
-  {
-    id: 'membership',
-    title: 'Topluluga Uyelik Basvurusu',
-    description:
-      'Yeni uye alim donemi acik oldugunda bu kanal uzerinden degerlendirme yapilir.',
-    status: 'open',
-    route: '/topluluga-katil',
-    cta: 'Uyelik surecini incele',
   },
 ]

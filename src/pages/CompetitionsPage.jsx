@@ -12,9 +12,9 @@ export default function CompetitionsPage() {
     >
       <header className="rounded-3xl border border-white/10 bg-slate-900/75 p-6 sm:p-8">
         <p className="text-xs uppercase tracking-[0.2em] text-fuchsia-200">Gecmis Basarilar</p>
-        <h1 className="mt-2 font-heading text-3xl text-white sm:text-4xl">Yarismalar</h1>
+        <h1 className="mt-2 font-heading text-3xl text-white sm:text-4xl">Basarilar</h1>
         <p className="mt-3 max-w-3xl text-slate-300">
-          Toplulugun katildigi yarisma ve teknik programlarin ciktisini tek bakista gosteren arsiv.
+          Yarisma ve teknik programlardan elde edilen ciktilar bu sayfada arsivlenir.
         </p>
       </header>
 

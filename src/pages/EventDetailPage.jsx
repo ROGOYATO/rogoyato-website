@@ -106,19 +106,19 @@ export default function EventDetailPage() {
         </article>
       </section>
 
-      {event.requiresApplication ? (
+      {event.requiresApplication && event.status !== 'closed' ? (
         <section className="rounded-2xl border border-cyan-300/25 bg-cyan-300/10 p-5">
-          <h2 className="font-heading text-xl text-cyan-100">Basvuru adimi</h2>
+          <h2 className="font-heading text-xl text-cyan-100">Etkinlik basvurusu</h2>
           <p className="mt-2 text-cyan-50/90">
-            Bu etkinlik basvuru gerektirir. Guncel kontenjan ve kriterler icin basvuru merkezini
-            kullan.
+            Bu etkinlik icin ayri bir basvuru sayfasi bulunur. Son tarih ve gerekli bilgiler
+            basvuru ekraninda yer alir.
           </p>
           <Link
-            to="/basvuru-merkezi"
+            to={`/etkinlikler/${event.id}/basvuru`}
             className="mt-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/40 bg-cyan-200/20 px-4 py-2 text-sm font-medium text-cyan-50 transition hover:bg-cyan-200/30"
           >
             <ClipboardList size={16} />
-            Basvuru merkezine git
+            Etkinlige basvur
           </Link>
         </section>
       ) : null}

@@ -3,15 +3,15 @@ import { motion } from 'framer-motion'
 const values = [
   {
     title: 'Uretim odakli topluluk',
-    text: 'Sadece etkinlik duzenlemek yerine prototip ve teknik cikti olusturan bir yapi.',
+    text: 'Teknik gelisim, proje ciktisi ve ekip calismasi odakli bir yapi.',
   },
   {
-    title: 'Donem ritmine uygun tempo',
-    text: 'Yilda onlarca etkinlik yerine donemsel 3-4 nitelikli program ve olceklenebilir format.',
+    title: 'Gercekci etkinlik ritmi',
+    text: 'Donem icinde 3-4 etkinlik ve gerektiginde basvuru bazli programlar.',
   },
   {
-    title: 'Acik ve adil basvuru sureci',
-    text: 'Universitelerarasi ve okul ici programlarda kosullar net, degerlendirme seffaf.',
+    title: 'Acik basvuru surecleri',
+    text: 'Okul ici ve universitelerarasi etkinliklerde kosullar net sekilde duyurulur.',
   },
 ]
 
@@ -27,9 +27,8 @@ export default function AboutPage() {
         <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">Topluluk Profili</p>
         <h1 className="mt-3 font-heading text-3xl text-white sm:text-4xl">Hakkimizda</h1>
         <p className="mt-4 max-w-3xl text-slate-300">
-          ROGOYATO, robotik ve gomulu yazilim alanlarinda uretim odakli ekipler kurar,
-          teknik gelisimi destekleyen etkinlikler duzenler ve universitelararasi formatlarda
-          is birligi agi olusturur.
+          ROGOYATO, robotik ve gomulu yazilim alaninda ogrenci gelisimini destekleyen, ekip
+          tabanli uretim kulturunu yayginlastiran bir topluluktur.
         </p>
       </header>
 
@@ -43,12 +42,21 @@ export default function AboutPage() {
       </div>
 
       <article className="rounded-3xl border border-cyan-300/25 bg-cyan-400/10 p-6 sm:p-8">
-        <h2 className="font-heading text-2xl text-cyan-100">Calisma modeli</h2>
+        <h2 className="font-heading text-2xl text-cyan-100">Kurumsal kimlik</h2>
         <p className="mt-3 text-cyan-50/90">
-          Platform normalde portal formatinda calisir. Basvuru gerektiren bir etkinlik acildiginda,
-          o etkinlige ozel landing sayfasi ve basvuru kosullari aktiflestirilir. Etkinlik bitince
-          sayfa arsive alinip yarisma/etkinlik gecmisi olarak korunur.
+          Asagidaki alanlar logolarin ve kimlik varyasyonlarinin yerlesmesi icin ayrilmistir.
         </p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-cyan-200/35 bg-slate-950/45 p-4 text-center text-sm text-cyan-50/90">
+            Ana logo alani
+          </div>
+          <div className="rounded-xl border border-cyan-200/35 bg-slate-950/45 p-4 text-center text-sm text-cyan-50/90">
+            Monogram alani
+          </div>
+          <div className="rounded-xl border border-cyan-200/35 bg-slate-950/45 p-4 text-center text-sm text-cyan-50/90">
+            Koyu zemin logo alani
+          </div>
+        </div>
       </article>
     </motion.section>
   )
