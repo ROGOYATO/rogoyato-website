@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { ArrowLeft } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
+import PageTitleHero from '../components/PageTitleHero'
 import { events } from '../utils/siteData'
 
 export default function EventApplyPage() {
@@ -10,10 +11,10 @@ export default function EventApplyPage() {
   if (!event) {
     return (
       <section className="rounded-3xl border border-slate-200/90 bg-white/90 p-6 dark:border-white/10 dark:bg-slate-900/75 sm:p-8">
-        <h1 className="font-heading text-3xl text-slate-900 dark:text-white">Basvuru sayfasi bulunamadi</h1>
-        <p className="mt-3 text-slate-600 dark:text-slate-300">Etkinlik bilgisi degismis olabilir.</p>
+        <h1 className="font-heading text-3xl text-slate-900 dark:text-white">Başvuru sayfası bulunamadı</h1>
+        <p className="mt-3 text-slate-600 dark:text-slate-300">Etkinlik bilgisi değişmiş olabilir.</p>
         <Link to="/etkinlikler" className="mt-4 inline-flex text-cyan-700 hover:text-cyan-800 dark:text-cyan-200 dark:hover:text-cyan-100">
-          Etkinliklere don
+          Etkinliklere dön
         </Link>
       </section>
     )
@@ -22,13 +23,13 @@ export default function EventApplyPage() {
   if (!event.requiresApplication) {
     return (
       <section className="rounded-3xl border border-slate-200/90 bg-white/90 p-6 dark:border-white/10 dark:bg-slate-900/75 sm:p-8">
-        <h1 className="font-heading text-3xl text-slate-900 dark:text-white">Bu etkinlikte basvuru alinmiyor</h1>
-        <p className="mt-3 text-slate-600 dark:text-slate-300">Etkinlik herkese acik sekilde gerceklesecektir.</p>
+        <h1 className="font-heading text-3xl text-slate-900 dark:text-white">Bu etkinlikte başvuru alınmıyor</h1>
+        <p className="mt-3 text-slate-600 dark:text-slate-300">Etkinlik herkese açık şekilde gerçekleşecektir.</p>
         <Link
           to={`/etkinlikler/${event.id}`}
           className="mt-4 inline-flex text-cyan-700 hover:text-cyan-800 dark:text-cyan-200 dark:hover:text-cyan-100"
         >
-          Etkinlik detayina don
+          Etkinlik detayına dön
         </Link>
       </section>
     )
@@ -46,24 +47,25 @@ export default function EventApplyPage() {
         className="inline-flex items-center gap-2 text-sm text-cyan-700 hover:text-cyan-800 dark:text-cyan-200 dark:hover:text-cyan-100"
       >
         <ArrowLeft size={16} />
-        Etkinlik detayina don
+        Etkinlik detayına dön
       </Link>
 
-      <header className="rounded-3xl border border-slate-200/90 bg-white/90 p-6 dark:border-white/10 dark:bg-slate-900/75 sm:p-8">
-        <p className="text-xs uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-200">Etkinlik Basvurusu</p>
-        <h1 className="mt-2 font-heading text-3xl text-slate-900 dark:text-white sm:text-4xl">{event.title}</h1>
+      <PageTitleHero title="Etkinlik Başvurusu" />
+
+      <section className="rounded-3xl border border-slate-200/90 bg-white/90 p-6 dark:border-white/10 dark:bg-slate-900/75 sm:p-8">
+        <h2 className="font-heading text-2xl text-slate-900 dark:text-white sm:text-3xl">{event.title}</h2>
         <p className="mt-3 max-w-3xl text-slate-600 dark:text-slate-300">
-          Son basvuru tarihi: {event.applicationDeadline || 'Etkinlik duyurusundaki tarihe bakiniz'}
+          Son başvuru tarihi: {event.applicationDeadline || 'Etkinlik duyurusundaki tarihe bakınız'}
         </p>
         {event.applicationNote ? (
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{event.applicationNote}</p>
         ) : null}
-      </header>
+      </section>
 
       <section className="rounded-2xl border border-slate-200/80 bg-white/85 p-5 dark:border-white/10 dark:bg-slate-900/65">
-        <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Basvuru formu (taslak)</h2>
+        <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Başvuru formu (taslak)</h2>
         <p className="mt-2 text-slate-600 dark:text-slate-300">
-          Bu alana daha sonra Google Form ya da ozel backend formu baglanabilir.
+          Bu alana daha sonra Google Form ya da özel backend formu bağlanabilir.
         </p>
 
         <form className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -71,7 +73,7 @@ export default function EventApplyPage() {
             Ad Soyad
             <input
               type="text"
-              placeholder="Adinizi yazin"
+              placeholder="Adınızı yazın"
               className="mt-1 w-full rounded-lg border border-slate-300/80 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 dark:border-white/15 dark:bg-slate-950/70 dark:text-white"
             />
           </label>
@@ -86,10 +88,10 @@ export default function EventApplyPage() {
           </label>
 
           <label className="text-sm text-slate-700 dark:text-slate-200 sm:col-span-2">
-            Kisa not
+            Kısa not
             <textarea
               rows="4"
-              placeholder="Neden katilmak istediginizi yazin"
+              placeholder="Neden katılmak istediğinizi yazın"
               className="mt-1 w-full rounded-lg border border-slate-300/80 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 dark:border-white/15 dark:bg-slate-950/70 dark:text-white"
             />
           </label>
@@ -98,7 +100,7 @@ export default function EventApplyPage() {
             type="button"
             className="rounded-full border border-emerald-300/40 bg-emerald-300/15 px-4 py-2 text-sm font-medium text-emerald-100 transition hover:bg-emerald-300/25"
           >
-            Basvuruyu gonder (demo)
+            Başvuruyu gönder (demo)
           </button>
         </form>
       </section>

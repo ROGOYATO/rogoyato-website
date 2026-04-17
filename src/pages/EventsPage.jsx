@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { ArrowRight, CalendarClock, MapPin } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import PageTitleHero from '../components/PageTitleHero'
 import { events } from '../utils/siteData'
 
 function statusClass(status) {
@@ -10,9 +11,9 @@ function statusClass(status) {
 }
 
 function statusLabel(status) {
-  if (status === 'open') return 'Basvuru Acik'
-  if (status === 'upcoming') return 'Yakinda'
-  return 'Tamamlandi'
+  if (status === 'open') return 'Başvuru Açık'
+  if (status === 'upcoming') return 'Yakında'
+  return 'Tamamlandı'
 }
 
 export default function EventsPage() {
@@ -21,22 +22,17 @@ export default function EventsPage() {
 
   return (
     <div className="space-y-6">
-      <motion.header
+      <motion.section
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: 'easeOut' }}
-        className="rounded-3xl border border-slate-200/90 bg-white/90 p-6 dark:border-white/10 dark:bg-slate-900/75 sm:p-8"
+        className="overflow-hidden"
       >
-        <p className="text-xs uppercase tracking-[0.2em] text-cyan-700 dark:text-cyan-200">Donem Takvimi</p>
-        <h1 className="mt-2 font-heading text-3xl text-slate-900 dark:text-white sm:text-4xl">Etkinlikler</h1>
-        <p className="mt-3 max-w-3xl text-slate-600 dark:text-slate-300">
-          Bu sayfa iki bolume ayrilir: yaklasan etkinlikler ve gecmis etkinlikler. Basvuru
-          gereken etkinliklerde "Etkinlige basvur" aksiyonu dogrudan ilgili sayfaya gider.
-        </p>
-      </motion.header>
+        <PageTitleHero title="Etkinlikler" />
+      </motion.section>
 
       <section className="space-y-3">
-        <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Yaklasan Etkinlikler</h2>
+        <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Yaklaşan Etkinlikler</h2>
         <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-900/65">
           {upcomingEvents.map((event) => (
             <article key={event.id} className="border-b border-slate-200/80 p-4 last:border-b-0 dark:border-white/10">
@@ -78,7 +74,7 @@ export default function EventsPage() {
                     to={`/etkinlikler/${event.id}/basvuru`}
                     className="inline-flex rounded-full border border-emerald-300/40 bg-emerald-300/15 px-3 py-1 text-xs font-medium text-emerald-100 transition hover:bg-emerald-300/25"
                   >
-                    Etkinlige basvur
+                    Etkinliğe başvur
                   </Link>
                 ) : null}
               </div>
@@ -88,7 +84,7 @@ export default function EventsPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Gecmis Etkinlikler</h2>
+        <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Geçmiş Etkinlikler</h2>
         <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-900/65">
           {pastEvents.map((event) => (
             <article key={event.id} className="border-b border-slate-200/80 p-4 last:border-b-0 dark:border-white/10">
@@ -100,7 +96,7 @@ export default function EventsPage() {
                 to={`/etkinlikler/${event.id}`}
                 className="mt-2 inline-flex items-center gap-2 text-sm text-cyan-700 hover:text-cyan-800 dark:text-cyan-200 dark:hover:text-cyan-100"
               >
-                Etkinlik detayini gor
+                Etkinlik detayını gör
                 <ArrowRight size={14} />
               </Link>
             </article>

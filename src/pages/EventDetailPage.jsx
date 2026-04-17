@@ -1,23 +1,24 @@
 import { motion } from 'framer-motion'
 import { ArrowLeft, CalendarClock, ClipboardList, MapPin } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
+import PageTitleHero from '../components/PageTitleHero'
 import { events } from '../utils/siteData'
 
 function statusMeta(status) {
   if (status === 'open') {
     return {
-      label: 'Basvuru Acik',
+      label: 'Başvuru Açık',
       classes: 'bg-emerald-300/20 text-emerald-100 border-emerald-300/30',
     }
   }
   if (status === 'upcoming') {
     return {
-      label: 'Yakinda',
+      label: 'Yakında',
       classes: 'bg-amber-300/20 text-amber-100 border-amber-300/40',
     }
   }
   return {
-    label: 'Tamamlandi',
+    label: 'Tamamlandı',
     classes: 'bg-slate-300/15 text-slate-200 border-slate-300/25',
   }
 }
@@ -29,10 +30,10 @@ export default function EventDetailPage() {
   if (!event) {
     return (
       <section className="rounded-3xl border border-slate-200/90 bg-white/90 p-6 dark:border-white/10 dark:bg-slate-900/75 sm:p-8">
-        <h1 className="font-heading text-3xl text-slate-900 dark:text-white">Etkinlik bulunamadi</h1>
-        <p className="mt-3 text-slate-600 dark:text-slate-300">Bu etkinlik arsivde degismis olabilir.</p>
+        <h1 className="font-heading text-3xl text-slate-900 dark:text-white">Etkinlik bulunamadı</h1>
+        <p className="mt-3 text-slate-600 dark:text-slate-300">Bu etkinlik arşivde değişmiş olabilir.</p>
         <Link to="/etkinlikler" className="mt-5 inline-flex text-cyan-700 hover:text-cyan-800 dark:text-cyan-200 dark:hover:text-cyan-100">
-          Etkinlik listesine don
+          Etkinlik listesine dön
         </Link>
       </section>
     )
@@ -49,8 +50,10 @@ export default function EventDetailPage() {
     >
       <Link to="/etkinlikler" className="inline-flex items-center gap-2 text-sm text-cyan-700 hover:text-cyan-800 dark:text-cyan-200 dark:hover:text-cyan-100">
         <ArrowLeft size={16} />
-        Tum etkinliklere don
+        Tüm etkinliklere dön
       </Link>
+
+      <PageTitleHero title="Etkinlik Detayı" />
 
       <section className="rounded-3xl border border-slate-200/90 bg-white/90 p-6 dark:border-white/10 dark:bg-slate-900/75 sm:p-8">
         <div className="flex flex-wrap items-center gap-2">
@@ -62,7 +65,7 @@ export default function EventDetailPage() {
           </span>
           {event.requiresApplication ? (
             <span className="rounded-full border border-cyan-300/25 bg-cyan-400/10 px-2.5 py-1 text-xs text-cyan-100">
-              Basvuru Gerekli
+              Başvuru Gerekli
             </span>
           ) : null}
         </div>
@@ -84,7 +87,7 @@ export default function EventDetailPage() {
 
       <section className="grid gap-4 lg:grid-cols-2">
         <article className="rounded-2xl border border-slate-200/80 bg-white/85 p-5 dark:border-white/10 dark:bg-slate-900/65">
-          <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Program Akisi</h2>
+          <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Program Akışı</h2>
           <ul className="mt-4 space-y-3 text-slate-600 dark:text-slate-300">
             {event.agenda.map((item) => (
               <li key={item} className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-slate-950/60">
@@ -95,7 +98,7 @@ export default function EventDetailPage() {
         </article>
 
         <article className="rounded-2xl border border-slate-200/80 bg-white/85 p-5 dark:border-white/10 dark:bg-slate-900/65">
-          <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Kosullar ve Notlar</h2>
+          <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Koşullar ve Notlar</h2>
           <ul className="mt-4 space-y-3 text-slate-600 dark:text-slate-300">
             {event.notes.map((item) => (
               <li key={item} className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-slate-950/60">
@@ -108,17 +111,17 @@ export default function EventDetailPage() {
 
       {event.requiresApplication && event.status !== 'closed' ? (
         <section className="rounded-2xl border border-cyan-300/25 bg-cyan-300/10 p-5">
-          <h2 className="font-heading text-xl text-cyan-100">Etkinlik basvurusu</h2>
+          <h2 className="font-heading text-xl text-cyan-100">Etkinlik başvurusu</h2>
           <p className="mt-2 text-cyan-50/90">
-            Bu etkinlik icin ayri bir basvuru sayfasi bulunur. Son tarih ve gerekli bilgiler
-            basvuru ekraninda yer alir.
+            Bu etkinlik için ayrı bir başvuru sayfası bulunur. Son tarih ve gerekli bilgiler
+            başvuru ekranında yer alır.
           </p>
           <Link
             to={`/etkinlikler/${event.id}/basvuru`}
             className="mt-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/40 bg-cyan-200/20 px-4 py-2 text-sm font-medium text-cyan-50 transition hover:bg-cyan-200/30"
           >
             <ClipboardList size={16} />
-            Etkinlige basvur
+            Etkinliğe başvur
           </Link>
         </section>
       ) : null}

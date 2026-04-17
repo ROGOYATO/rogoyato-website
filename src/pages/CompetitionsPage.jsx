@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { Trophy } from 'lucide-react'
+import PageTitleHero from '../components/PageTitleHero'
 import { competitionHighlights } from '../utils/siteData'
 
 export default function CompetitionsPage() {
@@ -10,13 +11,7 @@ export default function CompetitionsPage() {
       transition={{ duration: 0.45, ease: 'easeOut' }}
       className="space-y-6"
     >
-      <header className="rounded-3xl border border-slate-200/90 bg-white/90 p-6 dark:border-white/10 dark:bg-slate-900/75 sm:p-8">
-        <p className="text-xs uppercase tracking-[0.2em] text-fuchsia-700 dark:text-fuchsia-200">Gecmis Basarilar</p>
-        <h1 className="mt-2 font-heading text-3xl text-slate-900 dark:text-white sm:text-4xl">Basarilar</h1>
-        <p className="mt-3 max-w-3xl text-slate-600 dark:text-slate-300">
-          Yarisma ve teknik programlardan elde edilen ciktilar bu sayfada arsivlenir.
-        </p>
-      </header>
+      <PageTitleHero title="Başarılar" />
 
       <div className="grid gap-4">
         {competitionHighlights.map((item) => (
