@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -12,6 +12,10 @@ body,
 }
 
 @layer base {
+  * {
+    box-sizing: border-box;
+  }
+
   html {
     color-scheme: light;
   }
@@ -21,19 +25,19 @@ body,
   }
 
   body {
-    font-family: 'Manrope', 'Segoe UI', sans-serif;
-    background: linear-gradient(145deg, #f8fafc 0%, #e2e8f0 55%, #dbeafe 100%);
+    font-family: 'Manrope', 'Noto Sans', sans-serif;
+    background: #f4f6f8;
     color: #0f172a;
     transition: background 0.25s ease, color 0.25s ease;
   }
 
   html.dark body {
-    background: linear-gradient(145deg, #020617 0%, #0f172a 55%, #111827 100%);
+    background: #0b1220;
     color: #f1f5f9;
   }
 
   .font-heading {
-    font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+    font-family: 'Manrope', 'Noto Sans', sans-serif;
   }
 
   .no-scrollbar {
