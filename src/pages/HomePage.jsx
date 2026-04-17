@@ -18,10 +18,10 @@ export default function HomePage() {
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="rounded-3xl border border-slate-200/90 bg-white/90 p-6 shadow-[0_18px_72px_rgba(56,189,248,0.12)] dark:border-white/10 dark:bg-slate-900/75 sm:min-h-[360px] sm:p-10"
+        className="rounded-3xl border border-slate-200/90 bg-white/90 px-6 py-8 shadow-[0_18px_72px_rgba(56,189,248,0.12)] dark:border-white/10 dark:bg-slate-900/75 sm:px-10 sm:py-10"
       >
-        <div className="flex h-full items-center justify-center">
-          <div className="flex flex-col items-center justify-center gap-8 sm:flex-row sm:items-center">
+        <div className="flex w-full items-center justify-center">
+          <div className="flex w-full max-w-4xl flex-col items-center justify-center gap-8 sm:flex-row sm:items-center sm:justify-center">
             <img
               src={logoImage}
               alt="TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu logosu"
