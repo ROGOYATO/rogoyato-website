@@ -18,16 +18,18 @@ export default function HomePage() {
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="rounded-3xl border border-slate-200/90 bg-white/90 p-6 shadow-[0_18px_72px_rgba(56,189,248,0.12)] dark:border-white/10 dark:bg-slate-900/75 sm:p-8"
+        className="rounded-3xl border border-slate-200/90 bg-white/90 p-6 shadow-[0_18px_72px_rgba(56,189,248,0.12)] dark:border-white/10 dark:bg-slate-900/75 sm:min-h-[320px] sm:p-10"
       >
-        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+        <div className="flex h-full flex-col items-center justify-center gap-8 sm:flex-row sm:items-center sm:justify-start">
           <img
             src={logoImage}
             alt="TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu logosu"
-            className="h-20 w-20 rounded-xl border border-slate-200 bg-white object-contain p-1.5 dark:border-slate-700 dark:bg-slate-900"
+            className="h-32 w-32 object-contain sm:h-44 sm:w-44"
           />
-          <h1 className="font-heading text-3xl leading-tight text-slate-900 dark:text-white sm:text-5xl">
-            TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu
+          <h1 className="font-heading text-center text-3xl font-semibold leading-tight text-slate-900 dark:text-white sm:text-left sm:text-5xl sm:leading-[1.05]">
+            <span className="block">TOBB ETÜ</span>
+            <span className="block">Robotik ve Gömülü</span>
+            <span className="block">Yazılım Topluluğu</span>
           </h1>
         </div>
       </motion.section>
