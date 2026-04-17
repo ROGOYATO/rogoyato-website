@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Serif:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Serif:wght@600;700&family=Playfair+Display:wght@700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -28,12 +28,16 @@ body,
   }
 
   html.dark body {
-    background: #0b1220;
-    color: #f1f5f9;
+    background: #121212;
+    color: #f3f4f6;
   }
 
   .font-heading {
     font-family: 'Noto Serif', 'Georgia', serif;
+  }
+
+  .font-hero {
+    font-family: 'Playfair Display', 'Times New Roman', serif;
   }
 
   .no-scrollbar {

@@ -15,7 +15,7 @@ export default function CompetitionsPage() {
 
       <div className="grid gap-4">
         {competitionHighlights.map((item) => (
-          <article key={item.title} className="rounded-2xl border border-slate-200/80 bg-white/85 p-5 dark:border-white/10 dark:bg-slate-900/65">
+          <article key={item.title} className="rounded-2xl border border-slate-200/80 bg-white/85 p-5 dark:border-white/10 dark:bg-zinc-900/65">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/45 bg-fuchsia-400/15 px-3 py-1 text-xs text-fuchsia-700 dark:border-fuchsia-300/35 dark:bg-fuchsia-400/10 dark:text-fuchsia-100">
                 <Trophy size={14} />

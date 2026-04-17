@@ -17,7 +17,7 @@ export default function HomePage() {
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="rounded-3xl border border-slate-200/90 bg-white/90 px-6 py-8 shadow-[0_18px_72px_rgba(56,189,248,0.12)] dark:border-white/10 dark:bg-slate-900/75 sm:px-10 sm:py-10"
+        className="rounded-3xl border border-slate-200/90 bg-white/90 px-6 py-8 shadow-[0_18px_72px_rgba(56,189,248,0.12)] dark:border-white/10 dark:bg-zinc-900/75 sm:px-10 sm:py-10"
       >
         <div className="flex w-full items-center justify-center">
           <div className="flex w-full max-w-4xl flex-col items-center justify-center gap-8 sm:flex-row sm:items-center sm:justify-center">
@@ -26,7 +26,7 @@ export default function HomePage() {
               alt="TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu logosu"
               className="h-32 w-32 object-contain sm:h-44 sm:w-44"
             />
-            <h1 className="font-heading text-center text-3xl font-semibold leading-tight text-slate-900 dark:text-white sm:text-left sm:text-5xl sm:leading-[1.05]">
+            <h1 className="font-hero text-center text-3xl font-bold leading-tight text-slate-900 dark:text-white sm:text-left sm:text-5xl sm:leading-[1.05]">
               <span className="block">TOBB ETÜ</span>
               <span className="block">Robotik ve Gömülü</span>
               <span className="block">Yazılım Topluluğu</span>
@@ -40,7 +40,7 @@ export default function HomePage() {
           <Link
             key={item.to}
             to={item.to}
-            className="group relative h-44 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-[0_10px_34px_rgba(15,23,42,0.14)] dark:border-slate-700 dark:bg-slate-900 sm:h-56"
+            className="group relative h-44 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-[0_10px_34px_rgba(15,23,42,0.14)] dark:border-zinc-700 dark:bg-zinc-900 sm:h-56"
           >
             <img
               src={buttonBackdrop}

@@ -33,7 +33,7 @@ export default function EventsPage() {
 
       <section className="space-y-3">
         <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Yaklaşan Etkinlikler</h2>
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-900/65">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-zinc-900/65">
           {upcomingEvents.map((event) => (
             <article key={event.id} className="border-b border-slate-200/80 p-4 last:border-b-0 dark:border-white/10">
               <div className="flex flex-wrap items-center gap-2">
@@ -85,7 +85,7 @@ export default function EventsPage() {
 
       <section className="space-y-3">
         <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Geçmiş Etkinlikler</h2>
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-900/65">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-zinc-900/65">
           {pastEvents.map((event) => (
             <article key={event.id} className="border-b border-slate-200/80 p-4 last:border-b-0 dark:border-white/10">
               <p className="font-medium text-slate-900 dark:text-slate-100">{event.title}</p>
