@@ -4,13 +4,9 @@ import { Link } from 'react-router-dom'
 import { events } from '../utils/siteData'
 
 function statusClass(status) {
-  if (status === 'open') {
-    return 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-500/15 dark:text-emerald-200 dark:border-emerald-400/40'
-  }
-  if (status === 'upcoming') {
-    return 'bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-500/15 dark:text-amber-200 dark:border-amber-400/40'
-  }
-  return 'bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-500/15 dark:text-slate-300 dark:border-slate-500/40'
+  if (status === 'open') return 'bg-emerald-300/20 text-emerald-100 border-emerald-300/30'
+  if (status === 'upcoming') return 'bg-amber-300/20 text-amber-100 border-amber-300/40'
+  return 'bg-slate-300/15 text-slate-200 border-slate-300/25'
 }
 
 function statusLabel(status) {
@@ -29,7 +25,7 @@ export default function EventsPage() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: 'easeOut' }}
-        className="border-b border-slate-200 pb-8 dark:border-slate-800"
+        className="rounded-3xl border border-slate-200/90 bg-white/90 p-6 dark:border-white/10 dark:bg-slate-900/75 sm:p-8"
       >
         <p className="text-xs uppercase tracking-[0.2em] text-cyan-700 dark:text-cyan-200">Donem Takvimi</p>
         <h1 className="mt-2 font-heading text-3xl text-slate-900 dark:text-white sm:text-4xl">Etkinlikler</h1>
@@ -40,17 +36,17 @@ export default function EventsPage() {
       </motion.header>
 
       <section className="space-y-3">
-        <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Yaklaşan Etkinlikler</h2>
-        <div className="border-y border-slate-200 dark:border-slate-800">
+        <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Yaklasan Etkinlikler</h2>
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-900/65">
           {upcomingEvents.map((event) => (
-            <article key={event.id} className="border-b border-slate-200 py-5 last:border-b-0 dark:border-slate-800">
+            <article key={event.id} className="border-b border-slate-200/80 p-4 last:border-b-0 dark:border-white/10">
               <div className="flex flex-wrap items-center gap-2">
                 <span
                   className={`inline-flex rounded-full border px-2.5 py-1 text-xs ${statusClass(event.status)}`}
                 >
                   {statusLabel(event.status)}
                 </span>
-                <span className="rounded-full border border-slate-300 bg-slate-100 px-2.5 py-1 text-xs text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                <span className="rounded-full border border-slate-300/70 bg-slate-100 px-2.5 py-1 text-xs text-slate-700 dark:border-white/15 dark:bg-white/5 dark:text-slate-200">
                   {event.type}
                 </span>
               </div>
@@ -80,7 +76,7 @@ export default function EventsPage() {
                 {event.requiresApplication && event.status !== 'closed' ? (
                   <Link
                     to={`/etkinlikler/${event.id}/basvuru`}
-                    className="inline-flex rounded-md border border-emerald-300 bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 transition hover:bg-emerald-200 dark:border-emerald-400/40 dark:bg-emerald-500/15 dark:text-emerald-200 dark:hover:bg-emerald-500/25"
+                    className="inline-flex rounded-full border border-emerald-300/40 bg-emerald-300/15 px-3 py-1 text-xs font-medium text-emerald-100 transition hover:bg-emerald-300/25"
                   >
                     Etkinlige basvur
                   </Link>
@@ -92,10 +88,10 @@ export default function EventsPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Geçmiş Etkinlikler</h2>
-        <div className="border-y border-slate-200 dark:border-slate-800">
+        <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Gecmis Etkinlikler</h2>
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 dark:border-white/10 dark:bg-slate-900/65">
           {pastEvents.map((event) => (
-            <article key={event.id} className="border-b border-slate-200 py-5 last:border-b-0 dark:border-slate-800">
+            <article key={event.id} className="border-b border-slate-200/80 p-4 last:border-b-0 dark:border-white/10">
               <p className="font-medium text-slate-900 dark:text-slate-100">{event.title}</p>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                 {event.date} • {event.location}

@@ -24,7 +24,7 @@ export default function TeamPage() {
       transition={{ duration: 0.45, ease: 'easeOut' }}
       className="space-y-6"
     >
-      <header className="border-b border-slate-200 pb-8 dark:border-slate-800">
+      <header className="rounded-3xl border border-slate-200/90 bg-white/90 p-6 dark:border-white/10 dark:bg-slate-900/75 sm:p-8">
         <p className="text-xs uppercase tracking-[0.2em] text-amber-700 dark:text-amber-200">Organizasyon</p>
         <h1 className="mt-2 font-heading text-3xl text-slate-900 dark:text-white sm:text-4xl">Ekibimiz</h1>
         <p className="mt-3 max-w-3xl text-slate-600 dark:text-slate-300">
@@ -33,14 +33,14 @@ export default function TeamPage() {
         </p>
       </header>
 
-      <section className="border-y border-slate-200 py-5 dark:border-slate-800">
+      <section className="rounded-2xl border border-slate-200/80 bg-white/85 p-5 dark:border-white/10 dark:bg-slate-900/65">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Ekip üyeleri</h2>
+          <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Ekip uyeleri</h2>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => scrollSlider('prev')}
-              className="rounded-md border border-slate-300 bg-white p-2 text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+              className="rounded-full border border-slate-300 bg-white p-2 text-slate-700 transition hover:bg-slate-100 dark:border-white/20 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
               aria-label="Bir onceki uye"
             >
               <ChevronLeft size={16} />
@@ -48,7 +48,7 @@ export default function TeamPage() {
             <button
               type="button"
               onClick={() => scrollSlider('next')}
-              className="rounded-md border border-slate-300 bg-white p-2 text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+              className="rounded-full border border-slate-300 bg-white p-2 text-slate-700 transition hover:bg-slate-100 dark:border-white/20 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
               aria-label="Bir sonraki uye"
             >
               <ChevronRight size={16} />
@@ -60,7 +60,7 @@ export default function TeamPage() {
           {teamMembers.map((member) => (
             <article
               key={member.name}
-              className="min-w-[250px] snap-start overflow-hidden rounded-md border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
+              className="min-w-[250px] snap-start overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-50/85 dark:border-white/10 dark:bg-slate-950/70"
             >
               <img
                 src={member.photo}
@@ -77,9 +77,9 @@ export default function TeamPage() {
         </div>
       </section>
 
-      <div className="grid gap-4 border-t border-slate-200 pt-5 md:grid-cols-2 dark:border-slate-800">
+      <div className="grid gap-4 md:grid-cols-2">
         {teamUnits.map((unit) => (
-          <article key={unit.name} className="border-l-2 border-amber-500 pl-4 dark:border-amber-300">
+          <article key={unit.name} className="rounded-2xl border border-slate-200/80 bg-white/85 p-5 dark:border-white/10 dark:bg-slate-900/65">
             <h2 className="font-heading text-2xl text-slate-900 dark:text-white">{unit.name}</h2>
             <p className="mt-2 text-slate-600 dark:text-slate-300">{unit.focus}</p>
           </article>
