@@ -79,34 +79,33 @@ export default function TeamPage() {
       <PageTitleHero title="Ekibimiz" />
 
       <section className="rounded-3xl border border-slate-200/80 bg-white/85 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.14)] dark:border-white/10 dark:bg-slate-900/70 sm:p-8">
-        <div className="mb-5 flex items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => scrollToIndex(activeIndex - 1)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300/80 bg-white text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:bg-slate-950/60 dark:text-slate-100 dark:hover:bg-slate-800"
-            aria-label="Önceki üye"
-            disabled={activeIndex === 0}
-          >
-            <ChevronLeft size={18} />
-          </button>
-          <button
-            type="button"
-            onClick={() => scrollToIndex(activeIndex + 1)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300/80 bg-white text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:bg-slate-950/60 dark:text-slate-100 dark:hover:bg-slate-800"
-            aria-label="Sonraki üye"
-            disabled={activeIndex === teamMembers.length - 1}
-          >
-            <ChevronRight size={18} />
-          </button>
-        </div>
-
         <div className="relative">
           <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-white via-white/70 to-transparent dark:from-slate-900 dark:via-slate-900/75" />
           <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-gradient-to-l from-white via-white/70 to-transparent dark:from-slate-900 dark:via-slate-900/75" />
 
+          <button
+            type="button"
+            onClick={() => scrollToIndex(activeIndex - 1)}
+            className="absolute left-1 top-1/2 z-20 inline-flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300/80 bg-white/95 text-slate-700 shadow-lg transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:bg-slate-950/85 dark:text-slate-100 dark:hover:bg-slate-800 sm:left-2"
+            aria-label="Önceki üye"
+            disabled={activeIndex === 0}
+          >
+            <ChevronLeft size={26} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => scrollToIndex(activeIndex + 1)}
+            className="absolute right-1 top-1/2 z-20 inline-flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300/80 bg-white/95 text-slate-700 shadow-lg transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:bg-slate-950/85 dark:text-slate-100 dark:hover:bg-slate-800 sm:right-2"
+            aria-label="Sonraki üye"
+            disabled={activeIndex === teamMembers.length - 1}
+          >
+            <ChevronRight size={26} />
+          </button>
+
           <div
             ref={sliderRef}
-            className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-4 pt-1 scroll-smooth"
+            className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto px-14 pb-4 pt-1 scroll-smooth sm:px-16"
           >
             {teamMembers.map((member, index) => {
               const distance = Math.abs(index - activeIndex)
