@@ -22,13 +22,13 @@ body,
 
   body {
     font-family: 'Manrope', 'Segoe UI', sans-serif;
-    background: #e9f0ff;
+    background: #f2f5f9;
     color: #0f172a;
     transition: background 0.25s ease, color 0.25s ease;
   }
 
   html.dark body {
-    background: #0d1324;
+    background: #0b1220;
     color: #f1f5f9;
   }
 
