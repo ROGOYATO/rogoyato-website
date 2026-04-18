@@ -69,7 +69,7 @@ function EventGalleryCarousel({ images, title }) {
                 <img
                   src={`${publicBase}${imagePath}`}
                   alt={`${title} görseli`}
-                  className="aspect-[4/3] w-full rounded-2xl bg-zinc-950/85 object-contain"
+                  className="aspect-[4/3] w-full rounded-2xl object-cover object-center"
                   loading="lazy"
                 />
               </div>
