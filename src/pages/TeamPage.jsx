@@ -10,9 +10,12 @@ const publicBase = import.meta.env.BASE_URL
 export default function TeamPage() {
   const sliderRef = useRef(null)
   const baseCount = teamMembers.length
-  const loopMembers = useMemo(() => [...teamMembers, ...teamMembers, ...teamMembers], [])
+  const loopMembers = useMemo(
+    () => [...teamMembers, ...teamMembers, ...teamMembers, ...teamMembers, ...teamMembers],
+    [],
+  )
   const [activeIndex, setActiveIndex] = useState(0)
-  const [virtualIndex, setVirtualIndex] = useState(baseCount)
+  const [virtualIndex, setVirtualIndex] = useState(baseCount * 2)
 
   const centerCardInView = (slider, card, smooth) => {
     const targetLeft = card.offsetLeft - (slider.clientWidth - card.clientWidth) / 2
@@ -53,12 +56,21 @@ export default function TeamPage() {
     setActiveIndex(normalizedIndex)
     setVirtualIndex(nearestIndex)
 
-    if (nearestIndex < baseCount * 0.6 || nearestIndex > baseCount * 2.4) {
-      const middleIndex = normalizedIndex + baseCount
-      const middleCard = cards[middleIndex]
-      if (middleCard) {
-        centerCardInView(slider, middleCard, false)
-        setVirtualIndex(middleIndex)
+    if (nearestIndex < baseCount * 1.5) {
+      const shiftedIndex = nearestIndex + baseCount
+      const shiftedCard = cards[shiftedIndex]
+      if (shiftedCard) {
+        centerCardInView(slider, shiftedCard, false)
+        setVirtualIndex(shiftedIndex)
+      }
+    }
+
+    if (nearestIndex > baseCount * 3.5) {
+      const shiftedIndex = nearestIndex - baseCount
+      const shiftedCard = cards[shiftedIndex]
+      if (shiftedCard) {
+        centerCardInView(slider, shiftedCard, false)
+        setVirtualIndex(shiftedIndex)
       }
     }
   }
@@ -74,13 +86,13 @@ export default function TeamPage() {
     window.addEventListener('resize', handleScroll)
 
     window.requestAnimationFrame(() => {
-      const initialCard = slider.children[baseCount]
+      const initialCard = slider.children[baseCount * 2]
       if (!initialCard) {
         return
       }
 
       centerCardInView(slider, initialCard, false)
-      setVirtualIndex(baseCount)
+      setVirtualIndex(baseCount * 2)
       setActiveIndex(0)
     })
 
@@ -97,9 +109,7 @@ export default function TeamPage() {
     }
 
     const cards = Array.from(slider.children)
-    const normalizedCurrent = ((virtualIndex % baseCount) + baseCount) % baseCount
-    const middleCurrent = normalizedCurrent + baseCount
-    const targetVirtual = middleCurrent + step
+    const targetVirtual = virtualIndex + step
     const targetCard = cards[targetVirtual]
 
     if (!targetCard) {
@@ -151,10 +161,10 @@ export default function TeamPage() {
               const photoSrc = member.photo.startsWith('http') ? member.photo : `${publicBase}${member.photo}`
               const cardClass =
                 distance === 0
-                  ? 'scale-100 opacity-100 blur-0'
+                  ? 'scale-[1.15] opacity-100 blur-0'
                   : distance === 1
-                    ? 'scale-[0.95] opacity-95 blur-[1px]'
-                    : 'scale-[0.9] opacity-75 blur-[2px]'
+                    ? 'scale-[0.93] opacity-95 blur-[1px]'
+                    : 'scale-[0.86] opacity-75 blur-[2px]'
 
               return (
                 <article

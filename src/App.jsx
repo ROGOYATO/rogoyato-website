@@ -59,7 +59,7 @@ function App() {
 
       <footer className="relative z-10 border-t border-slate-200/80 bg-white/70 dark:border-white/10 dark:bg-zinc-950/70">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-6 text-sm text-slate-600 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-          <p>ROGOYATO • Robotik ve Gömülü Yazılım Topluluğu</p>
+          <p>ROGOYATO • TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu</p>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <a
               href="https://www.instagram.com/eturogoyato/"
