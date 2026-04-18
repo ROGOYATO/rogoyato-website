@@ -31,20 +31,26 @@ const SCORE_STORAGE_KEY = 'snake-best-score'
 const TICK_MS = 130
 const SWIPE_THRESHOLD = 24
 
-function getBoardSize() {
+function getBoardConfig() {
   if (typeof window === 'undefined') {
-    return 20
+    return { cols: 32, rows: 18, isMobile: false }
   }
 
-  return window.matchMedia('(max-width: 640px)').matches ? 14 : 20
+  const isMobile = window.matchMedia('(max-width: 640px)').matches
+  if (isMobile) {
+    return { cols: 14, rows: 14, isMobile: true }
+  }
+
+  return { cols: 32, rows: 18, isMobile: false }
 }
 
-function createInitialSnake(boardSize) {
-  const middle = Math.floor(boardSize / 2)
+function createInitialSnake(boardConfig) {
+  const middleX = Math.floor(boardConfig.cols / 2)
+  const middleY = Math.floor(boardConfig.rows / 2)
   return [
-    { x: middle + 1, y: middle },
-    { x: middle, y: middle },
-    { x: middle - 1, y: middle },
+    { x: middleX + 1, y: middleY },
+    { x: middleX, y: middleY },
+    { x: middleX - 1, y: middleY },
   ]
 }
 
@@ -52,12 +58,12 @@ function toCellKey(cell) {
   return `${cell.x}-${cell.y}`
 }
 
-function createFood(snake, boardSize) {
+function createFood(snake, boardConfig) {
   const occupied = new Set(snake.map(toCellKey))
   const freeCells = []
 
-  for (let y = 0; y < boardSize; y += 1) {
-    for (let x = 0; x < boardSize; x += 1) {
+  for (let y = 0; y < boardConfig.rows; y += 1) {
+    for (let x = 0; x < boardConfig.cols; x += 1) {
       const key = `${x}-${y}`
       if (!occupied.has(key)) {
         freeCells.push({ x, y })
@@ -84,19 +90,23 @@ function readBestScore() {
 }
 
 export default function SnakeGamePage() {
-  const [boardSize, setBoardSize] = useState(() => getBoardSize())
-  const [snake, setSnake] = useState(() => createInitialSnake(getBoardSize()))
+  const initialBoardConfig = getBoardConfig()
+
+  const [boardConfig, setBoardConfig] = useState(initialBoardConfig)
+  const [snake, setSnake] = useState(() => createInitialSnake(initialBoardConfig))
   const [direction, setDirection] = useState('RIGHT')
-  const [food, setFood] = useState(() => createFood(createInitialSnake(getBoardSize()), getBoardSize()))
+  const [food, setFood] = useState(() => createFood(createInitialSnake(initialBoardConfig), initialBoardConfig))
   const [score, setScore] = useState(0)
   const [bestScore, setBestScore] = useState(() => readBestScore())
   const [isGameOver, setIsGameOver] = useState(false)
 
   const directionRef = useRef(direction)
   const touchStartRef = useRef(null)
+  const audioContextRef = useRef(null)
 
-  const cellPercent = 100 / boardSize
-  const elementBleedPx = boardSize <= 14 ? 4 : 6
+  const cellWidthPercent = 100 / boardConfig.cols
+  const cellHeightPercent = 100 / boardConfig.rows
+  const elementBleedPx = boardConfig.isMobile ? 4 : 8
 
   const updateBestScore = useCallback((nextScore) => {
     setBestScore((currentBest) => {
@@ -124,19 +134,64 @@ export default function SnakeGamePage() {
     setDirection(nextDirection)
   }, [isGameOver])
 
-  const resetGame = useCallback((nextBoardSize = boardSize) => {
-    const initialSnake = createInitialSnake(nextBoardSize)
+  const playEatSound = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext
+    if (!AudioContextClass) {
+      return
+    }
+
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContextClass()
+      }
+
+      const context = audioContextRef.current
+      if (!context) {
+        return
+      }
+
+      if (context.state === 'suspended') {
+        context.resume()
+      }
+
+      const now = context.currentTime
+      const oscillator = context.createOscillator()
+      const gain = context.createGain()
+
+      oscillator.type = 'triangle'
+      oscillator.frequency.setValueAtTime(540, now)
+      oscillator.frequency.exponentialRampToValueAtTime(820, now + 0.07)
+
+      gain.gain.setValueAtTime(0.0001, now)
+      gain.gain.exponentialRampToValueAtTime(0.06, now + 0.015)
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12)
+
+      oscillator.connect(gain)
+      gain.connect(context.destination)
+      oscillator.start(now)
+      oscillator.stop(now + 0.13)
+    } catch {
+      // No-op: audio feedback is optional.
+    }
+  }, [])
+
+  const resetGame = useCallback((nextBoardConfig = boardConfig) => {
+    const initialSnake = createInitialSnake(nextBoardConfig)
     directionRef.current = 'RIGHT'
     setDirection('RIGHT')
     setSnake(initialSnake)
-    setFood(createFood(initialSnake, nextBoardSize))
+    setFood(createFood(initialSnake, nextBoardConfig))
     setScore(0)
     setIsGameOver(false)
-  }, [boardSize])
+  }, [boardConfig])
 
   useEffect(() => {
     const handleResize = () => {
-      setBoardSize(getBoardSize())
+      setBoardConfig(getBoardConfig())
     }
 
     window.addEventListener('resize', handleResize)
@@ -146,8 +201,15 @@ export default function SnakeGamePage() {
   }, [])
 
   useEffect(() => {
-    resetGame(boardSize)
-  }, [boardSize, resetGame])
+    resetGame(boardConfig)
+  }, [boardConfig, resetGame])
+
+  useEffect(() => () => {
+    const context = audioContextRef.current
+    if (context && typeof context.close === 'function') {
+      context.close().catch(() => {})
+    }
+  }, [])
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -181,7 +243,10 @@ export default function SnakeGamePage() {
         }
 
         const wallCollision =
-          nextHead.x < 0 || nextHead.y < 0 || nextHead.x >= boardSize || nextHead.y >= boardSize
+          nextHead.x < 0 ||
+          nextHead.y < 0 ||
+          nextHead.x >= boardConfig.cols ||
+          nextHead.y >= boardConfig.rows
 
         const bodyCollision = currentSnake.some((segment) => segment.x === nextHead.x && segment.y === nextHead.y)
 
@@ -201,8 +266,9 @@ export default function SnakeGamePage() {
             updateBestScore(nextScore)
             return nextScore
           })
+          playEatSound()
 
-          const nextFood = createFood(nextSnake, boardSize)
+          const nextFood = createFood(nextSnake, boardConfig)
           if (!nextFood) {
             setIsGameOver(true)
           }
@@ -216,7 +282,7 @@ export default function SnakeGamePage() {
     return () => {
       window.clearInterval(intervalId)
     }
-  }, [boardSize, food, isGameOver, updateBestScore])
+  }, [boardConfig, food, isGameOver, playEatSound, updateBestScore])
 
   const handleTouchStart = (event) => {
     const touch = event.changedTouches[0]
@@ -267,27 +333,33 @@ export default function SnakeGamePage() {
       <div
         className="relative w-full touch-none select-none rounded-2xl border border-slate-300/25 dark:border-white/12"
         style={{
-          aspectRatio: '1 / 1',
+          ...(boardConfig.isMobile
+            ? {
+                width: '100%',
+                maxWidth: '520px',
+                aspectRatio: '1 / 1',
+              }
+            : {
+                width: '100%',
+                maxWidth: '100%',
+                height: 'min(62vh, calc(100vh - 230px))',
+                minHeight: '320px',
+              }),
         }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        onClick={() => {
-          if (isGameOver) {
-            resetGame()
-          }
-        }}
       >
         {food ? (
           <div
             className="absolute flex items-center justify-center text-emerald-400 drop-shadow-[0_0_9px_rgba(16,185,129,0.65)]"
             style={{
-              width: `calc(${cellPercent}% + ${elementBleedPx}px)`,
-              height: `calc(${cellPercent}% + ${elementBleedPx}px)`,
-              left: `calc(${food.x * cellPercent}% - ${elementBleedPx / 2}px)`,
-              top: `calc(${food.y * cellPercent}% - ${elementBleedPx / 2}px)`,
+              width: `calc(${cellWidthPercent}% + ${elementBleedPx}px)`,
+              height: `calc(${cellHeightPercent}% + ${elementBleedPx}px)`,
+              left: `calc(${food.x * cellWidthPercent}% - ${elementBleedPx / 2}px)`,
+              top: `calc(${food.y * cellHeightPercent}% - ${elementBleedPx / 2}px)`,
             }}
           >
-            <Cpu size={boardSize <= 14 ? 17 : 23} />
+            <Cpu className="h-[88%] w-[88%]" strokeWidth={2.3} />
           </div>
         ) : null}
 
@@ -301,14 +373,24 @@ export default function SnakeGamePage() {
               index === 0 ? 'drop-shadow-[0_0_10px_rgba(6,182,212,0.65)]' : 'opacity-95'
             }`}
             style={{
-              width: `calc(${cellPercent}% + ${elementBleedPx}px)`,
-              height: `calc(${cellPercent}% + ${elementBleedPx}px)`,
-              left: `calc(${segment.x * cellPercent}% - ${elementBleedPx / 2}px)`,
-              top: `calc(${segment.y * cellPercent}% - ${elementBleedPx / 2}px)`,
+              width: `calc(${cellWidthPercent}% + ${elementBleedPx}px)`,
+              height: `calc(${cellHeightPercent}% + ${elementBleedPx}px)`,
+              left: `calc(${segment.x * cellWidthPercent}% - ${elementBleedPx / 2}px)`,
+              top: `calc(${segment.y * cellHeightPercent}% - ${elementBleedPx / 2}px)`,
             }}
           />
         ))}
       </div>
+
+      {isGameOver ? (
+        <button
+          type="button"
+          onClick={() => resetGame()}
+          className="rounded-full border border-slate-300/75 bg-white/85 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-100 dark:border-white/15 dark:bg-zinc-900/80 dark:text-slate-100 dark:hover:bg-zinc-800"
+        >
+          Restart
+        </button>
+      ) : null}
     </section>
   )
 }
