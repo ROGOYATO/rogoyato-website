@@ -1,4 +1,5 @@
-import { Moon, ShieldCheck, Sun } from 'lucide-react'
+import { Moon, Sun } from 'lucide-react'
+import { FaInstagram, FaLinkedinIn } from 'react-icons/fa'
 import { NavLink, Outlet } from 'react-router-dom'
 import useTheme from './hooks/useTheme'
 
@@ -56,10 +57,26 @@ function App() {
       <footer className="relative z-10 border-t border-slate-200/80 bg-white/70 dark:border-white/10 dark:bg-zinc-950/70">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-6 text-sm text-slate-600 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <p>ROGOYATO • Robotik ve Gömülü Yazılım Topluluğu</p>
-          <p className="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400">
-            <ShieldCheck size={16} />
-            Etkinlik başvuruları etkinlik bazlı açılır.
-          </p>
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <a
+              href="https://www.instagram.com/eturogoyato/"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-300/80 bg-white/75 px-3 py-1.5 text-slate-700 transition hover:bg-slate-100 dark:border-white/15 dark:bg-zinc-900/70 dark:text-slate-100 dark:hover:bg-zinc-800"
+            >
+              <FaInstagram size={15} />
+              Instagram
+            </a>
+            <a
+              href="https://www.linkedin.com/company/robotik-ve-g%C3%B6m%C3%BCl%C3%BC-yaz%C4%B1l%C4%B1m-toplulu%C4%9Fu/"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-300/80 bg-white/75 px-3 py-1.5 text-slate-700 transition hover:bg-slate-100 dark:border-white/15 dark:bg-zinc-900/70 dark:text-slate-100 dark:hover:bg-zinc-800"
+            >
+              <FaLinkedinIn size={15} />
+              LinkedIn
+            </a>
+          </div>
         </div>
       </footer>
     </div>

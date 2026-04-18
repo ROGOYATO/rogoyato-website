@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Serif:wght@600;700&family=Playfair+Display:wght@700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Serif:wght@600;700&family=Playfair+Display:wght@700;800&family=Cormorant+Garamond:wght@600;700&family=DM+Serif+Display:ital@0;1&family=Lora:wght@600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -37,7 +37,23 @@ body,
   }
 
   .font-hero {
+    font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+  }
+
+  .font-hero-option-1 {
+    font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+  }
+
+  .font-hero-option-2 {
     font-family: 'Playfair Display', 'Times New Roman', serif;
+  }
+
+  .font-hero-option-3 {
+    font-family: 'DM Serif Display', 'Times New Roman', serif;
+  }
+
+  .font-hero-option-4 {
+    font-family: 'Lora', 'Times New Roman', serif;
   }
 
   .no-scrollbar {

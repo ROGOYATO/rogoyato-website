@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import PageTitleHero from '../components/PageTitleHero'
 import { teamMembers } from '../utils/siteData'
 
+const publicBase = import.meta.env.BASE_URL
+
 export default function TeamPage() {
   const sliderRef = useRef(null)
   const [activeIndex, setActiveIndex] = useState(0)
@@ -78,7 +80,7 @@ export default function TeamPage() {
     >
       <PageTitleHero title="Ekibimiz" />
 
-      <section className="rounded-3xl border border-slate-200/80 bg-white/85 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.14)] dark:border-white/10 dark:bg-zinc-900/70 sm:p-8">
+      <section className="rounded-3xl border border-slate-200/80 bg-white/85 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.14)] dark:border-white/10 dark:bg-zinc-900/70 dark:shadow-none sm:p-8">
         <div className="relative">
           <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-white via-white/70 to-transparent dark:from-slate-900 dark:via-slate-900/75" />
           <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-gradient-to-l from-white via-white/70 to-transparent dark:from-slate-900 dark:via-slate-900/75" />
@@ -109,6 +111,7 @@ export default function TeamPage() {
           >
             {teamMembers.map((member, index) => {
               const distance = Math.abs(index - activeIndex)
+              const photoSrc = member.photo.startsWith('http') ? member.photo : `${publicBase}${member.photo}`
               const cardClass =
                 distance === 0
                   ? 'scale-100 opacity-100'
@@ -128,7 +131,7 @@ export default function TeamPage() {
                   className={`min-w-[74vw] snap-center overflow-hidden rounded-3xl border border-slate-200/80 bg-slate-50/90 transition duration-300 dark:border-white/10 dark:bg-zinc-950/70 sm:min-w-[44vw] lg:min-w-[30%] ${cardClass}`}
                 >
                   <img
-                    src={member.photo}
+                    src={photoSrc}
                     alt={`${member.name} fotoğrafı`}
                     className={`h-72 w-full object-cover transition duration-300 sm:h-80 ${imageClass}`}
                     loading="lazy"

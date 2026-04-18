@@ -2,7 +2,7 @@ import heroPhoto from '../../ornekbutonarkaplan.png'
 
 export default function PageTitleHero({ title }) {
   return (
-    <header className="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white/70 shadow-[0_18px_64px_rgba(15,23,42,0.15)] dark:border-white/10 dark:bg-zinc-900/65">
+    <header className="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white/70 shadow-[0_18px_64px_rgba(15,23,42,0.15)] dark:border-white/10 dark:bg-zinc-900/65 dark:shadow-none">
       <img
         src={heroPhoto}
         alt=""

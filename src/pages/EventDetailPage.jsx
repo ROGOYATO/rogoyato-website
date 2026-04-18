@@ -8,18 +8,20 @@ function statusMeta(status) {
   if (status === 'open') {
     return {
       label: 'Başvuru Açık',
-      classes: 'bg-emerald-300/20 text-emerald-100 border-emerald-300/30',
+      classes:
+        'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-300/20 dark:text-emerald-100 dark:border-emerald-300/30',
     }
   }
   if (status === 'upcoming') {
     return {
       label: 'Yakında',
-      classes: 'bg-amber-300/20 text-amber-100 border-amber-300/40',
+      classes:
+        'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-300/20 dark:text-amber-100 dark:border-amber-300/40',
     }
   }
   return {
     label: 'Tamamlandı',
-    classes: 'bg-slate-300/15 text-slate-200 border-slate-300/25',
+    classes: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-zinc-600/20 dark:text-zinc-100 dark:border-zinc-400/35',
   }
 }
 
@@ -64,7 +66,7 @@ export default function EventDetailPage() {
             {event.type}
           </span>
           {event.requiresApplication ? (
-            <span className="rounded-full border border-cyan-300/25 bg-cyan-400/10 px-2.5 py-1 text-xs text-cyan-100">
+            <span className="rounded-full border border-cyan-300 bg-cyan-100 px-2.5 py-1 text-xs text-cyan-800 dark:border-cyan-300/25 dark:bg-cyan-400/10 dark:text-cyan-100">
               Başvuru Gerekli
             </span>
           ) : null}
@@ -110,15 +112,15 @@ export default function EventDetailPage() {
       </section>
 
       {event.requiresApplication && event.status !== 'closed' ? (
-        <section className="rounded-2xl border border-cyan-300/25 bg-cyan-300/10 p-5">
-          <h2 className="font-heading text-xl text-cyan-100">Etkinlik başvurusu</h2>
-          <p className="mt-2 text-cyan-50/90">
+        <section className="rounded-2xl border border-cyan-200 bg-cyan-50 p-5 dark:border-cyan-300/25 dark:bg-cyan-300/10">
+          <h2 className="font-heading text-xl text-cyan-900 dark:text-cyan-100">Etkinlik başvurusu</h2>
+          <p className="mt-2 text-cyan-800 dark:text-cyan-50/90">
             Bu etkinlik için ayrı bir başvuru sayfası bulunur. Son tarih ve gerekli bilgiler
             başvuru ekranında yer alır.
           </p>
           <Link
             to={`/etkinlikler/${event.id}/basvuru`}
-            className="mt-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/40 bg-cyan-200/20 px-4 py-2 text-sm font-medium text-cyan-50 transition hover:bg-cyan-200/30"
+            className="mt-4 inline-flex items-center gap-2 rounded-full border border-cyan-300 bg-cyan-100 px-4 py-2 text-sm font-medium text-cyan-900 transition hover:bg-cyan-200 dark:border-cyan-300/40 dark:bg-cyan-200/20 dark:text-cyan-50 dark:hover:bg-cyan-200/30"
           >
             <ClipboardList size={16} />
             Etkinliğe başvur

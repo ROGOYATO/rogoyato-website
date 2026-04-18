@@ -98,7 +98,7 @@ export default function EventApplyPage() {
 
           <button
             type="button"
-            className="rounded-full border border-emerald-300/40 bg-emerald-300/15 px-4 py-2 text-sm font-medium text-emerald-100 transition hover:bg-emerald-300/25"
+            className="rounded-full border border-emerald-300 bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-800 transition hover:bg-emerald-200 dark:border-emerald-300/40 dark:bg-emerald-300/15 dark:text-emerald-100 dark:hover:bg-emerald-300/25"
           >
             Başvuruyu gönder (demo)
           </button>

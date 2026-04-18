@@ -5,9 +5,13 @@ import PageTitleHero from '../components/PageTitleHero'
 import { events } from '../utils/siteData'
 
 function statusClass(status) {
-  if (status === 'open') return 'bg-emerald-300/20 text-emerald-100 border-emerald-300/30'
-  if (status === 'upcoming') return 'bg-amber-300/20 text-amber-100 border-amber-300/40'
-  return 'bg-slate-300/15 text-slate-200 border-slate-300/25'
+  if (status === 'open') {
+    return 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-300/20 dark:text-emerald-100 dark:border-emerald-300/30'
+  }
+  if (status === 'upcoming') {
+    return 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-300/20 dark:text-amber-100 dark:border-amber-300/40'
+  }
+  return 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-zinc-600/20 dark:text-zinc-100 dark:border-zinc-400/35'
 }
 
 function statusLabel(status) {
@@ -72,7 +76,7 @@ export default function EventsPage() {
                 {event.requiresApplication && event.status !== 'closed' ? (
                   <Link
                     to={`/etkinlikler/${event.id}/basvuru`}
-                    className="inline-flex rounded-full border border-emerald-300/40 bg-emerald-300/15 px-3 py-1 text-xs font-medium text-emerald-100 transition hover:bg-emerald-300/25"
+                    className="inline-flex rounded-full border border-emerald-300 bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800 transition hover:bg-emerald-200 dark:border-emerald-300/40 dark:bg-emerald-300/15 dark:text-emerald-100 dark:hover:bg-emerald-300/25"
                   >
                     Etkinliğe başvur
                   </Link>

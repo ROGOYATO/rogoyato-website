@@ -104,54 +104,30 @@ export const competitionHighlights = [
   },
 ]
 
-export const teamUnits = [
-  {
-    name: 'Gömülü Yazılım',
-    focus: 'Firmware, haberleşme protokolleri, sistem optimizasyonu',
-  },
-  {
-    name: 'Elektronik ve PCB',
-    focus: 'Kart tasarımı, güç yönetimi, test ve doğrulama',
-  },
-  {
-    name: 'Mekanik ve Üretim',
-    focus: 'Şasi, hareket sistemleri, prototipleme',
-  },
-  {
-    name: 'Organizasyon ve İletişim',
-    focus: 'Etkinlik planı, iş birlikleri, topluluk süreçleri',
-  },
-]
-
 export const teamMembers = [
   {
-    name: 'Elif Yılmaz',
-    role: 'Topluluk Başkanı',
-    photo: 'https://api.dicebear.com/9.x/notionists/svg?seed=ElifYilmaz',
+    name: 'Elif Özge Yavuz',
+    role: 'Başkan',
+    photo: 'team/elif-ozge-yavuz.jpg',
   },
   {
-    name: 'Berk Kara',
-    role: 'Gömülü Yazılım Lideri',
-    photo: 'https://api.dicebear.com/9.x/notionists/svg?seed=BerkKara',
+    name: 'Zeynep Güleniş',
+    role: 'Başkan Yardımcısı',
+    photo: 'team/zeynep-gulenis.jpg',
   },
   {
-    name: 'Dila Aydın',
-    role: 'Elektronik Takım Sorumlusu',
-    photo: 'https://api.dicebear.com/9.x/notionists/svg?seed=DilaAydin',
+    name: 'Mehmet Gönül',
+    role: 'YK Üyesi',
+    photo: 'team/mehmet-gonul.jpg',
   },
   {
-    name: 'Emir Can',
-    role: 'Mekanik Takım Sorumlusu',
-    photo: 'https://api.dicebear.com/9.x/notionists/svg?seed=EmirCan',
+    name: 'Yavuz Selim Oktar',
+    role: 'YK Üyesi',
+    photo: 'team/yavuz-selim-oktar.jpg',
   },
   {
-    name: 'Nisa Demir',
-    role: 'Etkinlik ve İletişim',
-    photo: 'https://api.dicebear.com/9.x/notionists/svg?seed=NisaDemir',
-  },
-  {
-    name: 'Ali Öztürk',
-    role: 'Yarışma Koordinatörü',
-    photo: 'https://api.dicebear.com/9.x/notionists/svg?seed=AliOzturk',
+    name: 'İsmail Kerem Ersöz',
+    role: 'YK Üyesi',
+    photo: 'team/ismail-kerem-ersoz.jpg',
   },
 ]
