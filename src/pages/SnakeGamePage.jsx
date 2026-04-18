@@ -1,9 +1,6 @@
-import { motion } from 'framer-motion'
-import { ArrowLeft, Cpu } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Cpu } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import snakeSegmentImage from '../assets/favicon.png'
-import PageTitleHero from '../components/PageTitleHero'
 
 const DIRECTION_VECTORS = {
   UP: { x: 0, y: -1 },
@@ -98,7 +95,8 @@ export default function SnakeGamePage() {
   const directionRef = useRef(direction)
   const touchStartRef = useRef(null)
 
-  const boardPixels = boardSize <= 14 ? 308 : 440
+  const boardPixels = boardSize <= 14 ? 320 : 520
+  const cellPercent = 100 / boardSize
 
   const updateBestScore = useCallback((nextScore) => {
     setBestScore((currentBest) => {
@@ -198,9 +196,11 @@ export default function SnakeGamePage() {
           : [nextHead, ...currentSnake.slice(0, currentSnake.length - 1)]
 
         if (eatsFood) {
-          const nextScore = score + 1
-          setScore(nextScore)
-          updateBestScore(nextScore)
+          setScore((currentScore) => {
+            const nextScore = currentScore + 1
+            updateBestScore(nextScore)
+            return nextScore
+          })
 
           const nextFood = createFood(nextSnake, boardSize)
           if (!nextFood) {
@@ -216,21 +216,7 @@ export default function SnakeGamePage() {
     return () => {
       window.clearInterval(intervalId)
     }
-  }, [boardSize, food, isGameOver, score, updateBestScore])
-
-  const snakeCellSet = useMemo(() => new Set(snake.map(toCellKey)), [snake])
-  const headKey = snake.length ? toCellKey(snake[0]) : ''
-  const foodKey = food ? toCellKey(food) : ''
-
-  const cells = useMemo(() => {
-    const allCells = []
-    for (let y = 0; y < boardSize; y += 1) {
-      for (let x = 0; x < boardSize; x += 1) {
-        allCells.push({ x, y, key: `${x}-${y}` })
-      }
-    }
-    return allCells
-  }, [boardSize])
+  }, [boardSize, food, isGameOver, updateBestScore])
 
   const handleTouchStart = (event) => {
     const touch = event.changedTouches[0]
@@ -273,101 +259,57 @@ export default function SnakeGamePage() {
   }
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease: 'easeOut' }}
-      className="space-y-6"
-    >
-      <Link
-        to="/"
-        className="inline-flex items-center gap-2 text-sm text-cyan-700 hover:text-cyan-800 dark:text-cyan-200 dark:hover:text-cyan-100"
+    <section className="flex min-h-[calc(100vh-9rem)] flex-col items-center justify-center gap-4">
+      <div className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-200">
+        Skor: {score} | Best: {bestScore} {isGameOver ? '| Oyun Bitti' : ''}
+      </div>
+
+      <div
+        className="relative touch-none select-none"
+        style={{
+          width: `min(92vw, ${boardPixels}px)`,
+          aspectRatio: '1 / 1',
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onClick={() => {
+          if (isGameOver) {
+            resetGame()
+          }
+        }}
       >
-        <ArrowLeft size={16} />
-        Ana sayfaya dön
-      </Link>
-
-      <PageTitleHero title="Snake Easter Egg" />
-
-      <section className="rounded-3xl border border-slate-200/90 bg-white/90 p-6 dark:border-white/10 dark:bg-zinc-900/75 sm:p-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-slate-600 dark:text-slate-300">
-            Yonu degistirmek icin ok tuslari, WASD veya swipe kullan. Islemciyi yedikce yilan +1 favicon buyur.
-          </p>
-          <button
-            type="button"
-            onClick={() => resetGame()}
-            className="rounded-full border border-slate-300/80 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-100 dark:border-white/15 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
-          >
-            Yeniden baslat
-          </button>
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
-          <span className="rounded-full border border-cyan-300 bg-cyan-100 px-3 py-1 text-cyan-900 dark:border-cyan-300/30 dark:bg-cyan-300/15 dark:text-cyan-100">
-            Skor: {score}
-          </span>
-          <span className="rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-amber-900 dark:border-amber-300/30 dark:bg-amber-300/15 dark:text-amber-100">
-            Best: {bestScore}
-          </span>
-          {isGameOver ? (
-            <span className="rounded-full border border-rose-300 bg-rose-100 px-3 py-1 text-rose-900 dark:border-rose-300/30 dark:bg-rose-300/15 dark:text-rose-100">
-              Oyun bitti
-            </span>
-          ) : null}
-        </div>
-
-        <div className="mt-5 flex justify-center">
+        {food ? (
           <div
-            className="touch-none overflow-hidden rounded-2xl border border-slate-300/80 bg-slate-200/70 p-1 dark:border-white/15 dark:bg-zinc-950/70"
-            style={{ width: `min(92vw, ${boardPixels}px)` }}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
+            className="absolute flex items-center justify-center text-emerald-400 drop-shadow-[0_0_9px_rgba(16,185,129,0.65)]"
+            style={{
+              width: `calc(${cellPercent}% - 2px)`,
+              height: `calc(${cellPercent}% - 2px)`,
+              left: `calc(${food.x * cellPercent}% + 1px)`,
+              top: `calc(${food.y * cellPercent}% + 1px)`,
+            }}
           >
-            <div
-              className="grid gap-[2px]"
-              style={{
-                gridTemplateColumns: `repeat(${boardSize}, minmax(0, 1fr))`,
-                gridTemplateRows: `repeat(${boardSize}, minmax(0, 1fr))`,
-                aspectRatio: '1 / 1',
-              }}
-            >
-              {cells.map((cell) => {
-                const isSnake = snakeCellSet.has(cell.key)
-                const isHead = cell.key === headKey
-                const isFood = cell.key === foodKey
-
-                return (
-                  <div
-                    key={cell.key}
-                    className={`relative overflow-hidden rounded-[6px] ${
-                      isSnake
-                        ? 'border border-cyan-300/60 bg-slate-900/95 dark:border-cyan-200/40'
-                        : 'border border-slate-300/80 bg-slate-100 dark:border-zinc-800 dark:bg-zinc-900'
-                    }`}
-                  >
-                    {isSnake ? (
-                      <div
-                        className={`h-full w-full bg-center bg-no-repeat ${isHead ? 'scale-100' : 'scale-[0.92]'}`}
-                        style={{
-                          backgroundImage: `url(${snakeSegmentImage})`,
-                          backgroundSize: '88% 88%',
-                        }}
-                      />
-                    ) : null}
-
-                    {isFood ? (
-                      <div className="absolute inset-0 flex items-center justify-center bg-emerald-200/35 dark:bg-emerald-500/10">
-                        <Cpu size={14} className="text-emerald-700 dark:text-emerald-300" />
-                      </div>
-                    ) : null}
-                  </div>
-                )
-              })}
-            </div>
+            <Cpu size={boardSize <= 14 ? 14 : 18} />
           </div>
-        </div>
-      </section>
-    </motion.section>
+        ) : null}
+
+        {snake.map((segment, index) => (
+          <img
+            key={`${segment.x}-${segment.y}-${index}`}
+            src={snakeSegmentImage}
+            alt=""
+            draggable="false"
+            className={`pointer-events-none absolute select-none object-contain ${
+              index === 0 ? 'drop-shadow-[0_0_10px_rgba(6,182,212,0.65)]' : 'opacity-95'
+            }`}
+            style={{
+              width: `calc(${cellPercent}% - 2px)`,
+              height: `calc(${cellPercent}% - 2px)`,
+              left: `calc(${segment.x * cellPercent}% + 1px)`,
+              top: `calc(${segment.y * cellPercent}% + 1px)`,
+            }}
+          />
+        ))}
+      </div>
+    </section>
   )
 }
