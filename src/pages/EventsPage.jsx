@@ -56,13 +56,13 @@ export default function EventsPage() {
                   key={event.id}
                   className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-[0_16px_40px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-zinc-900/70"
                 >
-                  <div className="flex flex-col sm:min-h-[250px] sm:flex-row">
-                    <div className="relative h-44 sm:h-auto sm:w-1/3">
+                  <div className="flex flex-col sm:flex-row">
+                    <div className="relative h-44 sm:aspect-square sm:w-1/3 sm:shrink-0 sm:self-start">
                       <img src={visual} alt="" className="h-full w-full object-cover" loading="lazy" />
                       <div className="absolute inset-0 bg-gradient-to-br from-slate-950/50 via-slate-900/25 to-transparent" />
                     </div>
 
-                    <div className="flex flex-1 flex-col p-5 sm:w-2/3 sm:p-6">
+                    <div className="p-5 sm:w-2/3 sm:p-6">
                       <div className="flex flex-wrap items-center gap-2">
                         <span
                           className={`inline-flex rounded-full border px-2.5 py-1 text-xs ${statusClass(event.status)}`}
@@ -88,7 +88,7 @@ export default function EventsPage() {
                         </p>
                       </div>
 
-                      <div className="mt-auto flex flex-wrap gap-3 pt-5">
+                      <div className="mt-5 flex flex-wrap gap-3">
                         <Link
                           to={`/etkinlikler/${event.id}`}
                           className="inline-flex items-center gap-2 text-sm font-medium text-cyan-700 hover:text-cyan-800 dark:text-cyan-200 dark:hover:text-cyan-100"
@@ -132,13 +132,13 @@ export default function EventsPage() {
                   key={event.id}
                   className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-white/10 dark:bg-zinc-900/70"
                 >
-                  <div className="flex flex-col sm:min-h-[220px] sm:flex-row">
-                    <div className="relative h-40 sm:h-auto sm:w-1/3">
+                  <div className="flex flex-col sm:flex-row">
+                    <div className="relative h-44 sm:aspect-square sm:w-1/3 sm:shrink-0 sm:self-start">
                       <img src={visual} alt="" className="h-full w-full object-cover" loading="lazy" />
                       <div className="absolute inset-0 bg-gradient-to-br from-slate-950/45 via-slate-900/15 to-transparent" />
                     </div>
 
-                    <div className="flex flex-1 flex-col p-5 sm:w-2/3 sm:p-6">
+                    <div className="p-5 sm:w-2/3 sm:p-6">
                       <span className={`inline-flex w-fit rounded-full border px-2.5 py-1 text-xs ${statusClass('closed')}`}>
                         {statusLabel('closed')}
                       </span>
@@ -150,7 +150,7 @@ export default function EventsPage() {
 
                       <Link
                         to={`/etkinlikler/${event.id}`}
-                        className="mt-auto inline-flex items-center gap-2 pt-5 text-sm text-cyan-700 hover:text-cyan-800 dark:text-cyan-200 dark:hover:text-cyan-100"
+                        className="mt-5 inline-flex items-center gap-2 text-sm text-cyan-700 hover:text-cyan-800 dark:text-cyan-200 dark:hover:text-cyan-100"
                       >
                         Etkinlik detayını gör
                         <ArrowRight size={14} />

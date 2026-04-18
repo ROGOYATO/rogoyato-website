@@ -69,7 +69,7 @@ function EventGalleryCarousel({ images, title }) {
                 <img
                   src={`${publicBase}${imagePath}`}
                   alt={`${title} görseli`}
-                  className="h-[300px] w-full rounded-2xl object-cover sm:h-[430px]"
+                  className="aspect-[4/3] w-full rounded-2xl bg-zinc-950/85 object-contain"
                   loading="lazy"
                 />
               </div>
@@ -194,30 +194,6 @@ export default function EventDetailPage() {
       {event.galleryImages && event.galleryImages.length ? (
         <EventGalleryCarousel images={event.galleryImages} title={event.title} />
       ) : null}
-
-      <section className="grid gap-4 lg:grid-cols-2">
-        <article className="rounded-2xl border border-slate-200/80 bg-white/85 p-5 dark:border-white/10 dark:bg-zinc-900/65">
-          <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Program Akışı</h2>
-          <ul className="mt-4 space-y-3 text-slate-600 dark:text-slate-300">
-            {event.agenda.map((item) => (
-              <li key={item} className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-zinc-950/60">
-                {item}
-              </li>
-            ))}
-          </ul>
-        </article>
-
-        <article className="rounded-2xl border border-slate-200/80 bg-white/85 p-5 dark:border-white/10 dark:bg-zinc-900/65">
-          <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Koşullar ve Notlar</h2>
-          <ul className="mt-4 space-y-3 text-slate-600 dark:text-slate-300">
-            {event.notes.map((item) => (
-              <li key={item} className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-zinc-950/60">
-                {item}
-              </li>
-            ))}
-          </ul>
-        </article>
-      </section>
 
       {event.requiresApplication && event.status !== 'closed' ? (
         <section className="rounded-2xl border border-cyan-200 bg-cyan-50 p-5 dark:border-cyan-300/25 dark:bg-cyan-300/10">
