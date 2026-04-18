@@ -49,4 +49,43 @@ body,
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
+  .interactive-pattern {
+    background:
+      radial-gradient(circle at 12% 18%, rgba(2, 132, 199, 0.06), transparent 33%),
+      radial-gradient(circle at 86% 72%, rgba(15, 23, 42, 0.06), transparent 28%);
+  }
+
+  html.dark .interactive-pattern {
+    background:
+      radial-gradient(circle at 12% 18%, rgba(212, 212, 216, 0.05), transparent 34%),
+      radial-gradient(circle at 86% 72%, rgba(82, 82, 91, 0.08), transparent 30%);
+  }
+
+  .interactive-pattern-item {
+    position: absolute;
+    color: rgba(15, 23, 42, 0.25);
+    transform: translate3d(0, 0, 0);
+    transition: transform 0.28s ease-out, opacity 0.28s ease-out;
+    animation-name: patternFloat;
+    animation-iteration-count: infinite;
+    animation-timing-function: ease-in-out;
+    will-change: transform, opacity;
+  }
+
+  html.dark .interactive-pattern-item {
+    color: rgba(212, 212, 216, 0.28);
+  }
+
+  @keyframes patternFloat {
+    0% {
+      margin-top: 0;
+    }
+    50% {
+      margin-top: -6px;
+    }
+    100% {
+      margin-top: 0;
+    }
+  }
 }

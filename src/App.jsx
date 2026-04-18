@@ -1,6 +1,7 @@
 import { Moon, Sun } from 'lucide-react'
 import { FaInstagram, FaLinkedinIn } from 'react-icons/fa'
 import { NavLink, Outlet } from 'react-router-dom'
+import InteractivePattern from './components/InteractivePattern'
 import useTheme from './hooks/useTheme'
 
 const navLinks = [
@@ -16,6 +17,8 @@ function App() {
 
   return (
     <div className="relative min-h-screen overflow-hidden text-slate-800 dark:text-slate-100">
+      <InteractivePattern />
+
       <header className="sticky top-0 z-30 border-b border-slate-200/90 bg-white/85 backdrop-blur-xl dark:border-cyan-500/20 dark:bg-zinc-950/80">
         <div className="mx-auto flex w-full max-w-6xl justify-center px-4 py-4 sm:px-6 lg:px-8">
           <nav className="flex flex-wrap items-center justify-center gap-2 text-sm sm:text-[0.95rem]">

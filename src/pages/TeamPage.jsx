@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import PageTitleHero from '../components/PageTitleHero'
 import { teamMembers } from '../utils/siteData'
 
@@ -8,7 +8,21 @@ const publicBase = import.meta.env.BASE_URL
 
 export default function TeamPage() {
   const sliderRef = useRef(null)
+  const baseCount = teamMembers.length
+  const loopMembers = useMemo(() => [...teamMembers, ...teamMembers, ...teamMembers], [])
   const [activeIndex, setActiveIndex] = useState(0)
+  const [virtualIndex, setVirtualIndex] = useState(baseCount)
+
+  const centerCardInView = (slider, card, smooth) => {
+    const targetLeft = card.offsetLeft - (slider.clientWidth - card.clientWidth) / 2
+
+    if (smooth) {
+      slider.scrollTo({ left: targetLeft, behavior: 'smooth' })
+      return
+    }
+
+    slider.scrollLeft = targetLeft
+  }
 
   const updateActiveCard = () => {
     const slider = sliderRef.current
@@ -34,7 +48,18 @@ export default function TeamPage() {
       }
     })
 
-    setActiveIndex(nearestIndex)
+    const normalizedIndex = ((nearestIndex % baseCount) + baseCount) % baseCount
+    setActiveIndex(normalizedIndex)
+    setVirtualIndex(nearestIndex)
+
+    if (nearestIndex < baseCount * 0.6 || nearestIndex > baseCount * 2.4) {
+      const middleIndex = normalizedIndex + baseCount
+      const middleCard = cards[middleIndex]
+      if (middleCard) {
+        centerCardInView(slider, middleCard, false)
+        setVirtualIndex(middleIndex)
+      }
+    }
   }
 
   useEffect(() => {
@@ -46,29 +71,43 @@ export default function TeamPage() {
     const handleScroll = () => updateActiveCard()
     slider.addEventListener('scroll', handleScroll, { passive: true })
     window.addEventListener('resize', handleScroll)
-    handleScroll()
+
+    window.requestAnimationFrame(() => {
+      const initialCard = slider.children[baseCount]
+      if (!initialCard) {
+        return
+      }
+
+      centerCardInView(slider, initialCard, false)
+      setVirtualIndex(baseCount)
+      setActiveIndex(0)
+    })
 
     return () => {
       slider.removeEventListener('scroll', handleScroll)
       window.removeEventListener('resize', handleScroll)
     }
-  }, [])
+  }, [baseCount])
 
-  const scrollToIndex = (targetIndex) => {
+  const scrollByStep = (step) => {
     const slider = sliderRef.current
     if (!slider) {
       return
     }
 
-    const clampedIndex = Math.max(0, Math.min(targetIndex, teamMembers.length - 1))
-    const targetCard = slider.children[clampedIndex]
+    const cards = Array.from(slider.children)
+    const normalizedCurrent = ((virtualIndex % baseCount) + baseCount) % baseCount
+    const middleCurrent = normalizedCurrent + baseCount
+    const targetVirtual = middleCurrent + step
+    const targetCard = cards[targetVirtual]
+
     if (!targetCard) {
       return
     }
 
-    const targetLeft = targetCard.offsetLeft - (slider.clientWidth - targetCard.clientWidth) / 2
-    slider.scrollTo({ left: targetLeft, behavior: 'smooth' })
-    setActiveIndex(clampedIndex)
+    centerCardInView(slider, targetCard, true)
+    setVirtualIndex(targetVirtual)
+    setActiveIndex(((targetVirtual % baseCount) + baseCount) % baseCount)
   }
 
   return (
@@ -82,25 +121,20 @@ export default function TeamPage() {
 
       <section className="rounded-3xl border border-slate-200/80 bg-white/85 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.14)] dark:border-white/10 dark:bg-zinc-900/70 dark:shadow-none sm:p-8">
         <div className="relative">
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-white via-white/70 to-transparent dark:hidden" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-gradient-to-l from-white via-white/70 to-transparent dark:hidden" />
-
           <button
             type="button"
-            onClick={() => scrollToIndex(activeIndex - 1)}
+            onClick={() => scrollByStep(-1)}
             className="absolute left-1 top-1/2 z-20 inline-flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300/80 bg-white/95 text-slate-700 shadow-lg transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:bg-zinc-950/85 dark:text-slate-100 dark:hover:bg-zinc-800 sm:left-2"
             aria-label="Önceki üye"
-            disabled={activeIndex === 0}
           >
             <ChevronLeft size={26} />
           </button>
 
           <button
             type="button"
-            onClick={() => scrollToIndex(activeIndex + 1)}
+            onClick={() => scrollByStep(1)}
             className="absolute right-1 top-1/2 z-20 inline-flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300/80 bg-white/95 text-slate-700 shadow-lg transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:bg-zinc-950/85 dark:text-slate-100 dark:hover:bg-zinc-800 sm:right-2"
             aria-label="Sonraki üye"
-            disabled={activeIndex === teamMembers.length - 1}
           >
             <ChevronRight size={26} />
           </button>
@@ -109,8 +143,10 @@ export default function TeamPage() {
             ref={sliderRef}
             className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto px-14 pb-4 pt-1 scroll-smooth sm:px-16"
           >
-            {teamMembers.map((member, index) => {
-              const distance = Math.abs(index - activeIndex)
+            {loopMembers.map((member, index) => {
+              const realIndex = index % baseCount
+              const rawDistance = Math.abs(realIndex - activeIndex)
+              const distance = Math.min(rawDistance, baseCount - rawDistance)
               const photoSrc = member.photo.startsWith('http') ? member.photo : `${publicBase}${member.photo}`
               const cardClass =
                 distance === 0
@@ -127,7 +163,7 @@ export default function TeamPage() {
 
               return (
                 <article
-                  key={member.name}
+                  key={`${member.name}-${index}`}
                   className={`min-w-[74vw] snap-center overflow-hidden rounded-3xl border border-slate-200/80 bg-slate-50/90 transition duration-300 dark:border-white/10 dark:bg-zinc-950/70 sm:min-w-[44vw] lg:min-w-[30%] ${cardClass}`}
                 >
                   <img
