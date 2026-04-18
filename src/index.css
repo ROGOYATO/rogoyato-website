@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Serif:wght@600;700&family=Outfit:wght@700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Serif:wght@600;700&family=Sora:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -37,8 +37,14 @@ body,
   }
 
   .font-hero {
-    font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+    font-family: 'Sora', 'Plus Jakarta Sans', sans-serif;
     letter-spacing: 0.01em;
+  }
+
+  .font-hero-soft {
+    font-family: 'Sora', 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: 0.006em;
+    font-weight: 500;
   }
 
   .no-scrollbar {
@@ -52,19 +58,24 @@ body,
 
   .interactive-pattern {
     background:
-      radial-gradient(circle at 12% 18%, rgba(2, 132, 199, 0.06), transparent 33%),
-      radial-gradient(circle at 86% 72%, rgba(15, 23, 42, 0.06), transparent 28%);
+      radial-gradient(circle at 12% 18%, rgba(14, 116, 144, 0.13), transparent 36%),
+      radial-gradient(circle at 86% 72%, rgba(15, 23, 42, 0.1), transparent 31%),
+      radial-gradient(circle at 68% 26%, rgba(8, 145, 178, 0.09), transparent 30%);
   }
 
   html.dark .interactive-pattern {
     background:
-      radial-gradient(circle at 12% 18%, rgba(212, 212, 216, 0.05), transparent 34%),
-      radial-gradient(circle at 86% 72%, rgba(82, 82, 91, 0.08), transparent 30%);
+      radial-gradient(circle at 12% 18%, rgba(212, 212, 216, 0.08), transparent 36%),
+      radial-gradient(circle at 86% 72%, rgba(82, 82, 91, 0.12), transparent 32%),
+      radial-gradient(circle at 68% 26%, rgba(161, 161, 170, 0.08), transparent 30%);
   }
 
   .interactive-pattern-item {
     position: absolute;
-    color: rgba(15, 23, 42, 0.25);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(15, 23, 42, 0.42);
     transform: translate3d(0, 0, 0);
     transition: transform 0.28s ease-out, opacity 0.28s ease-out;
     animation-name: patternFloat;
@@ -74,7 +85,23 @@ body,
   }
 
   html.dark .interactive-pattern-item {
-    color: rgba(212, 212, 216, 0.28);
+    color: rgba(212, 212, 216, 0.35);
+  }
+
+  .interactive-pattern-item-bot {
+    color: rgba(3, 105, 161, 0.46);
+  }
+
+  .interactive-pattern-item-cpu {
+    color: rgba(30, 64, 175, 0.36);
+  }
+
+  html.dark .interactive-pattern-item-bot {
+    color: rgba(161, 161, 170, 0.42);
+  }
+
+  html.dark .interactive-pattern-item-cpu {
+    color: rgba(212, 212, 216, 0.3);
   }
 
   @keyframes patternFloat {

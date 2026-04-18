@@ -53,7 +53,7 @@ export default function HomePage() {
             />
             <div className={`absolute inset-0 bg-gradient-to-br ${item.tint} transition group-hover:opacity-85`} />
             <div className="relative flex h-full items-center justify-center px-3 text-center">
-              <span className="font-heading text-2xl font-semibold text-white">{item.label}</span>
+              <span className="font-hero-soft text-2xl font-semibold text-white">{item.label}</span>
             </div>
           </Link>
         ))}

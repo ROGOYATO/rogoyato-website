@@ -1,9 +1,10 @@
+import { Bot, Cpu } from 'lucide-react'
 import { useEffect, useMemo, useRef } from 'react'
 
 function buildItems() {
-  const glyphs = ['+', 'x', 'o', '◇', '•']
+  const kinds = ['bot', 'cpu']
 
-  return Array.from({ length: 22 }, (_, index) => {
+  return Array.from({ length: 28 }, (_, index) => {
     const ratioX = ((index * 37) % 100) / 100
     const ratioY = ((index * 53 + 17) % 100) / 100
 
@@ -11,10 +12,10 @@ function buildItems() {
       id: index,
       x: 0.06 + ratioX * 0.88,
       y: 0.08 + ratioY * 0.84,
-      size: 12 + (index % 4) * 3,
+      size: 14 + (index % 4) * 3,
       depth: 0.5 + (index % 5) * 0.18,
-      baseOpacity: 0.2 + (index % 3) * 0.08,
-      glyph: glyphs[index % glyphs.length],
+      baseOpacity: 0.32 + (index % 3) * 0.09,
+      kind: kinds[index % kinds.length],
       delay: `${(index % 7) * 0.6}s`,
       duration: `${8 + (index % 5) * 2}s`,
     }
@@ -46,12 +47,12 @@ export default function InteractivePattern() {
         const dx = pointer.x - anchorX
         const dy = pointer.y - anchorY
         const distance = Math.hypot(dx, dy)
-        const influence = Math.max(0, 1 - distance / 250)
-        const translateX = -dx * 0.07 * item.depth * influence
-        const translateY = -dy * 0.07 * item.depth * influence
+        const influence = Math.max(0, 1 - distance / 320)
+        const translateX = -dx * 0.09 * item.depth * influence
+        const translateY = -dy * 0.09 * item.depth * influence
 
         node.style.transform = `translate3d(${translateX.toFixed(2)}px, ${translateY.toFixed(2)}px, 0)`
-        node.style.opacity = `${Math.min(0.85, item.baseOpacity + influence * 0.35)}`
+        node.style.opacity = `${Math.min(0.92, item.baseOpacity + influence * 0.38)}`
       })
     }
 
@@ -92,17 +93,16 @@ export default function InteractivePattern() {
           ref={(node) => {
             itemRefs.current[index] = node
           }}
-          className="interactive-pattern-item"
+          className={`interactive-pattern-item ${item.kind === 'bot' ? 'interactive-pattern-item-bot' : 'interactive-pattern-item-cpu'}`}
           style={{
             left: `${item.x * 100}%`,
             top: `${item.y * 100}%`,
-            fontSize: `${item.size}px`,
             opacity: item.baseOpacity,
             animationDelay: item.delay,
             animationDuration: item.duration,
           }}
         >
-          {item.glyph}
+          {item.kind === 'bot' ? <Bot size={item.size} strokeWidth={1.8} /> : <Cpu size={item.size} strokeWidth={1.8} />}
         </span>
       ))}
     </div>

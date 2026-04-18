@@ -10,7 +10,7 @@ export default function PageTitleHero({ title }) {
       />
       <div className="absolute inset-0 bg-slate-950/40 dark:bg-zinc-950/55" />
       <div className="relative flex min-h-[170px] items-center justify-center px-6 py-10 sm:min-h-[210px]">
-        <h1 className="font-heading text-center text-4xl font-semibold text-white sm:text-5xl">{title}</h1>
+        <h1 className="font-hero-soft text-center text-4xl font-semibold text-white sm:text-5xl">{title}</h1>
       </div>
     </header>
   )
