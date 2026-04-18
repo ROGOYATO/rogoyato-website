@@ -82,8 +82,8 @@ export default function TeamPage() {
 
       <section className="rounded-3xl border border-slate-200/80 bg-white/85 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.14)] dark:border-white/10 dark:bg-zinc-900/70 dark:shadow-none sm:p-8">
         <div className="relative">
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-white via-white/70 to-transparent dark:from-slate-900 dark:via-slate-900/75" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-gradient-to-l from-white via-white/70 to-transparent dark:from-slate-900 dark:via-slate-900/75" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-white via-white/70 to-transparent dark:hidden" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-gradient-to-l from-white via-white/70 to-transparent dark:hidden" />
 
           <button
             type="button"
@@ -133,7 +133,7 @@ export default function TeamPage() {
                   <img
                     src={photoSrc}
                     alt={`${member.name} fotoğrafı`}
-                    className={`h-72 w-full object-cover transition duration-300 sm:h-80 ${imageClass}`}
+                    className={`aspect-square w-full object-cover transition duration-300 ${imageClass}`}
                     loading="lazy"
                   />
                   <div className="p-5">

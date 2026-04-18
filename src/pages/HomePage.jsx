@@ -10,7 +10,7 @@ const primaryLinks = [
   { to: '/basarilar', label: 'Başarılar', tint: 'from-orange-700/55 via-slate-900/50 to-slate-900/70' },
 ]
 
-const heroFontClass = 'font-hero-option-1'
+const heroFontClass = 'font-hero'
 
 export default function HomePage() {
   return (
@@ -28,7 +28,7 @@ export default function HomePage() {
               alt="TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu logosu"
               className="h-32 w-32 object-contain sm:h-44 sm:w-44"
             />
-            <h1 className={`${heroFontClass} text-center text-3xl font-bold leading-tight text-slate-900 dark:text-white sm:text-left sm:text-5xl sm:leading-[1.05]`}>
+            <h1 className={`${heroFontClass} text-center text-3xl font-extrabold leading-tight text-slate-900 dark:text-white sm:text-left sm:text-5xl sm:leading-[1.05]`}>
               <span className="block">TOBB ETÜ</span>
               <span className="block">ROBOTİK VE</span>
               <span className="block">GÖMÜLÜ YAZILIM</span>
