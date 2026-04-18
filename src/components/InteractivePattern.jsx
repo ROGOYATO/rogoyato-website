@@ -17,7 +17,10 @@ function buildItems() {
       baseOpacity: 0.32 + (index % 3) * 0.09,
       kind: kinds[index % kinds.length],
       delay: `${(index % 7) * 0.6}s`,
-      duration: `${8 + (index % 5) * 2}s`,
+      duration: `${5 + (index % 5) * 1.3}s`,
+      driftDuration: `${4.8 + (index % 4) * 1.1}s`,
+      driftX: `${(index % 2 === 0 ? 1 : -1) * (4 + (index % 4) * 2)}px`,
+      driftY: `${(index % 3 === 0 ? -1 : 1) * (5 + (index % 3) * 2)}px`,
     }
   })
 }
@@ -100,9 +103,14 @@ export default function InteractivePattern() {
             opacity: item.baseOpacity,
             animationDelay: item.delay,
             animationDuration: item.duration,
+            '--drift-duration': item.driftDuration,
+            '--drift-x': item.driftX,
+            '--drift-y': item.driftY,
           }}
         >
-          {item.kind === 'bot' ? <Bot size={item.size} strokeWidth={1.8} /> : <Cpu size={item.size} strokeWidth={1.8} />}
+          <span className="interactive-pattern-glyph">
+            {item.kind === 'bot' ? <Bot size={item.size} strokeWidth={1.8} /> : <Cpu size={item.size} strokeWidth={1.8} />}
+          </span>
         </span>
       ))}
     </div>

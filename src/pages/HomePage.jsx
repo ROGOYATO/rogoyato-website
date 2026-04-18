@@ -4,10 +4,10 @@ import logoImage from '../assets/favicon.png'
 import buttonBackdrop from '../../ornekbutonarkaplan.png'
 
 const primaryLinks = [
-  { to: '/etkinlikler', label: 'Etkinlikler', tint: 'from-cyan-700/32 via-slate-900/20 to-slate-900/45' },
-  { to: '/ekip', label: 'Ekibimiz', tint: 'from-amber-700/30 via-slate-900/20 to-slate-900/45' },
-  { to: '/hakkimizda', label: 'Hakkımızda', tint: 'from-blue-700/30 via-slate-900/20 to-slate-900/45' },
-  { to: '/basarilar', label: 'Başarılar', tint: 'from-orange-700/30 via-slate-900/20 to-slate-900/45' },
+  { to: '/etkinlikler', label: 'Etkinlikler', tint: 'from-cyan-700/20 via-slate-900/16 to-slate-900/30' },
+  { to: '/ekip', label: 'Ekibimiz', tint: 'from-amber-700/20 via-slate-900/16 to-slate-900/30' },
+  { to: '/hakkimizda', label: 'Hakkımızda', tint: 'from-blue-700/20 via-slate-900/16 to-slate-900/30' },
+  { to: '/basarilar', label: 'Başarılar', tint: 'from-orange-700/20 via-slate-900/16 to-slate-900/30' },
 ]
 
 const heroFontClass = 'font-hero'
@@ -51,9 +51,19 @@ export default function HomePage() {
               className="absolute inset-0 h-full w-full scale-105 object-cover blur-[2px] transition duration-300 group-hover:scale-110"
               loading="lazy"
             />
-            <div className={`absolute inset-0 bg-gradient-to-br ${item.tint} transition group-hover:opacity-75`} />
+            <div className={`absolute inset-0 bg-gradient-to-br ${item.tint} transition group-hover:opacity-70`} />
+            <div className="absolute inset-0 bg-slate-950/36 transition group-hover:bg-slate-950/42" />
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  'radial-gradient(circle at center, rgba(2, 6, 23, 0.56) 0%, rgba(2, 6, 23, 0.3) 38%, rgba(2, 6, 23, 0.08) 70%, rgba(2, 6, 23, 0) 100%)',
+              }}
+            />
             <div className="relative flex h-full items-center justify-center px-3 text-center">
-              <span className="font-hero-soft text-2xl font-semibold text-white">{item.label}</span>
+              <span className="font-hero-soft inline-flex rounded-full border border-white/20 bg-slate-950/42 px-4 py-2 text-2xl font-semibold tracking-[0.01em] text-white backdrop-blur-[1.5px] drop-shadow-[0_4px_14px_rgba(0,0,0,0.85)]">
+                {item.label}
+              </span>
             </div>
           </Link>
         ))}

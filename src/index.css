@@ -84,6 +84,14 @@ body,
     will-change: transform, opacity;
   }
 
+  .interactive-pattern-glyph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    animation: patternDrift var(--drift-duration, 6s) ease-in-out infinite;
+    will-change: transform;
+  }
+
   html.dark .interactive-pattern-item {
     color: rgba(212, 212, 216, 0.35);
   }
@@ -107,12 +115,31 @@ body,
   @keyframes patternFloat {
     0% {
       margin-top: 0;
+      margin-left: 0;
     }
-    50% {
-      margin-top: -6px;
+    35% {
+      margin-top: -10px;
+      margin-left: 3px;
+    }
+    70% {
+      margin-top: 7px;
+      margin-left: -3px;
     }
     100% {
       margin-top: 0;
+      margin-left: 0;
+    }
+  }
+
+  @keyframes patternDrift {
+    0% {
+      transform: translate3d(0, 0, 0) rotate(0deg);
+    }
+    50% {
+      transform: translate3d(var(--drift-x, 5px), var(--drift-y, -5px), 0) rotate(5deg);
+    }
+    100% {
+      transform: translate3d(0, 0, 0) rotate(0deg);
     }
   }
 }
