@@ -57,7 +57,7 @@ export default function EventsPage() {
                   className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-[0_16px_40px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-zinc-900/70"
                 >
                   <div className="flex flex-col sm:flex-row">
-                    <div className="relative h-44 sm:aspect-square sm:w-1/3 sm:shrink-0 sm:self-start">
+                    <div className="relative aspect-square w-full sm:w-1/3 sm:shrink-0 sm:self-start">
                       <img src={visual} alt="" className="h-full w-full object-cover" loading="lazy" />
                       <div className="absolute inset-0 bg-gradient-to-br from-slate-950/50 via-slate-900/25 to-transparent" />
                     </div>
@@ -133,7 +133,7 @@ export default function EventsPage() {
                   className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-white/10 dark:bg-zinc-900/70"
                 >
                   <div className="flex flex-col sm:flex-row">
-                    <div className="relative h-44 sm:aspect-square sm:w-1/3 sm:shrink-0 sm:self-start">
+                    <div className="relative aspect-square w-full sm:w-1/3 sm:shrink-0 sm:self-start">
                       <img src={visual} alt="" className="h-full w-full object-cover" loading="lazy" />
                       <div className="absolute inset-0 bg-gradient-to-br from-slate-950/45 via-slate-900/15 to-transparent" />
                     </div>
