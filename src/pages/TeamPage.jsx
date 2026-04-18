@@ -120,15 +120,6 @@ export default function TeamPage() {
     >
       <PageTitleHero title="Ekibimiz" />
 
-      <div className="flex justify-center">
-        <Link
-          to="/ekip/basvuru"
-          className="inline-flex items-center rounded-full border border-cyan-300/60 bg-cyan-100 px-5 py-2 text-sm font-semibold text-cyan-900 transition hover:bg-cyan-200 dark:border-cyan-300/35 dark:bg-cyan-300/15 dark:text-cyan-100 dark:hover:bg-cyan-300/25"
-        >
-          Ekibe Katıl
-        </Link>
-      </div>
-
       <section className="rounded-3xl border border-slate-200/80 bg-white/85 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.14)] dark:border-white/10 dark:bg-zinc-900/70 dark:shadow-none sm:p-8">
         <div className="relative">
           <button
@@ -160,16 +151,10 @@ export default function TeamPage() {
               const photoSrc = member.photo.startsWith('http') ? member.photo : `${publicBase}${member.photo}`
               const cardClass =
                 distance === 0
-                  ? 'scale-100 opacity-100'
+                  ? 'scale-100 opacity-100 blur-0'
                   : distance === 1
-                    ? 'scale-[0.95] opacity-95'
-                    : 'scale-[0.9] opacity-75'
-              const imageClass =
-                distance === 0
-                  ? 'blur-0'
-                  : distance === 1
-                    ? 'blur-[1px]'
-                    : 'blur-[2.2px]'
+                    ? 'scale-[0.95] opacity-95 blur-[1px]'
+                    : 'scale-[0.9] opacity-75 blur-[2px]'
 
               return (
                 <article
@@ -179,7 +164,7 @@ export default function TeamPage() {
                   <img
                     src={photoSrc}
                     alt={`${member.name} fotoğrafı`}
-                    className={`aspect-square w-full object-cover transition duration-300 ${imageClass}`}
+                    className="aspect-square w-full object-cover transition duration-300"
                     loading="lazy"
                   />
                   <div className="p-5">
@@ -192,6 +177,15 @@ export default function TeamPage() {
           </div>
         </div>
       </section>
+
+      <div className="flex justify-center pt-1">
+        <Link
+          to="/ekip/basvuru"
+          className="inline-flex items-center rounded-full border border-cyan-300/60 bg-cyan-100 px-7 py-3 text-base font-semibold text-cyan-900 transition hover:bg-cyan-200 dark:border-cyan-300/35 dark:bg-cyan-300/15 dark:text-cyan-100 dark:hover:bg-cyan-300/25"
+        >
+          Ekibe Katıl
+        </Link>
+      </div>
     </motion.section>
   )
 }
