@@ -16,8 +16,13 @@ export default function CompetitionsPage() {
     >
       <PageTitleHero title="Başarılar" />
 
-      <div className="grid gap-4">
-        {competitionHighlights.map((item, index) => {
+      {competitionHighlights.length === 0 ? (
+        <article className="rounded-2xl border border-slate-200/80 bg-white/90 p-6 text-slate-600 dark:border-white/10 dark:bg-zinc-900/70 dark:text-slate-300 sm:p-8">
+          Başarı arşivi gerçek verilerle güncelleniyor. Yeni sonuçları bu alanda paylaşacağız.
+        </article>
+      ) : (
+        <div className="grid gap-4">
+          {competitionHighlights.map((item, index) => {
           const visual = `${publicBase}${achievementVisuals[index % achievementVisuals.length]}`
 
           return (
@@ -48,8 +53,9 @@ export default function CompetitionsPage() {
               </div>
             </article>
           )
-        })}
-      </div>
+          })}
+        </div>
+      )}
     </motion.section>
   )
 }

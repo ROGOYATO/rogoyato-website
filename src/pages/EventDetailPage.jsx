@@ -1,8 +1,101 @@
 import { motion } from 'framer-motion'
-import { ArrowLeft, CalendarClock, ClipboardList, MapPin } from 'lucide-react'
+import { ArrowLeft, CalendarClock, ChevronLeft, ChevronRight, ClipboardList, MapPin } from 'lucide-react'
+import useEmblaCarousel from 'embla-carousel-react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import PageTitleHero from '../components/PageTitleHero'
 import { events } from '../utils/siteData'
+
+const publicBase = import.meta.env.BASE_URL
+
+function EventGalleryCarousel({ images, title }) {
+  const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'center', loop: true })
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const [snapPoints, setSnapPoints] = useState([])
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) {
+      return
+    }
+
+    setSelectedIndex(emblaApi.selectedScrollSnap())
+  }, [emblaApi])
+
+  useEffect(() => {
+    if (!emblaApi) {
+      return undefined
+    }
+
+    setSnapPoints(emblaApi.scrollSnapList())
+    onSelect()
+    emblaApi.on('select', onSelect)
+    emblaApi.on('reInit', () => {
+      setSnapPoints(emblaApi.scrollSnapList())
+      onSelect()
+    })
+
+    return () => {
+      emblaApi.off('select', onSelect)
+    }
+  }, [emblaApi, onSelect])
+
+  return (
+    <section className="rounded-3xl border border-slate-200/80 bg-white/90 p-5 dark:border-white/10 dark:bg-zinc-900/70 sm:p-6">
+      <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Gezi Galerisi</h2>
+
+      <div className="relative mt-4">
+        <button
+          type="button"
+          onClick={() => emblaApi?.scrollPrev()}
+          className="absolute left-2 top-1/2 z-20 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-slate-950/55 text-white backdrop-blur-sm transition hover:bg-slate-950/70"
+          aria-label="Önceki görsel"
+        >
+          <ChevronLeft size={20} />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => emblaApi?.scrollNext()}
+          className="absolute right-2 top-1/2 z-20 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-slate-950/55 text-white backdrop-blur-sm transition hover:bg-slate-950/70"
+          aria-label="Sonraki görsel"
+        >
+          <ChevronRight size={20} />
+        </button>
+
+        <div className="overflow-hidden rounded-2xl" ref={emblaRef}>
+          <div className="-ml-3 flex">
+            {images.map((imagePath) => (
+              <div key={imagePath} className="min-w-0 flex-[0_0_100%] pl-3">
+                <img
+                  src={`${publicBase}${imagePath}`}
+                  alt={`${title} görseli`}
+                  className="h-[300px] w-full rounded-2xl object-cover sm:h-[430px]"
+                  loading="lazy"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {snapPoints.length > 1 ? (
+        <div className="mt-4 flex items-center justify-center gap-2">
+          {snapPoints.map((_, index) => (
+            <button
+              key={`gallery-dot-${index}`}
+              type="button"
+              onClick={() => emblaApi?.scrollTo(index)}
+              className={`h-2.5 rounded-full transition ${
+                index === selectedIndex ? 'w-7 bg-cyan-600 dark:bg-cyan-300' : 'w-2.5 bg-slate-300 dark:bg-zinc-600'
+              }`}
+              aria-label={`Görsel ${index + 1}`}
+            />
+          ))}
+        </div>
+      ) : null}
+    </section>
+  )
+}
 
 function statusMeta(status) {
   if (status === 'open') {
@@ -86,6 +179,21 @@ export default function EventDetailPage() {
           </p>
         </div>
       </section>
+
+      {event.body && event.body.length ? (
+        <section className="rounded-2xl border border-slate-200/80 bg-white/90 p-5 text-slate-700 dark:border-white/10 dark:bg-zinc-900/70 dark:text-slate-300 sm:p-6">
+          <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Etkinlik Notları</h2>
+          <div className="mt-3 space-y-3 leading-relaxed">
+            {event.body.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {event.galleryImages && event.galleryImages.length ? (
+        <EventGalleryCarousel images={event.galleryImages} title={event.title} />
+      ) : null}
 
       <section className="grid gap-4 lg:grid-cols-2">
         <article className="rounded-2xl border border-slate-200/80 bg-white/85 p-5 dark:border-white/10 dark:bg-zinc-900/65">
