@@ -9,6 +9,7 @@ import EventApplyPage from './pages/EventApplyPage.jsx'
 import EventDetailPage from './pages/EventDetailPage.jsx'
 import EventsPage from './pages/EventsPage.jsx'
 import HomePage from './pages/HomePage.jsx'
+import SnakeGamePage from './pages/SnakeGamePage.jsx'
 import TeamApplyPage from './pages/TeamApplyPage.jsx'
 import TeamPage from './pages/TeamPage.jsx'
 
@@ -19,6 +20,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/" element={<App />}>
           <Route index element={<HomePage />} />
           <Route path="hakkimizda" element={<AboutPage />} />
+          <Route path="snake-game" element={<SnakeGamePage />} />
           <Route path="etkinlikler" element={<EventsPage />} />
           <Route path="etkinlikler/:eventId" element={<EventDetailPage />} />
           <Route path="etkinlikler/:eventId/basvuru" element={<EventApplyPage />} />

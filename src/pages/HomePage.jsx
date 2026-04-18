@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
+import { useRef } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import logoImage from '../assets/favicon.png'
 import buttonBackdrop from '../../ornekbutonarkaplan.png'
 
@@ -11,8 +12,24 @@ const primaryLinks = [
 ]
 
 const heroFontClass = 'font-hero'
+const EASTER_EGG_CLICK_WINDOW_MS = 700
 
 export default function HomePage() {
+  const navigate = useNavigate()
+  const logoClickTimesRef = useRef([])
+
+  const handleLogoClick = () => {
+    const now = Date.now()
+    const recentClicks = logoClickTimesRef.current.filter((time) => now - time <= EASTER_EGG_CLICK_WINDOW_MS)
+    recentClicks.push(now)
+    logoClickTimesRef.current = recentClicks
+
+    if (recentClicks.length >= 3) {
+      logoClickTimesRef.current = []
+      navigate('/snake-game')
+    }
+  }
+
   return (
     <div className="space-y-6">
       <motion.section
@@ -23,11 +40,18 @@ export default function HomePage() {
       >
         <div className="flex w-full items-center justify-center">
           <div className="flex w-full max-w-4xl flex-col items-center justify-center gap-8 sm:flex-row sm:items-center sm:justify-center">
-            <img
-              src={logoImage}
-              alt="TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu logosu"
-              className="h-32 w-32 object-contain sm:h-44 sm:w-44"
-            />
+            <button
+              type="button"
+              onClick={handleLogoClick}
+              aria-label="ROGOYATO logosu"
+              className="rounded-full outline-none transition hover:scale-[1.02] focus-visible:ring-2 focus-visible:ring-cyan-500/80"
+            >
+              <img
+                src={logoImage}
+                alt="TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu logosu"
+                className="h-32 w-32 object-contain sm:h-44 sm:w-44"
+              />
+            </button>
             <h1 className={`${heroFontClass} text-center text-3xl font-extrabold leading-tight text-slate-900 dark:text-white sm:text-left sm:text-5xl sm:leading-[1.05]`}>
               <span className="block">TOBB ETÜ</span>
               <span className="block">ROBOTİK VE</span>
