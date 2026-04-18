@@ -12,14 +12,8 @@ export default function AboutPage() {
       <PageTitleHero title="Hakkımızda" />
 
       <article className="rounded-2xl border border-slate-200/80 bg-white/85 p-6 dark:border-white/10 dark:bg-zinc-900/65 sm:p-7">
-        <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Topluluk Profili</h2>
-        <p className="mt-3 text-slate-600 dark:text-slate-300">
-          ROGOYATO, robotik ve gömülü yazılım alanında öğrenci gelişimini destekleyen, ekip
-          tabanlı üretim kültürünü yaygınlaştıran bir topluluktur.
-        </p>
-        <p className="mt-3 text-slate-600 dark:text-slate-300">
-          Dönem içinde teknik üretimi önceleyen etkinliklerle üyelerin gerçek proje çıktısı
-          almasını hedefler.
+        <p className="text-[1.02rem] leading-relaxed text-slate-700 dark:text-slate-300">
+          TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu kısaca ROGOYATO olarak, tamamen üretmeye, kodlamaya ve teknoloji geliştirmeye odaklı dinamik bir proje ekibiz. Temel amacımız, teorik sınırların dışına çıkarak fikirlerimizi atölye ortamında çalışan somut sistemlere dönüştürmek ve üyelerimize donanımdan yazılıma kadar gerçek mühendislik deneyimleri kazandırmaktır. Bu vizyonla kampüs içerisinde temel seviyeden ileri seviyeye kadar uygulamalı Arduino ve PCB tasarım eğitimleri veriyor, kendi içimizde düzenlediğimiz yarışmalar ve etkinliklerle teknik becerilerimizi sürekli taze tutuyoruz. Atölyede geçirdiğimiz uzun saatlerin ve ürettiğimiz projelerin meyvelerini ise TEKNOFEST, çeşitli hackathonlar ve RoboCup gibi ulusal ve uluslararası arenalarda yarışarak topluyoruz. Gömülü dünyanın kodlarını donanımla buluşturan ROGOYATO, merak eden, tasarlayan ve kendi devrelerini hayata geçirmek isteyen herkesi aynı masada buluşturan aktif bir üretim merkezidir.
         </p>
       </article>
 

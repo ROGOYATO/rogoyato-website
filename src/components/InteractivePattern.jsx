@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from 'react'
 function buildItems() {
   const kinds = ['bot', 'cpu']
 
-  return Array.from({ length: 28 }, (_, index) => {
+  return Array.from({ length: 48 }, (_, index) => {
     const ratioX = ((index * 37) % 100) / 100
     const ratioY = ((index * 53 + 17) % 100) / 100
 

@@ -9,6 +9,7 @@ import EventApplyPage from './pages/EventApplyPage.jsx'
 import EventDetailPage from './pages/EventDetailPage.jsx'
 import EventsPage from './pages/EventsPage.jsx'
 import HomePage from './pages/HomePage.jsx'
+import TeamApplyPage from './pages/TeamApplyPage.jsx'
 import TeamPage from './pages/TeamPage.jsx'
 
 createRoot(document.getElementById('root')).render(
@@ -23,6 +24,7 @@ createRoot(document.getElementById('root')).render(
           <Route path="etkinlikler/:eventId/basvuru" element={<EventApplyPage />} />
           <Route path="basarilar" element={<CompetitionsPage />} />
           <Route path="ekip" element={<TeamPage />} />
+          <Route path="ekip/basvuru" element={<TeamApplyPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

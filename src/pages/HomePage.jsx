@@ -4,10 +4,10 @@ import logoImage from '../assets/favicon.png'
 import buttonBackdrop from '../../ornekbutonarkaplan.png'
 
 const primaryLinks = [
-  { to: '/etkinlikler', label: 'Etkinlikler', tint: 'from-cyan-700/55 via-cyan-900/45 to-slate-900/65' },
-  { to: '/ekip', label: 'Ekibimiz', tint: 'from-amber-700/55 via-slate-900/45 to-slate-900/70' },
-  { to: '/hakkimizda', label: 'Hakkımızda', tint: 'from-blue-700/55 via-slate-900/50 to-slate-900/70' },
-  { to: '/basarilar', label: 'Başarılar', tint: 'from-orange-700/55 via-slate-900/50 to-slate-900/70' },
+  { to: '/etkinlikler', label: 'Etkinlikler', tint: 'from-cyan-700/32 via-slate-900/20 to-slate-900/45' },
+  { to: '/ekip', label: 'Ekibimiz', tint: 'from-amber-700/30 via-slate-900/20 to-slate-900/45' },
+  { to: '/hakkimizda', label: 'Hakkımızda', tint: 'from-blue-700/30 via-slate-900/20 to-slate-900/45' },
+  { to: '/basarilar', label: 'Başarılar', tint: 'from-orange-700/30 via-slate-900/20 to-slate-900/45' },
 ]
 
 const heroFontClass = 'font-hero'
@@ -51,7 +51,7 @@ export default function HomePage() {
               className="absolute inset-0 h-full w-full scale-105 object-cover blur-[2px] transition duration-300 group-hover:scale-110"
               loading="lazy"
             />
-            <div className={`absolute inset-0 bg-gradient-to-br ${item.tint} transition group-hover:opacity-85`} />
+            <div className={`absolute inset-0 bg-gradient-to-br ${item.tint} transition group-hover:opacity-75`} />
             <div className="relative flex h-full items-center justify-center px-3 text-center">
               <span className="font-hero-soft text-2xl font-semibold text-white">{item.label}</span>
             </div>
