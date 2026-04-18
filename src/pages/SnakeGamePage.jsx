@@ -95,8 +95,8 @@ export default function SnakeGamePage() {
   const directionRef = useRef(direction)
   const touchStartRef = useRef(null)
 
-  const boardPixels = boardSize <= 14 ? 320 : 520
   const cellPercent = 100 / boardSize
+  const elementBleedPx = boardSize <= 14 ? 4 : 6
 
   const updateBestScore = useCallback((nextScore) => {
     setBestScore((currentBest) => {
@@ -259,15 +259,14 @@ export default function SnakeGamePage() {
   }
 
   return (
-    <section className="flex min-h-[calc(100vh-9rem)] flex-col items-center justify-center gap-4">
+    <section className="flex min-h-[calc(100vh-9rem)] w-full flex-col items-center justify-center gap-4">
       <div className="text-sm font-semibold tracking-wide text-slate-700 dark:text-slate-200">
         Skor: {score} | Best: {bestScore} {isGameOver ? '| Oyun Bitti' : ''}
       </div>
 
       <div
-        className="relative touch-none select-none"
+        className="relative w-full touch-none select-none rounded-2xl border border-slate-300/25 dark:border-white/12"
         style={{
-          width: `min(92vw, ${boardPixels}px)`,
           aspectRatio: '1 / 1',
         }}
         onTouchStart={handleTouchStart}
@@ -282,13 +281,13 @@ export default function SnakeGamePage() {
           <div
             className="absolute flex items-center justify-center text-emerald-400 drop-shadow-[0_0_9px_rgba(16,185,129,0.65)]"
             style={{
-              width: `calc(${cellPercent}% - 2px)`,
-              height: `calc(${cellPercent}% - 2px)`,
-              left: `calc(${food.x * cellPercent}% + 1px)`,
-              top: `calc(${food.y * cellPercent}% + 1px)`,
+              width: `calc(${cellPercent}% + ${elementBleedPx}px)`,
+              height: `calc(${cellPercent}% + ${elementBleedPx}px)`,
+              left: `calc(${food.x * cellPercent}% - ${elementBleedPx / 2}px)`,
+              top: `calc(${food.y * cellPercent}% - ${elementBleedPx / 2}px)`,
             }}
           >
-            <Cpu size={boardSize <= 14 ? 14 : 18} />
+            <Cpu size={boardSize <= 14 ? 17 : 23} />
           </div>
         ) : null}
 
@@ -302,10 +301,10 @@ export default function SnakeGamePage() {
               index === 0 ? 'drop-shadow-[0_0_10px_rgba(6,182,212,0.65)]' : 'opacity-95'
             }`}
             style={{
-              width: `calc(${cellPercent}% - 2px)`,
-              height: `calc(${cellPercent}% - 2px)`,
-              left: `calc(${segment.x * cellPercent}% + 1px)`,
-              top: `calc(${segment.y * cellPercent}% + 1px)`,
+              width: `calc(${cellPercent}% + ${elementBleedPx}px)`,
+              height: `calc(${cellPercent}% + ${elementBleedPx}px)`,
+              left: `calc(${segment.x * cellPercent}% - ${elementBleedPx / 2}px)`,
+              top: `calc(${segment.y * cellPercent}% - ${elementBleedPx / 2}px)`,
             }}
           />
         ))}
