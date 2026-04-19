@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import PageTitleHero from '../components/PageTitleHero'
+import aboutHeroImage from '../../hakkımızda.png'
 
 export default function AboutPage() {
   return (
@@ -9,7 +10,7 @@ export default function AboutPage() {
       transition={{ duration: 0.45, ease: 'easeOut' }}
       className="space-y-6"
     >
-      <PageTitleHero title="Hakkımızda" />
+      <PageTitleHero title="Hakkımızda" imageSrc={aboutHeroImage} />
 
       <article className="rounded-2xl border border-slate-200/80 bg-white/85 p-6 dark:border-white/10 dark:bg-zinc-900/65 sm:p-7">
         <p className="text-[1.02rem] leading-relaxed text-slate-700 dark:text-slate-300">

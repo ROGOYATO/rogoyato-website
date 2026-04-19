@@ -3,6 +3,7 @@ import { ArrowRight, CalendarClock, MapPin } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import PageTitleHero from '../components/PageTitleHero'
 import { events } from '../utils/siteData'
+import eventsHeroImage from '../../etkinlikler.png'
 
 const publicBase = import.meta.env.BASE_URL
 const eventVisuals = ['nav-events.svg', 'nav-team.svg', 'nav-about.svg', 'nav-achievements.svg']
@@ -35,7 +36,7 @@ export default function EventsPage() {
         transition={{ duration: 0.45, ease: 'easeOut' }}
         className="overflow-hidden"
       >
-        <PageTitleHero title="Etkinlikler" />
+        <PageTitleHero title="Etkinlikler" imageSrc={eventsHeroImage} />
       </motion.section>
 
       <section className="space-y-3">

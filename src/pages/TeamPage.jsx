@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PageTitleHero from '../components/PageTitleHero'
 import { teamMembers } from '../utils/siteData'
+import teamHeroImage from '../../ekibimiz.png'
 
 const publicBase = import.meta.env.BASE_URL
 
@@ -45,7 +46,7 @@ export default function TeamPage() {
       transition={{ duration: 0.45, ease: 'easeOut' }}
       className="space-y-6"
     >
-      <PageTitleHero title="Ekibimiz" />
+      <PageTitleHero title="Ekibimiz" imageSrc={teamHeroImage} />
 
       <section className="rounded-3xl border border-slate-200/80 bg-white/85 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.14)] dark:border-white/10 dark:bg-zinc-900/70 dark:shadow-none sm:p-8">
         <div className="relative">

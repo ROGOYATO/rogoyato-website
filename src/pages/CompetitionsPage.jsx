@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { Trophy } from 'lucide-react'
 import PageTitleHero from '../components/PageTitleHero'
 import { competitionHighlights } from '../utils/siteData'
+import achievementsHeroImage from '../../ornekbutonarkaplan.png'
 
 const publicBase = import.meta.env.BASE_URL
 const achievementVisuals = ['nav-achievements.svg', 'nav-events.svg', 'nav-about.svg']
@@ -14,7 +15,7 @@ export default function CompetitionsPage() {
       transition={{ duration: 0.45, ease: 'easeOut' }}
       className="space-y-6"
     >
-      <PageTitleHero title="Başarılar" />
+      <PageTitleHero title="Başarılar" imageSrc={achievementsHeroImage} />
 
       {competitionHighlights.length === 0 ? (
         <article className="rounded-2xl border border-slate-200/80 bg-white/90 p-6 text-slate-600 dark:border-white/10 dark:bg-zinc-900/70 dark:text-slate-300 sm:p-8">

@@ -1,10 +1,10 @@
 import heroPhoto from '../../ornekbutonarkaplan.png'
 
-export default function PageTitleHero({ title }) {
+export default function PageTitleHero({ title, imageSrc = heroPhoto }) {
   return (
     <header className="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white/70 shadow-[0_18px_64px_rgba(15,23,42,0.15)] dark:border-white/10 dark:bg-zinc-900/65 dark:shadow-none">
       <img
-        src={heroPhoto}
+        src={imageSrc}
         alt=""
         className="absolute inset-0 h-full w-full scale-105 object-cover blur-[2.2px]"
       />
