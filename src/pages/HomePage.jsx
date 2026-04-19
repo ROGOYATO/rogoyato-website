@@ -2,13 +2,16 @@ import { motion } from 'framer-motion'
 import { useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import logoImage from '../assets/favicon.png'
-import buttonBackdrop from '../../ornekbutonarkaplan.png'
+import aboutHeroImage from '../../hakkımızda.png'
+import achievementsHeroImage from '../../ornekbutonarkaplan.png'
+import eventsHeroImage from '../../etkinlikler.png'
+import teamHeroImage from '../../ekibimiz.png'
 
 const primaryLinks = [
-  { to: '/etkinlikler', label: 'Etkinlikler', tint: 'from-cyan-700/20 via-slate-900/16 to-slate-900/30' },
-  { to: '/ekip', label: 'Ekibimiz', tint: 'from-amber-700/20 via-slate-900/16 to-slate-900/30' },
-  { to: '/hakkimizda', label: 'Hakkımızda', tint: 'from-blue-700/20 via-slate-900/16 to-slate-900/30' },
-  { to: '/basarilar', label: 'Başarılar', tint: 'from-orange-700/20 via-slate-900/16 to-slate-900/30' },
+  { to: '/etkinlikler', label: 'Etkinlikler', tint: 'from-cyan-700/20 via-slate-900/16 to-slate-900/30', backdrop: eventsHeroImage },
+  { to: '/ekip', label: 'Ekibimiz', tint: 'from-amber-700/20 via-slate-900/16 to-slate-900/30', backdrop: teamHeroImage },
+  { to: '/hakkimizda', label: 'Hakkımızda', tint: 'from-blue-700/20 via-slate-900/16 to-slate-900/30', backdrop: aboutHeroImage },
+  { to: '/basarilar', label: 'Başarılar', tint: 'from-orange-700/20 via-slate-900/16 to-slate-900/30', backdrop: achievementsHeroImage },
 ]
 
 const heroFontClass = 'font-hero'
@@ -70,7 +73,7 @@ export default function HomePage() {
             className="group relative h-44 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-[0_10px_34px_rgba(15,23,42,0.14)] dark:border-zinc-700 dark:bg-zinc-900 sm:h-56"
           >
             <img
-              src={buttonBackdrop}
+              src={item.backdrop}
               alt=""
               className="absolute inset-0 h-full w-full scale-105 object-cover blur-[2px] transition duration-300 group-hover:scale-110"
               loading="lazy"
