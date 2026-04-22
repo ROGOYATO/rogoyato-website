@@ -42,7 +42,7 @@ export const events = [
 export const competitionHighlights = [
   {
     id: 'teknofest-canbot-2025',
-    year: '2025',
+    year: '2026',
     title: 'TEKNOFEST Akıllı Ulaşım | CanBot',
     result: 'Ön Değerlendirme',
     score: '82.66',
@@ -52,7 +52,7 @@ export const competitionHighlights = [
   },
   {
     id: 'teknofest-serit-ihlali-2025',
-    year: '2025',
+    year: '2026',
     title: 'Kural Dışı Şerit Değiştirme Tespiti',
     result: 'Ön Değerlendirme',
     score: '79.33',
@@ -62,7 +62,7 @@ export const competitionHighlights = [
   },
   {
     id: 'teknofest-smartindustry-2025',
-    year: '2025',
+    year: '2026',
     title: 'TEKNOFEST Sanayide Dijital Teknoloji | TOBB SmartIndustry',
     result: 'Proje Detay Raporu',
     score: '87.33',

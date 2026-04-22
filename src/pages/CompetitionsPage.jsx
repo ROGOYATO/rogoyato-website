@@ -1,5 +1,5 @@
 import { motion, useInView } from 'framer-motion'
-import { Award, Cpu, GraduationCap, Rocket, Sparkles, Target, Trophy, Users } from 'lucide-react'
+import { Award, Cpu, GraduationCap, Rocket, Target, Trophy, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   achievementStats,
@@ -112,25 +112,11 @@ export default function CompetitionsPage() {
           <Trophy size={22} />
         </motion.div>
 
-        <motion.div
-          aria-hidden
-          animate={{ y: [0, 12, 0] }}
-          transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
-          className="pointer-events-none absolute bottom-8 right-24 hidden rounded-full border border-white/35 bg-white/50 p-2 text-amber-700 backdrop-blur md:block dark:border-white/10 dark:bg-zinc-900/55 dark:text-amber-200"
-        >
-          <Sparkles size={18} />
-        </motion.div>
-
         <div className="relative">
-          <p className="text-xs uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-200">ROGOYATO Performance Deck</p>
           <h1 className="font-hero mt-2 max-w-5xl text-4xl font-extrabold leading-[1.03] text-slate-900 dark:text-white sm:text-6xl">
             Yarışmada Ölçen,
             <span className="block text-cyan-700 dark:text-cyan-200">Sahada Üreten Takım Ekosistemi</span>
           </h1>
-          <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-700 dark:text-slate-300 sm:text-base">
-            Bu sayfa, yalnızca skorları değil; proje üretim disiplini, çok takımlı organizasyon yapısı, teknik eğitim hattı
-            ve dönemsel gelişim ivmesini tek bir sponsorluk vitrini içinde gösterir.
-          </p>
 
           <div className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {achievementStats.map((item, index) => {
@@ -251,7 +237,7 @@ export default function CompetitionsPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="font-heading text-3xl text-cyan-900 dark:text-cyan-100">Saha Ritmi ve İvme</h2>
           <span className="inline-flex items-center gap-2 rounded-full border border-cyan-300/50 bg-white/70 px-3 py-1 text-xs text-cyan-900 dark:border-cyan-300/35 dark:bg-zinc-900/55 dark:text-cyan-100">
-            <Sparkles size={13} />
+            <Award size={13} />
             Sürekli iterasyon modeli
           </span>
         </div>
