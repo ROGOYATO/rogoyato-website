@@ -41,9 +41,7 @@ function EventGalleryCarousel({ images, title }) {
 
   return (
     <section className="rounded-3xl border border-slate-200/80 bg-white/90 p-5 dark:border-white/10 dark:bg-zinc-900/70 sm:p-6">
-      <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Gezi Galerisi</h2>
-
-      <div className="relative mt-4">
+      <div className="relative">
         <button
           type="button"
           onClick={() => emblaApi?.scrollPrev()}
@@ -148,7 +146,7 @@ export default function EventDetailPage() {
         Tüm etkinliklere dön
       </Link>
 
-      <PageTitleHero title="Etkinlik Detayı" />
+      <PageTitleHero title="Etkinlik Detayı" imageSrc={event.coverImage ? `${publicBase}${event.coverImage}` : undefined} />
 
       <section className="rounded-3xl border border-slate-200/90 bg-white/90 p-6 dark:border-white/10 dark:bg-zinc-900/75 sm:p-8">
         <div className="flex flex-wrap items-center gap-2">
