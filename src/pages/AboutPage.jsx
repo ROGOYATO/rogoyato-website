@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import { Bot, GraduationCap, Rocket, Trophy, Users } from 'lucide-react'
 import PageTitleHero from '../components/PageTitleHero'
-import aboutHeroImage from '../../hakkımızda.png'
+import aboutHeroImage from '../assets/heroes/about-hero.png'
 
 export default function AboutPage() {
   return (

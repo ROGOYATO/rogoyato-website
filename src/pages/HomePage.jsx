@@ -2,16 +2,16 @@ import { motion } from 'framer-motion'
 import { useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import logoImage from '../assets/favicon.png'
-import aboutHeroImage from '../../hakkımızda.png'
+import aboutHeroImage from '../assets/heroes/about-hero.png'
 import achievementsHeroImage from '../../ornekbutonarkaplan.png'
-import eventsHeroImage from '../../etkinlikler.png'
-import teamHeroImage from '../../ekibimiz.png'
+import eventsHeroImage from '../assets/heroes/events-hero.png'
+import teamHeroImage from '../assets/heroes/team-hero.png'
 
 const primaryLinks = [
-  { to: '/etkinlikler', label: 'Etkinlikler', tint: 'from-cyan-700/20 via-slate-900/16 to-slate-900/30', backdrop: eventsHeroImage },
-  { to: '/ekip', label: 'Ekibimiz', tint: 'from-amber-700/20 via-slate-900/16 to-slate-900/30', backdrop: teamHeroImage },
-  { to: '/hakkimizda', label: 'Hakkımızda', tint: 'from-blue-700/20 via-slate-900/16 to-slate-900/30', backdrop: aboutHeroImage },
-  { to: '/basarilar', label: 'Başarılar', tint: 'from-orange-700/20 via-slate-900/16 to-slate-900/30', backdrop: achievementsHeroImage },
+  { to: '/etkinlikler', label: 'Etkinlikler', backdrop: eventsHeroImage },
+  { to: '/ekip', label: 'Ekibimiz', backdrop: teamHeroImage },
+  { to: '/hakkimizda', label: 'Hakkımızda', backdrop: aboutHeroImage },
+  { to: '/basarilar', label: 'Başarılar', backdrop: achievementsHeroImage },
 ]
 
 const heroFontClass = 'font-hero'
@@ -78,7 +78,6 @@ export default function HomePage() {
               className="absolute inset-0 h-full w-full scale-105 object-cover blur-[2px] transition duration-300 group-hover:scale-110"
               loading="lazy"
             />
-            <div className={`absolute inset-0 bg-gradient-to-br ${item.tint} transition group-hover:opacity-70`} />
             <div className="absolute inset-0 bg-slate-950/36 transition group-hover:bg-slate-950/42" />
             <div
               className="absolute inset-0"

@@ -14,8 +14,14 @@ export const events = [
       'Toplantıda topluluk yapımızı, dönem hedeflerimizi, proje ve takım çalışma modelimizi yeni katılımcılarla paylaştık. Etkinlik boyunca üretim kültürümüzü, teknik eğitim yaklaşımımızı ve yarışma odaklı çalışma düzenimizi konuşma fırsatı bulduk.',
       'Katılımcılara sağlanan kahve indirimiyle daha sıcak ve samimi bir ortam oluştu; etkinlik sonunda yeni döneme birlikte güçlü bir başlangıç yapmış olduk. Katılım sağlayan herkese ve bizi ağırlayan @bestepecoffe1919 ekibine teşekkür ederiz.',
     ],
-    coverImage: null,
-    galleryImages: [],
+    coverImage: 'events/2025-10-11-rogoyato-tanisma/cover.jpg',
+    galleryImages: [
+      'events/2025-10-11-rogoyato-tanisma/gallery-01.jpg',
+      'events/2025-10-11-rogoyato-tanisma/gallery-02.jpg',
+      'events/2025-10-11-rogoyato-tanisma/gallery-03.jpg',
+      'events/2025-10-11-rogoyato-tanisma/gallery-04.jpg',
+      'events/2025-10-11-rogoyato-tanisma/gallery-05.jpg',
+    ],
     agenda: [
       'Topluluk tanıtımı ve dönem başlangıç sunumu',
       'Takımlar, projeler ve eğitim planı hakkında bilgilendirme',

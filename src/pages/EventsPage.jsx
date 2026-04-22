@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PageTitleHero from '../components/PageTitleHero'
 import { events } from '../utils/siteData'
-import eventsHeroImage from '../../etkinlikler.png'
+import eventsHeroImage from '../assets/heroes/events-hero.png'
 
 const publicBase = import.meta.env.BASE_URL
 const eventVisuals = ['nav-events.svg', 'nav-team.svg', 'nav-about.svg', 'nav-achievements.svg']
