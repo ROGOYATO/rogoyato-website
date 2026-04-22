@@ -1,5 +1,34 @@
 export const events = [
   {
+    id: 'rogoyato-tanisma-toplantisi-2025',
+    title: 'ROGOYATO Tanışma Toplantısı',
+    type: 'Tanışma Toplantısı',
+    date: '11 Ekim 2025',
+    location: 'Kocatepe Coffee 1919, Beştepe',
+    status: 'closed',
+    requiresApplication: false,
+    summary:
+      '2025-2026 güz dönemine başlarken yeni üyelerle tanıştığımız, sıcak ve yoğun katılımlı bir buluşma gerçekleştirdik.',
+    body: [
+      'Yeni döneme birlikte başlamak için düzenlediğimiz ROGOYATO Tanışma Toplantısı, 11 Ekim 2025 tarihinde Kocatepe Coffee 1919, Beştepe’de gerçekleşti.',
+      'Toplantıda topluluk yapımızı, dönem hedeflerimizi, proje ve takım çalışma modelimizi yeni katılımcılarla paylaştık. Etkinlik boyunca üretim kültürümüzü, teknik eğitim yaklaşımımızı ve yarışma odaklı çalışma düzenimizi konuşma fırsatı bulduk.',
+      'Katılımcılara sağlanan kahve indirimiyle daha sıcak ve samimi bir ortam oluştu; etkinlik sonunda yeni döneme birlikte güçlü bir başlangıç yapmış olduk. Katılım sağlayan herkese ve bizi ağırlayan @bestepecoffe1919 ekibine teşekkür ederiz.',
+    ],
+    coverImage: null,
+    galleryImages: [],
+    agenda: [
+      'Topluluk tanıtımı ve dönem başlangıç sunumu',
+      'Takımlar, projeler ve eğitim planı hakkında bilgilendirme',
+      'Soru-cevap ve serbest networking bölümü',
+    ],
+    notes: [
+      'Etkinlik, yeni dönem üye kazanımı ve topluluk içi etkileşim için başlangıç buluşması olarak arşivlendi.',
+      'Tanışma toplantısı sonrasında proje ve eğitim süreçlerine katılım ivmesi artırıldı.',
+    ],
+    applicationDeadline: null,
+    applicationNote: null,
+  },
+  {
     id: 'intecro-robotics-teknik-gezi',
     title: "Intecro Robotics Teknik Gezisi",
     type: 'Teknik Gezi',

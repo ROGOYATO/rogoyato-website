@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { ArrowRight, CalendarClock, MapPin } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PageTitleHero from '../components/PageTitleHero'
 import { events } from '../utils/siteData'
@@ -7,6 +8,59 @@ import eventsHeroImage from '../../etkinlikler.png'
 
 const publicBase = import.meta.env.BASE_URL
 const eventVisuals = ['nav-events.svg', 'nav-team.svg', 'nav-about.svg', 'nav-achievements.svg']
+const monthMap = {
+  ocak: 0,
+  subat: 1,
+  'şubat': 1,
+  mart: 2,
+  nisan: 3,
+  mayis: 4,
+  mayıs: 4,
+  haziran: 5,
+  temmuz: 6,
+  agustos: 7,
+  ağustos: 7,
+  eylul: 8,
+  eylül: 8,
+  ekim: 9,
+  kasim: 10,
+  kasım: 10,
+  aralik: 11,
+  aralık: 11,
+}
+
+function normalizeText(value) {
+  return value
+    .toLocaleLowerCase('tr-TR')
+    .replace('ı', 'i')
+    .replace('ğ', 'g')
+    .replace('ü', 'u')
+    .replace('ş', 's')
+    .replace('ö', 'o')
+    .replace('ç', 'c')
+}
+
+function parseTurkishDate(dateText) {
+  if (!dateText) {
+    return 0
+  }
+
+  const parts = dateText.trim().split(/\s+/)
+  if (parts.length < 3) {
+    return 0
+  }
+
+  const day = Number.parseInt(parts[0], 10)
+  const monthKey = normalizeText(parts[1])
+  const year = Number.parseInt(parts[2], 10)
+  const monthIndex = monthMap[monthKey]
+
+  if (!Number.isFinite(day) || !Number.isFinite(year) || monthIndex === undefined) {
+    return 0
+  }
+
+  return new Date(year, monthIndex, day).getTime()
+}
 
 function statusClass(status) {
   if (status === 'open') {
@@ -25,8 +79,21 @@ function statusLabel(status) {
 }
 
 export default function EventsPage() {
+  const [pastSortOrder, setPastSortOrder] = useState('newest')
+
   const upcomingEvents = events.filter((event) => event.status === 'open' || event.status === 'upcoming')
-  const pastEvents = events.filter((event) => event.status === 'closed')
+  const pastEvents = useMemo(() => {
+    const closedEvents = events.filter((event) => event.status === 'closed')
+
+    closedEvents.sort((a, b) => {
+      const timeA = parseTurkishDate(a.date)
+      const timeB = parseTurkishDate(b.date)
+
+      return pastSortOrder === 'newest' ? timeB - timeA : timeA - timeB
+    })
+
+    return closedEvents
+  }, [pastSortOrder])
 
   return (
     <div className="space-y-6">
@@ -116,7 +183,20 @@ export default function EventsPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Geçmiş Etkinlikler</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Geçmiş Etkinlikler</h2>
+          <label className="inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+            Sırala
+            <select
+              value={pastSortOrder}
+              onChange={(event) => setPastSortOrder(event.target.value)}
+              className="rounded-full border border-slate-300/80 bg-white px-3 py-1 text-xs text-slate-700 outline-none transition hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-cyan-500/70 dark:border-white/15 dark:bg-zinc-900 dark:text-slate-100 dark:hover:bg-zinc-800"
+            >
+              <option value="newest">Yeniden eskiye</option>
+              <option value="oldest">Eskiden yeniye</option>
+            </select>
+          </label>
+        </div>
         {pastEvents.length === 0 ? (
           <article className="rounded-2xl border border-slate-200/80 bg-white/90 p-5 text-slate-600 dark:border-white/10 dark:bg-zinc-900/70 dark:text-slate-300">
             Arşive eklenen ilk etkinlikler yakında burada görünecek.

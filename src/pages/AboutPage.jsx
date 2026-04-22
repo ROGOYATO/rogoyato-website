@@ -14,28 +14,17 @@ export default function AboutPage() {
       <PageTitleHero title="Hakkımızda" imageSrc={aboutHeroImage} />
 
       <article className="rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-[0_16px_42px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-zinc-900/70 sm:p-8">
-        <p className="text-xs uppercase tracking-[0.08em] text-cyan-700 dark:text-cyan-200">ROGOYATO</p>
-        <h2 className="mt-2 font-heading text-3xl text-slate-900 dark:text-white sm:text-4xl">Üreten Topluluk Kültürü</h2>
+        <h2 className="font-heading text-3xl text-slate-900 dark:text-white sm:text-4xl">Hakkımızda</h2>
         <p className="mt-3 text-[1.02rem] leading-relaxed text-slate-700 dark:text-slate-300">
           TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu olarak hedefimiz, teori ile pratiği aynı masada buluşturmak.
           Üyelerimizin yalnızca kod yazan değil; problem tanımlayan, sistem kuran, test eden ve sahada uygulayan
           mühendislik refleksi kazanmasını önceliklendiriyoruz.
         </p>
-
-        <div className="mt-5 space-y-2">
-          <div className="rounded-[1.1rem] bg-rose-700/85 px-4 py-2 text-center text-sm font-medium text-white">
-            4 Ekim 2023'te kuruldu.
-          </div>
-          <div className="rounded-[1.1rem] bg-blue-950/92 px-4 py-2 text-center text-sm font-medium text-white">
-            Farklı mühendislik alanlarından üyelerle disiplinlerarası bir ortam oluşturuyor.
-          </div>
-          <div className="rounded-[1.1rem] bg-orange-500/90 px-4 py-2 text-center text-sm font-medium text-white">
-            Yenilikçi projelerle öğrencilerin teknik ve pratik becerilerini geliştiriyor.
-          </div>
-          <div className="rounded-[1.1rem] bg-cyan-600/90 px-4 py-2 text-center text-sm font-medium text-white">
-            Üreten, yenilikçi ve takım ruhuna dayalı bir kültür benimsiyor.
-          </div>
-        </div>
+        <p className="mt-3 text-[1.02rem] leading-relaxed text-slate-700 dark:text-slate-300">
+          4 Ekim 2023'ten bu yana farklı mühendislik disiplinlerinden öğrencileri bir araya getirerek eğitim,
+          proje üretimi ve yarışma hazırlığını aynı çatı altında sürdürüyoruz. Amacımız, üyelerimize yalnızca
+          teorik bilgi değil; ekip çalışması, uygulama disiplini ve sahada problem çözme yetkinliği kazandırmak.
+        </p>
       </article>
 
       <section className="grid gap-4 lg:grid-cols-3">
