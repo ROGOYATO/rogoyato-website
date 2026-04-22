@@ -1,4 +1,4 @@
-import { Moon, Sun } from 'lucide-react'
+import { Mail, Moon, Sun } from 'lucide-react'
 import { FaInstagram, FaLinkedinIn } from 'react-icons/fa'
 import { NavLink, Outlet } from 'react-router-dom'
 import InteractivePattern from './components/InteractivePattern'
@@ -58,8 +58,17 @@ function App() {
       </button>
 
       <footer className="relative z-10 border-t border-slate-200/80 bg-white/70 dark:border-white/10 dark:bg-zinc-950/70">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-6 text-sm text-slate-600 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-          <p>ROGOYATO • TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu</p>
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-6 text-sm text-slate-600 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-1.5">
+            <p className="font-medium">ROGOYATO • TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu</p>
+            <a
+              href="mailto:rogoyato@gmail.com"
+              className="inline-flex items-center gap-1.5 text-slate-500 transition-colors hover:text-cyan-600 dark:text-slate-400 dark:hover:text-cyan-400 w-fit"
+            >
+              <Mail size={14} />
+              rogoyato@gmail.com
+            </a>
+          </div>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <a
               href="https://www.instagram.com/eturogoyato/"
