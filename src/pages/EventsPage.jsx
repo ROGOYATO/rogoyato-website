@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { ArrowRight, CalendarClock, MapPin } from 'lucide-react'
+import { ArrowRight, CalendarClock, MapPin, ArrowUpDown } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PageTitleHero from '../components/PageTitleHero'
@@ -185,17 +185,17 @@ export default function EventsPage() {
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-heading text-2xl text-slate-900 dark:text-white">Geçmiş Etkinlikler</h2>
-          <label className="inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+          <div className="inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
             Sırala
-            <select
-              value={pastSortOrder}
-              onChange={(event) => setPastSortOrder(event.target.value)}
-              className="rounded-full border border-slate-300/80 bg-white px-3 py-1 text-xs text-slate-700 outline-none transition hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-cyan-500/70 dark:border-white/15 dark:bg-zinc-900 dark:text-slate-100 dark:hover:bg-zinc-800"
+            <button
+              onClick={() => setPastSortOrder((prev) => (prev === 'newest' ? 'oldest' : 'newest'))}
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-300/80 bg-white px-3 py-1 text-xs text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70 dark:border-white/15 dark:bg-zinc-900 dark:text-slate-100 dark:hover:bg-zinc-800"
+              aria-label="Sıralamayı değiştir"
             >
-              <option value="newest">Yeniden eskiye</option>
-              <option value="oldest">Eskiden yeniye</option>
-            </select>
-          </label>
+              <ArrowUpDown size={14} className="text-slate-500 dark:text-slate-400" />
+              <span className="min-w-[85px] text-left">{pastSortOrder === 'newest' ? 'Yeniden eskiye' : 'Eskiden yeniye'}</span>
+            </button>
+          </div>
         </div>
         {pastEvents.length === 0 ? (
           <article className="rounded-2xl border border-slate-200/80 bg-white/90 p-5 text-slate-600 dark:border-white/10 dark:bg-zinc-900/70 dark:text-slate-300">
