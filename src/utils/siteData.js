@@ -39,7 +39,114 @@ export const events = [
   },
 ]
 
-export const competitionHighlights = []
+export const competitionHighlights = [
+  {
+    id: 'teknofest-canbot-2025',
+    year: '2025',
+    title: 'TEKNOFEST Akıllı Ulaşım | CanBot',
+    result: 'Ön Değerlendirme',
+    score: '82.66',
+    stage: 'Rapor aşaması başarıyla tamamlandı',
+    detail:
+      'CanBot projemiz ile Akıllı Ulaşım kategorisinde teknik rapor aşamasında güçlü bir başlangıç performansı yakaladık. Sistem mimarisi, karar algoritmaları ve saha uyarlaması başlıklarında net bir proje çerçevesi sunduk.',
+  },
+  {
+    id: 'teknofest-serit-ihlali-2025',
+    year: '2025',
+    title: 'Kural Dışı Şerit Değiştirme Tespiti',
+    result: 'Ön Değerlendirme',
+    score: '79.33',
+    stage: 'Analiz ve modelleme çıktıları tamamlandı',
+    detail:
+      'Görüntü işleme ve yapay zeka tabanlı yaklaşım ile şerit ihlali tespiti üzerine çalışan ekibimiz, ilk fazda ölçülebilir bir teknik çıktı seti ortaya koydu. Proje, veri işleme ve karar desteği hatlarında geliştirme ivmesini koruyor.',
+  },
+  {
+    id: 'teknofest-smartindustry-2025',
+    year: '2025',
+    title: 'TEKNOFEST Sanayide Dijital Teknoloji | TOBB SmartIndustry',
+    result: 'Proje Detay Raporu',
+    score: '87.33',
+    stage: 'Video yükleme aşamasına geçiş hakkı kazanıldı',
+    detail:
+      'TOBB SmartIndustry takımımız, sanayide verimlilik odaklı otonom yük taşıma yaklaşımıyla proje detay raporu aşamasında yüksek puan elde etti. Teknik doğrulama ve sistem entegrasyonu başlıklarında güçlü bir sunum yapıldı.',
+  },
+]
+
+export const achievementStats = [
+  {
+    label: 'Topluluk Ölçeği',
+    value: '530+',
+    note: 'Kısa sürede sürdürülebilir büyüme gösteren aktif üye yapısı',
+  },
+  {
+    label: 'Aktif Takım',
+    value: '5',
+    note: '4 aktif takım ve yeni dönem için planlanan İHA odağı',
+  },
+  {
+    label: 'Proje Hattı',
+    value: '12',
+    note: 'Mini sumodan otonom araç projelerine uzanan ürün yelpazesi',
+  },
+  {
+    label: 'Teknik Eğitim',
+    value: '5',
+    note: '3 tamamlanan, 2 planlanan dönemlik teknik eğitim akışı',
+  },
+]
+
+export const teamTracks = [
+  {
+    name: 'TOBB Motion',
+    focus: 'Görüntü işleme ve yapay zeka tabanlı otonom sistemler',
+  },
+  {
+    name: 'EtuROOT',
+    focus: 'Mini sumo robotlar ve yarışma hazırlık süreçleri',
+  },
+  {
+    name: 'İnovetü',
+    focus: 'Şerit ihlali tespiti ve karar destek algoritmaları',
+  },
+  {
+    name: 'TOBB SmartIndustry',
+    focus: 'Sanayide dijitalleşme ve otonom taşıma çözümleri',
+  },
+]
+
+export const trainingRoadmap = [
+  {
+    term: '2023-2024 Güz',
+    title: 'Cesium Eğitimi',
+    status: 'Tamamlandı',
+  },
+  {
+    term: '2024-2025 Güz',
+    title: 'Arduino Robotik Kodlama Eğitimi',
+    status: 'Tamamlandı',
+  },
+  {
+    term: '2025-2026 Güz',
+    title: 'Arduino Robotik Kodlama Eğitimi',
+    status: 'Tamamlandı',
+  },
+  {
+    term: '2025-2026 Bahar',
+    title: 'PCB Tasarım Eğitimi',
+    status: 'Planlandı',
+  },
+  {
+    term: '2025-2026 Yaz',
+    title: 'ROS Eğitimi',
+    status: 'Planlandı',
+  },
+]
+
+export const participationHighlights = [
+  'TEKNOFEST odaklı proje gruplarında dönem boyunca aktif yarışma hazırlığı yürütüldü.',
+  'Hackathon katılımlarında çok takımlı çalışma modeliyle hızlı prototipleme pratiği artırıldı.',
+  'Takımlar, raporlama ve sunum disiplinini teknik geliştirme süreciyle birlikte ilerletti.',
+]
 
 export const teamMembers = [
   {
