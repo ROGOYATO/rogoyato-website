@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion'
-import { Bot, GraduationCap, Rocket, Trophy, Users } from 'lucide-react'
+import { Bot, Download, GraduationCap, Rocket, Trophy, Users } from 'lucide-react'
 import PageTitleHero from '../components/PageTitleHero'
 import aboutHeroImage from '../assets/heroes/about-hero.png'
+
+const publicBase = import.meta.env.BASE_URL
 
 export default function AboutPage() {
   return (
@@ -70,6 +72,47 @@ export default function AboutPage() {
           eğitimler ve takım çalışmasıyla birleşerek her dönem daha olgun proje çıktıları üretmeyi amaçlar.
         </p>
       </article>
+
+      <section className="rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-[0_16px_42px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-zinc-900/70 sm:p-8">
+        <h2 className="font-heading text-3xl text-slate-900 dark:text-white">Kurumsal Kimlik</h2>
+        <p className="mt-3 text-[1.02rem] leading-relaxed text-slate-700 dark:text-slate-300">
+          ROGOYATO'nun resmi logolarını aşağıdan inceleyebilir ve tasarımlarınızda, belgelerinizde kullanmak üzere vektörel (SVG) formatta indirebilirsiniz.
+        </p>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="flex flex-col items-center justify-between gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <img src={`${publicBase}branding/yatay_beyaz.png`} alt="Yatay Beyaz Logo" className="h-14 w-full object-contain" />
+            <a href={`${publicBase}branding/SVG/yatay_beyaz.svg`} download="ROGOYATO_Yatay_Beyaz.svg" className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20">
+              <Download size={16} />
+              SVG İndir
+            </a>
+          </div>
+          
+          <div className="flex flex-col items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-6">
+            <img src={`${publicBase}branding/yatay_siyah.png`} alt="Yatay Siyah Logo" className="h-14 w-full object-contain" />
+            <a href={`${publicBase}branding/SVG/yatay_siyah.svg`} download="ROGOYATO_Yatay_Siyah.svg" className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100">
+              <Download size={16} />
+              SVG İndir
+            </a>
+          </div>
+
+          <div className="flex flex-col items-center justify-between gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <img src={`${publicBase}branding/kare_beyaz.png`} alt="Kare Beyaz Logo" className="h-20 w-full object-contain" />
+            <a href={`${publicBase}branding/SVG/kare_beyaz.svg`} download="ROGOYATO_Kare_Beyaz.svg" className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20">
+              <Download size={16} />
+              SVG İndir
+            </a>
+          </div>
+
+          <div className="flex flex-col items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-6">
+            <img src={`${publicBase}branding/kare_siyah.png`} alt="Kare Siyah Logo" className="h-20 w-full object-contain" />
+            <a href={`${publicBase}branding/SVG/kare_siyah.svg`} download="ROGOYATO_Kare_Siyah.svg" className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100">
+              <Download size={16} />
+              SVG İndir
+            </a>
+          </div>
+        </div>
+      </section>
     </motion.section>
   )
 }
