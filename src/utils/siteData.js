@@ -141,7 +141,7 @@ export const teamTracks = [
   },
   {
     name: 'YERKON Takımı',
-    focus: 'Radyo dalgalarıyla çalışan konum belirleme ve konumlandırma sistemleri',
+    focus: 'Uydu sinyali kesildiğinde yol kenarındaki radyo vericileriyle konum sağlayan karasal konumlandırma sistemi',
   },
   {
     name: 'Sürü Robot Takımı',
