@@ -116,7 +116,7 @@ export const achievementStats = [
   {
     label: 'Aktif Takım',
     value: '5',
-    note: 'Savaşan İHA’dan sürü robotiğine uzanan aktif takım yapısı',
+    note: 'Savaşan İHA’dan sürü robotlarına uzanan aktif takım yapısı',
   },
   {
     label: 'Proje Hattı',
@@ -136,7 +136,7 @@ export const teamTracks = [
     focus: 'Otonom uçuş, hedef tespiti ve kilitlenme yapabilen İHA sistemleri',
   },
   {
-    name: 'EEG Takımı',
+    name: 'Nörobotik',
     focus: 'Beyin sinyallerini işleyen beyin-bilgisayar arayüzü uygulamaları',
   },
   {
@@ -144,7 +144,7 @@ export const teamTracks = [
     focus: 'Yer kontrol istasyonu, telemetri ve haberleşme sistemleri',
   },
   {
-    name: 'Sürü Robotik Takımı',
+    name: 'Sürü Robot Takımı',
     focus: 'Birbiriyle haberleşerek ortak görev yürüten çoklu robot sistemleri',
   },
   {
