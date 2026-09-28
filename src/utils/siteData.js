@@ -141,7 +141,7 @@ export const teamTracks = [
   },
   {
     name: 'YERKON Takımı',
-    focus: 'Yer kontrol istasyonu, telemetri ve haberleşme sistemleri',
+    focus: 'Radyo dalgalarıyla çalışan konum belirleme ve konumlandırma sistemleri',
   },
   {
     name: 'Sürü Robot Takımı',
