@@ -141,7 +141,7 @@ export const teamTracks = [
   },
   {
     name: 'YERKON Takımı',
-    focus: 'Uydu kesintisinde yol kenarı radyo vericileriyle çalışan konumlandırma sistemleri',
+    focus: 'GNSS’e alternatif karasal konumlandırma sistemleri',
   },
   {
     name: 'Sürü Robot Takımı',
