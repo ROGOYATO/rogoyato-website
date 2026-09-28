@@ -46,7 +46,7 @@ export default function AboutPage() {
           </div>
           <h3 className="mt-3 font-heading text-2xl text-slate-900 dark:text-white">Eğitim Hattı</h3>
           <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-            Kampüs içinde uygulamalı Arduino, PCB, Cesium ve ROS odaklı eğitimlerle teknik tabanı güçlendiriyoruz.
+            Kampüs içinde uygulamalı Arduino, PCB ve Cesium odaklı eğitimlerle teknik tabanı güçlendiriyoruz.
           </p>
         </article>
 

@@ -116,7 +116,7 @@ export const achievementStats = [
   {
     label: 'Aktif Takım',
     value: '5',
-    note: '4 aktif takım ve yeni dönem için planlanan İHA odağı',
+    note: 'Savaşan İHA’dan sürü robotlarına uzanan aktif takım yapısı',
   },
   {
     label: 'Proje Hattı',
@@ -126,26 +126,30 @@ export const achievementStats = [
   {
     label: 'Teknik Eğitim',
     value: '5',
-    note: '3 tamamlanan, 2 planlanan dönemlik teknik eğitim akışı',
+    note: '4 tamamlanan, 1 planlanan dönemlik teknik eğitim akışı',
   },
 ]
 
 export const teamTracks = [
   {
-    name: 'TOBB Motion',
-    focus: 'Görüntü işleme ve yapay zeka tabanlı otonom sistemler',
+    name: 'Savaşan İHA Takımı',
+    focus: 'Otonom uçuş, hedef tespiti ve kilitlenme yapabilen İHA sistemleri',
   },
   {
-    name: 'EtuROOT',
-    focus: 'Mini sumo robotlar ve yarışma hazırlık süreçleri',
+    name: 'Nörobotik',
+    focus: 'Beyin sinyallerini işleyen beyin-bilgisayar arayüzü uygulamaları',
   },
   {
-    name: 'İnovetü',
-    focus: 'Şerit ihlali tespiti ve karar destek algoritmaları',
+    name: 'YERKON Takımı',
+    focus: 'GNSS’e alternatif karasal konumlandırma sistemleri',
   },
   {
-    name: 'TOBB SmartIndustry',
-    focus: 'Sanayide dijitalleşme ve otonom taşıma çözümleri',
+    name: 'Sürü Robot Takımı',
+    focus: 'Birbiriyle haberleşerek ortak görev yürüten çoklu robot sistemleri',
+  },
+  {
+    name: 'AraşTr Takımı',
+    focus: 'Akademik araştırma, literatür taraması ve yeni proje fikirlerinin geliştirilmesi',
   },
 ]
 
@@ -168,11 +172,11 @@ export const trainingRoadmap = [
   {
     term: '2025-2026 Bahar',
     title: 'PCB Tasarım Eğitimi',
-    status: 'Planlandı',
+    status: 'Tamamlandı',
   },
   {
-    term: '2025-2026 Yaz',
-    title: 'ROS Eğitimi',
+    term: '2026-2027 Güz',
+    title: 'Arduino Robotik Kodlama Eğitimi',
     status: 'Planlandı',
   },
 ]
