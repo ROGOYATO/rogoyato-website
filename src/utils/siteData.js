@@ -189,14 +189,14 @@ export const participationHighlights = [
 
 export const teamMembers = [
   {
-    name: 'Elif Özge Yavuz',
+    name: 'Mehmet Gönül',
     role: 'Başkan',
-    photo: 'team/elif-ozge-yavuz.jpg',
+    photo: 'team/mehmet-gonul.jpg',
   },
   {
-    name: 'Mehmet Gönül',
+    name: 'Elif Özge Yavuz',
     role: 'Başkan Yardımcısı',
-    photo: 'team/mehmet-gonul.jpg',
+    photo: 'team/elif-ozge-yavuz.jpg',
   },
   {
     name: 'Ayşenur Kurt',
