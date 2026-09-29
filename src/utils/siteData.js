@@ -204,11 +204,6 @@ export const teamMembers = [
     photo: 'team/aysenur-kurt.jpg',
   },
   {
-    name: 'Büşra Türkan',
-    role: 'YK Üyesi',
-    photo: 'team/busra-turkan.jpg',
-  },
-  {
     name: 'Hatice Melike Aydın',
     role: 'YK Üyesi',
     photo: 'team/hatice-melike-aydin.jpg',
@@ -217,16 +212,6 @@ export const teamMembers = [
     name: 'İrem Aydın',
     role: 'YK Üyesi',
     photo: 'team/irem-aydin.jpg',
-  },
-  {
-    name: 'İsmail Kerem Ersöz',
-    role: 'YK Üyesi',
-    photo: 'team/ismail-kerem-ersoz.jpg',
-  },
-  {
-    name: 'Korhan Karaman',
-    role: 'YK Üyesi',
-    photo: 'team/korhan-karaman.jpg',
   },
   {
     name: 'Kutsal Türkeroğlu',
@@ -247,10 +232,5 @@ export const teamMembers = [
     name: 'Yavuz Selim Oktar',
     role: 'YK Üyesi',
     photo: 'team/yavuz-selim-oktar.jpg',
-  },
-  {
-    name: 'Zeynep Güleniş',
-    role: 'YK Üyesi',
-    photo: 'team/zeynep-gulenis.jpg',
   },
 ]

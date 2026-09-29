@@ -8,6 +8,8 @@ import { teamMembers } from '../utils/siteData'
 import teamHeroImage from '../assets/heroes/team-hero.png'
 
 const publicBase = import.meta.env.BASE_URL
+// Ekip başvuruları yeniden açıldığında true yapın
+const isTeamApplicationOpen = false
 
 export default function TeamPage() {
   const [activeIndex, setActiveIndex] = useState(0)
@@ -106,12 +108,23 @@ export default function TeamPage() {
       </section>
 
       <div className="flex justify-center pt-1">
-        <Link
-          to="/ekip/basvuru"
-          className="inline-flex items-center rounded-full border border-cyan-300/60 bg-cyan-100 px-7 py-3 text-base font-semibold text-cyan-900 transition hover:bg-cyan-200 dark:border-cyan-300/35 dark:bg-cyan-300/15 dark:text-cyan-100 dark:hover:bg-cyan-300/25"
-        >
-          Ekibe Katıl
-        </Link>
+        {isTeamApplicationOpen ? (
+          <Link
+            to="/ekip/basvuru"
+            className="inline-flex items-center rounded-full border border-cyan-300/60 bg-cyan-100 px-7 py-3 text-base font-semibold text-cyan-900 transition hover:bg-cyan-200 dark:border-cyan-300/35 dark:bg-cyan-300/15 dark:text-cyan-100 dark:hover:bg-cyan-300/25"
+          >
+            Ekibe Katıl
+          </Link>
+        ) : (
+          <button
+            type="button"
+            disabled
+            title="Ekip başvuruları şu anda kapalı"
+            className="inline-flex cursor-not-allowed items-center rounded-full border border-slate-300/70 bg-slate-100 px-7 py-3 text-base font-semibold text-slate-400 dark:border-white/10 dark:bg-zinc-800/60 dark:text-slate-500"
+          >
+            Ekibe Katıl
+          </button>
+        )}
       </div>
     </motion.section>
   )
