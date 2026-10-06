@@ -1,5 +1,5 @@
 import { motion, useInView } from 'framer-motion'
-import { Award, Cpu, GraduationCap, Rocket, Target, Trophy, Users } from 'lucide-react'
+import { Award, Cpu, ExternalLink, GraduationCap, Rocket, Target, Trophy, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   achievementStats,
@@ -192,24 +192,33 @@ export default function CompetitionsPage() {
             </p>
 
             <div className="mt-5 space-y-3">
-              {teamTracks.map((team, index) => (
-                <motion.article
-                  key={team.name}
-                  whileHover={{ x: 7, y: -2, rotateX: 5, rotateY: -5 }}
-                  transition={{ type: 'spring', stiffness: 210, damping: 16 }}
-                  className="rounded-2xl border border-slate-200/80 bg-white/82 p-4 [transform-style:preserve-3d] dark:border-white/10 dark:bg-zinc-950/45"
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="inline-flex rounded-full border border-cyan-300/55 bg-cyan-300/20 p-2 text-cyan-700 dark:border-cyan-300/35 dark:bg-cyan-400/10 dark:text-cyan-100">
-                      {index % 2 === 0 ? <Rocket size={15} /> : <Target size={15} />}
-                    </span>
-                    <div>
-                      <h3 className="font-heading text-lg text-slate-900 dark:text-white">{team.name}</h3>
-                      <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{team.focus}</p>
+              {teamTracks.map((team, index) => {
+                const Card = team.url ? motion.a : motion.article
+                const linkProps = team.url ? { href: team.url, target: '_blank', rel: 'noopener noreferrer' } : {}
+
+                return (
+                  <Card
+                    key={team.name}
+                    {...linkProps}
+                    whileHover={{ x: 7, y: -2, rotateX: 5, rotateY: -5 }}
+                    transition={{ type: 'spring', stiffness: 210, damping: 16 }}
+                    className={`block rounded-2xl border border-slate-200/80 bg-white/82 p-4 [transform-style:preserve-3d] dark:border-white/10 dark:bg-zinc-950/45 ${team.url ? 'transition-colors hover:border-cyan-300/70 dark:hover:border-cyan-300/40' : ''}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="inline-flex rounded-full border border-cyan-300/55 bg-cyan-300/20 p-2 text-cyan-700 dark:border-cyan-300/35 dark:bg-cyan-400/10 dark:text-cyan-100">
+                        {index % 2 === 0 ? <Rocket size={15} /> : <Target size={15} />}
+                      </span>
+                      <div>
+                        <h3 className="inline-flex items-center gap-1.5 font-heading text-lg text-slate-900 dark:text-white">
+                          {team.name}
+                          {team.url && <ExternalLink size={14} className="text-cyan-600 dark:text-cyan-300" aria-hidden="true" />}
+                        </h3>
+                        <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{team.focus}</p>
+                      </div>
                     </div>
-                  </div>
-                </motion.article>
-              ))}
+                  </Card>
+                )
+              })}
             </div>
           </div>
 

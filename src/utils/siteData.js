@@ -142,6 +142,7 @@ export const teamTracks = [
   {
     name: 'YERKON Takımı',
     focus: 'GNSS’e alternatif karasal konumlandırma sistemleri',
+    url: 'https://yerkon.com',
   },
   {
     name: 'Sürü Robot Takımı',
