@@ -110,7 +110,7 @@ export const competitionHighlights = [
 export const achievementStats = [
   {
     label: 'Topluluk Ölçeği',
-    value: '530+',
+    value: '500+',
     note: 'Kısa sürede sürdürülebilir büyüme gösteren aktif üye yapısı',
   },
   {
