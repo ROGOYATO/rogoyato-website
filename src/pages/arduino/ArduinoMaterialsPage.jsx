@@ -1,5 +1,20 @@
+import { ExternalLink } from 'lucide-react'
 import { arduinoMaterials } from '../../utils/arduinoTraining'
-import { Breadcrumb, Bullets, Label, Panel } from './ArduinoParts'
+import { Breadcrumb, Bullets, Label, Panel, ShopLink } from './ArduinoParts'
+
+function KitLink({ href, children }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="font-code inline-flex items-center gap-1.5 rounded-md border border-teal-700/40 px-2.5 py-1 text-xs text-teal-800 transition hover:bg-teal-50 dark:border-teal-400/40 dark:text-teal-200 dark:hover:bg-teal-400/10"
+    >
+      {children}
+      <ExternalLink size={12} aria-hidden="true" />
+    </a>
+  )
+}
 
 export default function ArduinoMaterialsPage() {
   return (
@@ -10,14 +25,17 @@ export default function ArduinoMaterialsPage() {
         <Label>Öğrenci başına donanım</Label>
         <h1 className="mt-1 font-hero text-3xl font-extrabold leading-tight text-slate-900 dark:text-white sm:text-4xl">Malzeme listesi</h1>
         <p className="mt-3 max-w-3xl text-lg leading-relaxed text-slate-600 dark:text-slate-300">
-          Eğitim boyunca ve yarışmada her öğrencinin kullanacağı parçalar.
+          Eğitim boyunca ve yarışmada her öğrencinin kullanacağı parçalar. Altı çizili adlar Elektronikport’taki ürün veya kategori sayfasına gider.
         </p>
       </header>
 
       <Panel>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="font-hero text-xl font-bold text-slate-900 dark:text-white">Başlangıç seti</h2>
-          <span className="font-code text-xs text-slate-500 dark:text-slate-400">{arduinoMaterials.starterKit.length} kalem</span>
+          <div className="flex items-center gap-3">
+            <span className="font-code text-xs text-slate-500 dark:text-slate-400">{arduinoMaterials.starterKit.length} kalem</span>
+            <KitLink href={arduinoMaterials.starterKitUrl}>Süper Başlangıç Seti</KitLink>
+          </div>
         </div>
         <div className="mt-4">
           <Bullets items={arduinoMaterials.starterKit} className="grid gap-x-8 gap-y-2.5 md:grid-cols-2" />
@@ -38,7 +56,9 @@ export default function ArduinoMaterialsPage() {
             <tbody>
               {arduinoMaterials.extras.map((item) => (
                 <tr key={item.name} className="border-b border-slate-200 last:border-0 dark:border-white/10">
-                  <td className="py-3 pr-4 font-semibold text-slate-900 dark:text-white">{item.name}</td>
+                  <td className="py-3 pr-4 font-semibold">
+                    <ShopLink href={item.url}>{item.name}</ShopLink>
+                  </td>
                   <td className="font-code py-3 pr-4 text-teal-700 dark:text-teal-300">{item.count}</td>
                   <td className="py-3 text-slate-600 dark:text-slate-300">{item.use}</td>
                 </tr>
@@ -50,7 +70,10 @@ export default function ArduinoMaterialsPage() {
 
       <div className="grid gap-4 md:grid-cols-2">
         <Panel>
-          <h2 className="font-hero text-xl font-bold text-slate-900 dark:text-white">2WD robot kitinin içeriği</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-hero text-xl font-bold text-slate-900 dark:text-white">2WD robot kitinin içeriği</h2>
+            <KitLink href={arduinoMaterials.robotKitUrl}>2WD robot kiti</KitLink>
+          </div>
           <div className="mt-4">
             <Bullets items={arduinoMaterials.robotKit} />
           </div>

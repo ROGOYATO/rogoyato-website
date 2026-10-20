@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, ExternalLink } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 export function Panel({ className = '', children }) {
@@ -18,13 +18,30 @@ export function Label({ children }) {
 export function Bullets({ items, className = 'space-y-2.5' }) {
   return (
     <ul className={className}>
-      {items.map((item) => (
-        <li key={item} className="flex gap-3 text-[0.95rem] leading-relaxed text-slate-700 dark:text-slate-200">
-          <span className="mt-[0.55rem] h-1.5 w-1.5 shrink-0 rounded-full bg-teal-600 dark:bg-teal-300" />
-          <span>{item}</span>
-        </li>
-      ))}
+      {items.map((item) => {
+        const { name, url } = typeof item === 'string' ? { name: item } : item
+        return (
+          <li key={name} className="flex gap-3 text-[0.95rem] leading-relaxed text-slate-700 dark:text-slate-200">
+            <span className="mt-[0.55rem] h-1.5 w-1.5 shrink-0 rounded-full bg-teal-600 dark:bg-teal-300" />
+            {url ? <ShopLink href={url}>{name}</ShopLink> : <span>{name}</span>}
+          </li>
+        )
+      })}
     </ul>
+  )
+}
+
+export function ShopLink({ href, children }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-teal-800 underline decoration-teal-600/40 underline-offset-2 transition hover:decoration-teal-600 dark:text-teal-200 dark:decoration-teal-300/40 dark:hover:decoration-teal-300"
+    >
+      {children}
+      <ExternalLink size={12} className="ml-1 inline-block align-[-1px] opacity-70" aria-hidden="true" />
+    </a>
   )
 }
 
