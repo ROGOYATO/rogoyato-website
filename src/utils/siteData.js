@@ -134,7 +134,7 @@ export const teamTracks = [
   {
     name: 'Savaşan İHA Takımı',
     focus: 'Otonom uçuş, hedef tespiti ve kilitlenme yapabilen İHA sistemleri',
-    url: 'https://rogoyato.github.io/siha-final-rapor/',
+    url: 'https://rogoyato.github.io/ikarus/',
   },
   {
     name: 'Nörobotik',
