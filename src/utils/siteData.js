@@ -35,6 +35,42 @@ export const events = [
     applicationNote: null,
   },
   {
+    id: 'cs-girlies-november-hackathon-2025',
+    title: 'CS Girlies November Hackathon 2025',
+    type: 'Hackathon',
+    date: '14–16 Kasım 2025',
+    location: 'TOBB ETÜ, TM107',
+    status: 'closed',
+    requiresApplication: false,
+    summary:
+      '“Building Fun Learning Tools for Students” temasıyla üç gün boyunca fikir geliştirdiğimiz, tasarladığımız ve kod yazdığımız CS Girlies November Hackathon 2025’e TM107’de bir araya gelerek katıldık.',
+    body: [
+      'TOBB ETÜ ROGOYATO olarak 14–16 Kasım 2025 tarihlerinde CS Girlies November Hackathon 2025’e katıldık. Etkinliğin teması “Building Fun Learning Tools for Students” idi; üç gün boyunca öğrenciler için eğlenceli öğrenme araçları üzerine fikir geliştirdik, tasarladık ve kod yazdık.',
+      'Kendi takımıyla gelenlerin yanı sıra bireysel başvuranları da uygun ekiplerle eşleştirdik; yazılımcı, tasarımcı ve fikir üreticisi farklı profilleri aynı masada buluşturduk.',
+      'Hackathon boyunca bolca eğlenirken kod da yazdık. Katılan herkese teşekkür ederiz; sonraki hackathonlarda görüşmek üzere!',
+    ],
+    coverImage: 'events/2025-11-14-cs-girlies-hackathon/cover.jpg',
+    galleryImages: [
+      'events/2025-11-14-cs-girlies-hackathon/gallery-01.jpg',
+      'events/2025-11-14-cs-girlies-hackathon/gallery-02.jpg',
+      'events/2025-11-14-cs-girlies-hackathon/gallery-03.jpg',
+      'events/2025-11-14-cs-girlies-hackathon/gallery-04.jpg',
+      'events/2025-11-14-cs-girlies-hackathon/gallery-05.jpg',
+      'events/2025-11-14-cs-girlies-hackathon/gallery-06.jpg',
+    ],
+    agenda: [
+      'Takımların oluşturulması ve bireysel katılımcıların eşleştirilmesi',
+      'Tema üzerine fikir geliştirme ve tasarım',
+      'Kodlama ve prototip geliştirme',
+    ],
+    notes: [
+      'Etkinlik, CS Girlies November Hackathon 2025 kapsamında TM107’de gerçekleştirildi.',
+      'Takımlar farklı profillerden katılımcıların eşleştirilmesiyle oluşturuldu.',
+    ],
+    applicationDeadline: null,
+    applicationNote: null,
+  },
+  {
     id: 'intecro-robotics-teknik-gezi',
     title: "Intecro Robotics Teknik Gezisi",
     type: 'Teknik Gezi',
