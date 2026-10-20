@@ -1,6 +1,7 @@
 import { motion, useInView } from 'framer-motion'
-import { Award, Cpu, ExternalLink, GraduationCap, Rocket, Target, Trophy, Users } from 'lucide-react'
+import { ArrowRight, Award, Cpu, ExternalLink, GraduationCap, Rocket, Target, Trophy, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   achievementStats,
   competitionHighlights,
@@ -232,7 +233,17 @@ export default function CompetitionsPage() {
                   <div key={`${item.term}-${item.title}`} className="relative">
                     <span className="absolute -left-[1.18rem] top-1.5 h-2.5 w-2.5 rounded-full bg-cyan-500 shadow-[0_0_0_3px_rgba(34,211,238,0.20)]" />
                     <p className="text-xs uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">{item.term}</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{item.title}</p>
+                    {item.link ? (
+                      <Link
+                        to={item.link}
+                        className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-cyan-700 underline-offset-2 hover:underline dark:text-cyan-300"
+                      >
+                        {item.title}
+                        <ArrowRight size={14} aria-hidden="true" />
+                      </Link>
+                    ) : (
+                      <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{item.title}</p>
+                    )}
                     <p className="text-xs text-slate-500 dark:text-slate-400">{item.status}</p>
                   </div>
                 ))}

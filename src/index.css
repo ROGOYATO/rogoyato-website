@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Serif:wght@600;700&family=Sora:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Serif:wght@600;700&family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -45,6 +45,21 @@ body,
     font-family: 'Sora', 'Plus Jakarta Sans', sans-serif;
     letter-spacing: 0.006em;
     font-weight: 500;
+  }
+
+  .font-code {
+    font-family: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+  }
+
+  .arduino-board {
+    background-color: #eef4f3;
+    background-image: radial-gradient(rgba(15, 118, 110, 0.18) 1.2px, transparent 1.3px);
+    background-size: 22px 22px;
+  }
+
+  html.dark .arduino-board {
+    background-color: #0b1517;
+    background-image: radial-gradient(rgba(45, 212, 191, 0.13) 1.2px, transparent 1.3px);
   }
 
   .no-scrollbar {
