@@ -195,6 +195,5 @@ export const arduinoMaterials = {
   consumables: [
     { name: 'AA pil (4 adet; öğrenci temin edecek)', url: 'https://www.elektronikport.com/kategori/pil' },
     { name: 'İzole bant veya kablo bağı', url: 'https://www.elektronikport.com/kategori/bant-ve-sprey-cesitleri' },
-    { name: 'Siyah bant ve açık renk parkur zemini', url: 'https://www.elektronikport.com/kategori/bant-ve-sprey-cesitleri' },
   ],
 }
