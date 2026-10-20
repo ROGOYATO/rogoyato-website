@@ -147,7 +147,7 @@ export const arduinoCompetition = {
       ],
     },
   ],
-  materials: ['2WD robot araba kiti', 'Arduino Uno', 'L298N', '3 adet KH-09', 'Piller', 'Jumper kablolar', 'Çizgi parkuru'],
+  materials: ['2WD robot araba kiti', 'Arduino Uno', 'L298N', '3 adet KH-09', 'Piller', 'Jumper kablolar'],
 }
 
 export const arduinoMaterials = {
@@ -182,6 +182,7 @@ export const arduinoMaterials = {
     { name: '2WD robot araba kiti', url: 'https://www.elektronikport.com/urun/2wd-robot-araba-kiti-arduino', count: '1', use: 'Yalnızca yarışmada robot montajı' },
     { name: 'KH-09 IR alıcı-verici sensör modülü', url: 'https://www.elektronikport.com/urun/ir-alici-verici-sensor-modulu-1', count: '3', use: 'Üç sensör: sol, orta ve sağ' },
   ],
+  starterKitRemoved: ['LCD ekran (2×16, 5 V 1602)', 'IR uzaktan kumanda ve alıcı (HX1838)'],
   robotKit: [
     { name: 'TT tip redüktörlü DC motor (2 adet)', url: 'https://www.elektronikport.com/urun/2wd-robot-araba-kiti-arduino' },
     { name: 'Tekerlek (2 adet)', url: 'https://www.elektronikport.com/urun/2wd-robot-araba-kiti-arduino' },
@@ -193,7 +194,7 @@ export const arduinoMaterials = {
   robotKitNote:
     'Şasi, tekerlek ve motorlar dört haftalık eğitim sırasında monte edilmez; yarışmacılar bunları derslerden bağımsız yarışma etkinliğinde monte eder.',
   consumables: [
-    { name: 'AA pil (4 adet; öğrenci temin edecek)', url: 'https://www.elektronikport.com/kategori/pil' },
+    { name: 'Piller', url: 'https://www.elektronikport.com/kategori/pil' },
     { name: 'İzole bant veya kablo bağı', url: 'https://www.elektronikport.com/kategori/bant-ve-sprey-cesitleri' },
   ],
 }
