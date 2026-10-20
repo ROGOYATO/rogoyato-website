@@ -4,6 +4,11 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 import AboutPage from './pages/AboutPage.jsx'
+import ArduinoCompetitionPage from './pages/arduino/ArduinoCompetitionPage.jsx'
+import ArduinoHomePage from './pages/arduino/ArduinoHomePage.jsx'
+import ArduinoLayout from './pages/arduino/ArduinoLayout.jsx'
+import ArduinoMaterialsPage from './pages/arduino/ArduinoMaterialsPage.jsx'
+import ArduinoWeekPage from './pages/arduino/ArduinoWeekPage.jsx'
 import CompetitionsPage from './pages/CompetitionsPage.jsx'
 import EventApplyPage from './pages/EventApplyPage.jsx'
 import EventDetailPage from './pages/EventDetailPage.jsx'
@@ -17,6 +22,13 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <HashRouter>
       <Routes>
+        <Route path="/arduino" element={<ArduinoLayout />}>
+          <Route index element={<ArduinoHomePage />} />
+          <Route path="hafta/:week" element={<ArduinoWeekPage />} />
+          <Route path="yarisma" element={<ArduinoCompetitionPage />} />
+          <Route path="malzemeler" element={<ArduinoMaterialsPage />} />
+          <Route path="*" element={<Navigate to="/arduino" replace />} />
+        </Route>
         <Route path="/" element={<App />}>
           <Route index element={<HomePage />} />
           <Route path="hakkimizda" element={<AboutPage />} />
