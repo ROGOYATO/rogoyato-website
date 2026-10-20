@@ -5,7 +5,7 @@ export const arduinoTraining = {
   facts: [
     { label: 'Ders günü', value: 'Cumartesi' },
     { label: 'Ders saati', value: '14:45–16:45' },
-    { label: 'Ders konumu', value: 'Duyurulacak' },
+    { label: 'Ders konumu', value: 'TM 218' },
     { label: 'Program', value: '4 hafta eğitim + yarışma' },
     { label: 'Çalışma biçimi', value: 'Bireysel' },
   ],
