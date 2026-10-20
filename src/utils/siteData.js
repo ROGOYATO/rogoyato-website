@@ -185,9 +185,9 @@ export const trainingRoadmap = [
 ]
 
 export const participationHighlights = [
-  'TEKNOFEST odaklı proje gruplarında dönem boyunca aktif yarışma hazırlığı yürütüldü.',
-  'Hackathon katılımlarında çok takımlı çalışma modeliyle hızlı prototipleme pratiği artırıldı.',
-  'Takımlar, raporlama ve sunum disiplinini teknik geliştirme süreciyle birlikte ilerletti.',
+  'TEKNOFEST ve SUAS gibi ulusal ve uluslararası yarışmalara odaklanan proje gruplarımızla dönem boyunca yarışma hazırlıklarını aktif olarak sürdürüyoruz.',
+  'Hackathonlarda çok takımlı çalışma modelimizle hızlı prototipleme pratiğimizi geliştiriyoruz.',
+  'Teknik geliştirmeyi raporlama ve sunum disipliniyle birlikte yürütüyoruz.',
 ]
 
 export const teamMembers = [
