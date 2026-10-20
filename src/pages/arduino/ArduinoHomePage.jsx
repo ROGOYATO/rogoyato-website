@@ -151,7 +151,7 @@ export default function ArduinoHomePage() {
               items={[
                 'Arduino Uno, breadboard, sensörler ve LED’lerden oluşan başlangıç seti',
                 'L298N motor sürücü, 2WD robot araba kiti ve 3 adet KH-09 sensör',
-                '4 adet AA pil öğrenci tarafından temin edilir',
+                'Piller öğrenci tarafından temin edilir',
               ]}
             />
           </div>
