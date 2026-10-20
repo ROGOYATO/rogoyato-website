@@ -10,6 +10,7 @@ const navLinks = [
   { to: '/etkinlikler', label: 'Etkinlikler' },
   { to: '/ekip', label: 'Ekibimiz' },
   { to: '/basarilar', label: 'Başarılar' },
+  { to: '/arduino', label: 'Arduino Eğitimi' },
 ]
 
 function App() {

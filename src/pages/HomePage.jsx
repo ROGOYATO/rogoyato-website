@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { ArrowRight, Cpu } from 'lucide-react'
 import { useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import logoImage from '../assets/favicon.png'
@@ -6,6 +7,7 @@ import aboutHeroImage from '../assets/heroes/about-hero.png'
 import achievementsHeroImage from '../../ornekbutonarkaplan.png'
 import eventsHeroImage from '../assets/heroes/events-hero.png'
 import teamHeroImage from '../assets/heroes/team-hero.png'
+import { arduinoTraining } from '../utils/arduinoTraining'
 
 const primaryLinks = [
   { to: '/etkinlikler', label: 'Etkinlikler', backdrop: eventsHeroImage },
@@ -64,6 +66,24 @@ export default function HomePage() {
           </div>
         </div>
       </motion.section>
+
+      <Link
+        to="/arduino"
+        className="group flex flex-col gap-4 rounded-2xl border border-teal-600/40 bg-teal-700 p-5 text-white shadow-[0_12px_38px_rgba(15,118,110,0.28)] transition hover:bg-teal-800 dark:border-teal-300/30 dark:bg-teal-900/70 dark:shadow-none dark:hover:bg-teal-900 sm:flex-row sm:items-center sm:p-6"
+      >
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/15">
+          <Cpu size={26} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-teal-100">Yeni eğitim · {arduinoTraining.term}</span>
+          <span className="mt-1 block font-hero text-2xl font-bold">{arduinoTraining.title}</span>
+          <span className="mt-1 block text-sm leading-relaxed text-teal-50/90">{arduinoTraining.summary}</span>
+        </span>
+        <span className="inline-flex shrink-0 items-center gap-2 self-start rounded-full bg-white px-4 py-2 text-sm font-semibold text-teal-800 transition group-hover:gap-3 sm:self-center">
+          Programı incele
+          <ArrowRight size={16} />
+        </span>
+      </Link>
 
       <section className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         {primaryLinks.map((item) => (
