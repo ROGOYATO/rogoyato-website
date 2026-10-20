@@ -41,7 +41,7 @@ export default function ArduinoMaterialsPage() {
           <Bullets items={arduinoMaterials.starterKit} className="grid gap-x-8 gap-y-2.5 md:grid-cols-2" />
         </div>
         <p className="mt-5 border-t border-slate-200 pt-4 text-sm leading-relaxed text-slate-500 dark:border-white/10 dark:text-slate-400">
-          Eğitimde kullanılmadığı için setten çıkarılır: {arduinoMaterials.starterKitRemoved.join(', ')}.
+          Eğitimde kullanılmadığı için setten çıkarılan parçalar: {arduinoMaterials.starterKitRemoved.join(', ')}.
         </p>
       </Panel>
 
