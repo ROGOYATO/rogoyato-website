@@ -1,4 +1,4 @@
-import heroPhoto from '../../ornekbutonarkaplan.png'
+import heroPhoto from '../assets/heroes/achievements-hero.webp'
 
 export default function PageTitleHero({ title, imageSrc = heroPhoto }) {
   return (

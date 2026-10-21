@@ -1,6 +1,6 @@
 import { Cpu } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import snakeSegmentImage from '../assets/favicon.png'
+import snakeSegmentImage from '../assets/logo.webp'
 
 const DIRECTION_VECTORS = {
   UP: { x: 0, y: -1 },
