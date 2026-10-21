@@ -32,7 +32,7 @@ async function pbkdf2(secret, salt, rounds) {
 export const normalizeCode = (code) => String(code ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '')
 export const formatCode = (code) => normalizeCode(code).replace(/(.{4})(?=.)/g, '$1-')
 export const looksLikeCode = (code) => normalizeCode(code).length === CODE_LENGTH && [...normalizeCode(code)].every((c) => ALPHABET.includes(c))
-// "Kartal LİMON  güvercin-IZ 47" and "kartal-limon-guvercin-iz-47" are the same:
+// "Örnek KELİME  şeker-İNCİ 12" and "ornek-kelime-seker-inci-12" are the same:
 // case, spacing and Turkish letters do not matter.
 const PLAIN = { ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u', â: 'a', î: 'i', û: 'u' }
 export const normalizePassphrase = (text) =>
