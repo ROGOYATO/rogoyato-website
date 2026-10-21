@@ -150,7 +150,7 @@ export function PartInspector({ part, circuit, inputs, state, onInput, onWire, o
   const reach = (pin) => {
     const uno = describeNet(nets, `P:${part.id}:${pin}`)
     const via = holes?.[pin] ? `${holes[pin]} deliği` : null
-    return [via, uno.length ? `→ ${uno.join(', ')}` : null].filter(Boolean).join(' ')
+    return [via, `→ ${uno.length ? uno.join(', ') : 'boşta'}`].filter(Boolean).join(' ')
   }
   return (
     <div className="space-y-4">
@@ -200,7 +200,7 @@ export function PartInspector({ part, circuit, inputs, state, onInput, onWire, o
               <div key={pin.id} className="grid grid-cols-[5.5rem_1fr] items-center gap-2">
                 <span className="font-code text-sm text-slate-700 dark:text-slate-200">
                   {pin.label}
-                  {reach(pin.id) ? <span className="block text-[0.7rem] leading-tight text-slate-500 dark:text-slate-400">{reach(pin.id)}</span> : null}
+                  <span className="block text-[0.7rem] leading-tight text-slate-500 dark:text-slate-400">{reach(pin.id)}</span>
                 </span>
                 <PinSelect label={`${partLabel(part)} ${pin.label}`} value={directUnoPin(circuit, part.id, pin.id)} onChange={(uno) => onWire(part.id, pin.id, uno)} />
               </div>
@@ -208,6 +208,38 @@ export function PartInspector({ part, circuit, inputs, state, onInput, onWire, o
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// Every part's pins and the Uno pins they reach, directly or through the
+// breadboard; always shown at the bottom of the parts card.
+export function ConnectionsSummary({ circuit, onSelect }) {
+  const { nets } = buildNets(circuit)
+  const parts = circuit.parts.filter((part) => part.type !== 'breadboard')
+  if (!parts.length) return null
+  return (
+    <div className="mt-4 border-t border-slate-200 pt-3 dark:border-white/10">
+      <p className="font-code mb-2 text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Tüm bağlantılar</p>
+      <ul className="space-y-1.5 text-sm">
+        {parts.map((part) => (
+          <li key={part.id} className="grid grid-cols-[minmax(0,9rem)_1fr] gap-2">
+            <button type="button" onClick={() => onSelect(part.id)} className="truncate text-left text-slate-800 hover:text-teal-700 dark:text-slate-100 dark:hover:text-teal-300">
+              {partLabel(part)}
+            </button>
+            <span className="font-code flex flex-wrap gap-x-3 text-xs leading-5 text-slate-600 dark:text-slate-300">
+              {PART_CATALOG[part.type].pins.map((pin) => {
+                const uno = describeNet(nets, `P:${part.id}:${pin.id}`)
+                return (
+                  <span key={pin.id} className={uno.length ? '' : 'text-slate-400 dark:text-slate-500'}>
+                    {pin.label} → {uno.length ? uno.join(', ') : 'boşta'}
+                  </span>
+                )
+              })}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

@@ -25,7 +25,7 @@ import AnswerBar from './AnswerBar'
 import { compileSketch, rememberCompiled } from './compile'
 import { onCompilerProgress, preloadCompiler } from './compiler/browserCompiler'
 import { EXAMPLES } from './examples'
-import { CarHud, CarWiring, IssuesList, PanelCard, PartInspector, SerialMonitor } from './Panels'
+import { CarHud, CarWiring, ConnectionsSummary, IssuesList, PanelCard, PartInspector, SerialMonitor } from './Panels'
 import useSimulator from './useSimulator'
 
 // Older saved projects held the examples' answers; they are dropped.
@@ -480,6 +480,7 @@ export default function SimulatorPage() {
                 ) : (
                   <p className="text-sm text-slate-600 dark:text-slate-300">Masada parça yok. “Parça ekle” ile başlayın.</p>
                 )}
+                <ConnectionsSummary circuit={project.circuit} onSelect={(partId) => setSelection({ partId })} />
               </PanelCard>
               {issues.length ? (
                 <PanelCard title="Devre kontrolü">
