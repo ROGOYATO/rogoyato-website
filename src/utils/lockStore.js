@@ -36,12 +36,16 @@ export async function readPublic(store) {
 async function api(path, token, options = {}) {
   const response = await fetch(`${API}${path}`, {
     ...options,
+    // GitHub lets browsers cache reads for a minute; a stale file would be
+    // saved over with an outdated sha and rejected.
+    cache: 'no-store',
     headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
   })
   if (response.status === 401) throw new Error('GitHub anahtarı geçersiz.')
   if (response.status === 403) throw new Error('GitHub anahtarının bu dosyayı düzenleme izni yok.')
   if (response.status === 404 && options.allowMissing) return null
   if (response.status === 404) throw new Error('Depo ya da dosya bulunamadı; anahtarın bu depoya erişimi olduğundan emin olun.')
+  if (response.status === 409) throw Object.assign(new Error('Kilit verisi bu sırada değişti; tekrar deneyin.'), { conflict: true })
   if (!response.ok) throw new Error(`GitHub isteği başarısız (HTTP ${response.status}).`)
   return response.status === 204 ? null : response.json()
 }

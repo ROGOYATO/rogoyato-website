@@ -138,17 +138,25 @@ export default function ArduinoLockPage() {
   }
 
   // Every change starts from the newest saved state, so two trainers do not
-  // overwrite each other.
+  // overwrite each other; if the file changed meanwhile, it starts over once.
   const act = async (key, change, done) => {
     setBusy(key)
     setMessage(null)
     try {
-      const latest = await readLatest(store, token)
-      if (!latest) throw new Error(MISSING)
-      const latestList = await readList(latest, pagePassword)
-      if (!latestList) throw new Error('Kayıttaki sayfa şifresi değişmiş; sayfayı yenileyip yeni şifreyle girin.')
-      const result = await change(latest, latestList)
-      await save(store, token, result.state, done)
+      let result
+      for (let attempt = 0; !result; attempt += 1) {
+        const latest = await readLatest(store, token)
+        if (!latest) throw new Error(MISSING)
+        const latestList = await readList(latest, pagePassword)
+        if (!latestList) throw new Error('Kayıttaki sayfa şifresi değişmiş; sayfayı yenileyip yeni şifreyle girin.')
+        const next = await change(latest, latestList)
+        try {
+          await save(store, token, next.state, done)
+          result = next
+        } catch (error) {
+          if (!error.conflict || attempt > 0) throw error
+        }
+      }
       await publish(store, token)
       setLock(result.state)
       setList(result.list)
