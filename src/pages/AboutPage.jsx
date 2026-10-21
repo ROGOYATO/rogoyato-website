@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import { Bot, Download, GraduationCap, Rocket, Trophy, Users } from 'lucide-react'
 import PageTitleHero from '../components/PageTitleHero'
-import aboutHeroImage from '../assets/heroes/about-hero.png'
+import aboutHeroImage from '../assets/heroes/about-hero.webp'
 
 const publicBase = import.meta.env.BASE_URL
 
@@ -82,7 +82,7 @@ export default function AboutPage() {
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           {/* Yatay Beyaz */}
           <div className="flex flex-col items-center justify-between gap-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6 sm:p-8">
-            <img src={`${publicBase}branding/yatay_beyaz.png`} alt="Yatay Beyaz Logo" className="h-24 w-full object-contain" />
+            <img src={`${publicBase}branding/preview/yatay_beyaz.webp`} alt="Yatay Beyaz Logo" className="h-24 w-full object-contain" />
             <div className="flex w-full flex-col gap-3 sm:flex-row">
               <a href={`${publicBase}branding/SVG/yatay_beyaz.svg`} download="ROGOYATO_Yatay_Beyaz.svg" className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20">
                 <Download size={16} />
@@ -97,7 +97,7 @@ export default function AboutPage() {
           
           {/* Yatay Siyah */}
           <div className="flex flex-col items-center justify-between gap-6 rounded-2xl border border-slate-200 bg-slate-50 p-6 sm:p-8">
-            <img src={`${publicBase}branding/yatay_siyah.png`} alt="Yatay Siyah Logo" className="h-24 w-full object-contain" />
+            <img src={`${publicBase}branding/preview/yatay_siyah.webp`} alt="Yatay Siyah Logo" className="h-24 w-full object-contain" />
             <div className="flex w-full flex-col gap-3 sm:flex-row">
               <a href={`${publicBase}branding/SVG/yatay_siyah.svg`} download="ROGOYATO_Yatay_Siyah.svg" className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100">
                 <Download size={16} />
@@ -112,7 +112,7 @@ export default function AboutPage() {
 
           {/* Kare Beyaz */}
           <div className="flex flex-col items-center justify-between gap-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6 sm:p-8">
-            <img src={`${publicBase}branding/kare_beyaz.png`} alt="Kare Beyaz Logo" className="h-36 w-full object-contain" />
+            <img src={`${publicBase}branding/preview/kare_beyaz.webp`} alt="Kare Beyaz Logo" className="h-36 w-full object-contain" />
             <div className="flex w-full flex-col gap-3 sm:flex-row">
               <a href={`${publicBase}branding/SVG/kare_beyaz.svg`} download="ROGOYATO_Kare_Beyaz.svg" className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20">
                 <Download size={16} />
@@ -127,7 +127,7 @@ export default function AboutPage() {
 
           {/* Kare Siyah */}
           <div className="flex flex-col items-center justify-between gap-6 rounded-2xl border border-slate-200 bg-slate-50 p-6 sm:p-8">
-            <img src={`${publicBase}branding/kare_siyah.png`} alt="Kare Siyah Logo" className="h-36 w-full object-contain" />
+            <img src={`${publicBase}branding/preview/kare_siyah.webp`} alt="Kare Siyah Logo" className="h-36 w-full object-contain" />
             <div className="flex w-full flex-col gap-3 sm:flex-row">
               <a href={`${publicBase}branding/SVG/kare_siyah.svg`} download="ROGOYATO_Kare_Siyah.svg" className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100">
                 <Download size={16} />

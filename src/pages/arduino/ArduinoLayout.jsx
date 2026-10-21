@@ -2,9 +2,8 @@ import { ArrowLeft, Cpu, Moon, Sun } from 'lucide-react'
 import { useEffect } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import useTheme from '../../hooks/useTheme'
+import logoImage from '../../assets/logo.webp'
 import { arduinoTraining } from '../../utils/arduinoTraining'
-
-const publicBase = import.meta.env.BASE_URL
 
 const navLinks = [
   { to: '/arduino', label: 'Program', end: true },
@@ -26,7 +25,7 @@ export default function ArduinoLayout() {
       <header className="sticky top-0 z-30 border-b-2 border-teal-700/80 bg-white/90 backdrop-blur-xl dark:border-teal-400/40 dark:bg-[#0b1517]/90">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 sm:px-6 lg:px-8">
           <Link to="/arduino" className="flex min-w-0 items-center gap-3" aria-label="Arduino eğitimi ana sayfası">
-            <img src={`${publicBase}favicon.png`} alt="" className="h-10 w-10 shrink-0" />
+            <img src={logoImage} alt="" className="h-10 w-10 shrink-0" />
             <span className="min-w-0 leading-tight">
               <span className="block font-hero text-lg font-bold text-slate-900 dark:text-white">{arduinoTraining.title}</span>
               <span className="font-code block text-xs text-teal-700 dark:text-teal-300">{arduinoTraining.term}</span>

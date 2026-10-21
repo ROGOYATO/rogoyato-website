@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PageTitleHero from '../components/PageTitleHero'
 import { teamMembers } from '../utils/siteData'
-import teamHeroImage from '../assets/heroes/team-hero.png'
+import teamHeroImage from '../assets/heroes/team-hero.webp'
 
 const publicBase = import.meta.env.BASE_URL
 // Ekip başvuruları yeniden açıldığında true yapın

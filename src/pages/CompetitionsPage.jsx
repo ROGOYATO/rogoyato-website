@@ -9,7 +9,7 @@ import {
   teamTracks,
   trainingRoadmap,
 } from '../utils/siteData'
-import achievementsHeroImage from '../../ornekbutonarkaplan.png'
+import achievementsHeroImage from '../assets/heroes/achievements-hero.webp'
 
 const statIcons = [Users, Rocket, Cpu, GraduationCap]
 
