@@ -74,10 +74,13 @@ export async function save(store, token, state, message = 'Kilit verisini günce
     await api(`/gists/${store.gist.id}`, token, { method: 'PATCH', body: JSON.stringify({ files: { [store.gist.file]: { content: text(state) } } }) })
     return
   }
-  const existing = await api(`${contentsPath(store.repo)}?ref=${store.repo.branch}`, token, { allowMissing: true })
+  const { owner, name, branch } = store.repo
+  const existing = await api(`${contentsPath(store.repo)}?ref=${branch}`, token, { allowMissing: true })
+  // A new, empty repository has no branch yet; its first file creates the default one.
+  const hasBranch = existing || (await api(`/repos/${owner}/${name}/branches/${branch}`, token, { allowMissing: true }))
   await api(contentsPath(store.repo), token, {
     method: 'PUT',
-    body: JSON.stringify({ message, branch: store.repo.branch, content: toBase64(text(state)), ...(existing ? { sha: existing.sha } : {}) }),
+    body: JSON.stringify({ message, content: toBase64(text(state)), ...(hasBranch ? { branch } : {}), ...(existing ? { sha: existing.sha } : {}) }),
   })
 }
 
