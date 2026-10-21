@@ -49,6 +49,7 @@ export const arduinoWeeks = [
     outcome: 'Çalışan Arduino kurulumu ve buton kontrollü LED devresi.',
     materials: ['Arduino Uno', 'USB kablo', 'Breadboard', 'Jumper', 'LED', '330Ω direnç', 'Buton'],
     code: 'digitalWrite(LED, HIGH);',
+    simulator: 'buton-led',
   },
   {
     week: 2,
@@ -73,6 +74,7 @@ export const arduinoWeeks = [
     outcome: 'En az iki sensörü okuyup karar üreten çalışan devre.',
     materials: ['Potansiyometre', 'LED', 'LDR', 'HC-SR04', 'DHT11', 'Aktif buzzer'],
     code: 'analogWrite(LED, analogRead(A0) / 4);',
+    simulator: 'mesafe-uyari',
   },
   {
     week: 3,
@@ -97,6 +99,7 @@ export const arduinoWeeks = [
     outcome: 'Sensör verisine tepki veren servo tabanlı uygulama.',
     materials: ['SG90', 'Potansiyometre', 'KH-09', 'RGB LED', '7 segment'],
     code: 'servo.write(90);',
+    simulator: 'servo-pot',
   },
   {
     week: 4,
@@ -120,6 +123,7 @@ export const arduinoWeeks = [
     outcome: 'İki motorun bağımsız yön ve hız kontrolü.',
     materials: ['Arduino Uno', 'L298N', '2 TT motor (2WD kitinden)'],
     code: 'analogWrite(ENA, 180);',
+    simulator: 'motorlar',
   },
 ]
 

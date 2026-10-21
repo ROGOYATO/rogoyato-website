@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Target, Trophy } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Cpu, Target, Trophy } from 'lucide-react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { arduinoWeeks } from '../../utils/arduinoTraining'
 import { Breadcrumb, Bullets, Chips, Label, Panel } from './ArduinoParts'
@@ -47,7 +47,7 @@ export default function ArduinoWeekPage() {
         </span>
         <div>
           <Label>{week.week}. hafta</Label>
-          <h1 className="mt-1 font-hero text-3xl font-extrabold leading-tight text-slate-900 dark:text-white sm:text-4xl">{week.title}</h1>
+          <h1 className="mt-1 font-hero text-3xl font-extrabold leading-tight text-slate-900 dark:text-white sm:text-4xl sm:leading-10">{week.title}</h1>
           <p className="mt-3 flex max-w-3xl gap-2 text-lg leading-relaxed text-slate-600 dark:text-slate-300">
             <Target size={20} className="mt-1 shrink-0 text-teal-600 dark:text-teal-300" />
             {week.goal}
@@ -82,6 +82,20 @@ export default function ArduinoWeekPage() {
           </div>
         </Panel>
       </div>
+
+      <Link
+        to={`/arduino/simulator?ornek=${week.simulator}`}
+        className="group flex items-center gap-4 rounded-xl border-2 border-teal-600/50 bg-teal-50/95 p-4 transition hover:border-teal-600 dark:border-teal-300/30 dark:bg-teal-400/10 dark:hover:border-teal-300"
+      >
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-700 text-white dark:bg-teal-400 dark:text-teal-950">
+          <Cpu size={22} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-semibold text-slate-900 dark:text-white">Bu haftanın örneğini simülatörde dene</span>
+          <span className="block text-sm text-slate-600 dark:text-slate-300">Kodu gerçek derleyiciyle derleyip 3D devrede çalıştırın; malzemeniz olmasa da deneyebilirsiniz.</span>
+        </span>
+        <ArrowRight size={18} className="shrink-0 text-teal-600 transition group-hover:translate-x-1 dark:text-teal-300" />
+      </Link>
 
       <nav className="grid gap-3 sm:grid-cols-2" aria-label="Haftalar arası geçiş">
         {previous ? (

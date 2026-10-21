@@ -45,7 +45,7 @@ function EventGalleryCarousel({ images, title }) {
         <button
           type="button"
           onClick={() => emblaApi?.scrollPrev()}
-          className="absolute left-2 top-1/2 z-20 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-slate-950/55 text-white backdrop-blur-sm transition hover:bg-slate-950/70"
+          className="absolute left-2 top-1/2 z-20 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-slate-950/55 text-white backdrop-blur-xs transition hover:bg-slate-950/70"
           aria-label="Önceki görsel"
         >
           <ChevronLeft size={20} />
@@ -54,7 +54,7 @@ function EventGalleryCarousel({ images, title }) {
         <button
           type="button"
           onClick={() => emblaApi?.scrollNext()}
-          className="absolute right-2 top-1/2 z-20 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-slate-950/55 text-white backdrop-blur-sm transition hover:bg-slate-950/70"
+          className="absolute right-2 top-1/2 z-20 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-slate-950/55 text-white backdrop-blur-xs transition hover:bg-slate-950/70"
           aria-label="Sonraki görsel"
         >
           <ChevronRight size={20} />
@@ -67,7 +67,7 @@ function EventGalleryCarousel({ images, title }) {
                 <img
                   src={`${publicBase}${imagePath}`}
                   alt={`${title} görseli`}
-                  className="aspect-[4/3] w-full rounded-2xl object-cover object-center"
+                  className="aspect-4/3 w-full rounded-2xl object-cover object-center"
                   loading="lazy"
                 />
               </div>
@@ -141,10 +141,12 @@ export default function EventDetailPage() {
       transition={{ duration: 0.45, ease: 'easeOut' }}
       className="space-y-6"
     >
-      <Link to="/etkinlikler" className="inline-flex items-center gap-2 text-sm text-cyan-700 hover:text-cyan-800 dark:text-cyan-200 dark:hover:text-cyan-100">
-        <ArrowLeft size={16} />
-        Tüm etkinliklere dön
-      </Link>
+      <div>
+        <Link to="/etkinlikler" className="inline-flex items-center gap-2 text-sm text-cyan-700 hover:text-cyan-800 dark:text-cyan-200 dark:hover:text-cyan-100">
+          <ArrowLeft size={16} />
+          Tüm etkinliklere dön
+        </Link>
+      </div>
 
       <PageTitleHero title="Etkinlik Detayı" imageSrc={event.coverImage ? `${publicBase}${event.coverImage}` : undefined} />
 

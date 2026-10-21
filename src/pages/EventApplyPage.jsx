@@ -42,13 +42,15 @@ export default function EventApplyPage() {
       transition={{ duration: 0.45, ease: 'easeOut' }}
       className="space-y-6"
     >
-      <Link
-        to={`/etkinlikler/${event.id}`}
-        className="inline-flex items-center gap-2 text-sm text-cyan-700 hover:text-cyan-800 dark:text-cyan-200 dark:hover:text-cyan-100"
-      >
-        <ArrowLeft size={16} />
-        Etkinlik detayına dön
-      </Link>
+      <div>
+        <Link
+          to={`/etkinlikler/${event.id}`}
+          className="inline-flex items-center gap-2 text-sm text-cyan-700 hover:text-cyan-800 dark:text-cyan-200 dark:hover:text-cyan-100"
+        >
+          <ArrowLeft size={16} />
+          Etkinlik detayına dön
+        </Link>
+      </div>
 
       <PageTitleHero title="Etkinlik Başvurusu" />
 

@@ -127,7 +127,7 @@ export default function EventsPage() {
                   <div className="flex flex-col sm:flex-row">
                     <div className="relative aspect-square w-full sm:w-1/3 sm:shrink-0 sm:self-start">
                       <img src={visual} alt="" className="h-full w-full object-cover" loading="lazy" />
-                      <div className="absolute inset-0 bg-gradient-to-br from-slate-950/50 via-slate-900/25 to-transparent" />
+                      <div className="absolute inset-0 bg-linear-to-br from-slate-950/50 via-slate-900/25 to-transparent" />
                     </div>
 
                     <div className="p-5 sm:w-2/3 sm:p-6">
@@ -189,7 +189,7 @@ export default function EventsPage() {
             Sırala
             <button
               onClick={() => setPastSortOrder((prev) => (prev === 'newest' ? 'oldest' : 'newest'))}
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-300/80 bg-white px-3 py-1 text-xs text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70 dark:border-white/15 dark:bg-zinc-900 dark:text-slate-100 dark:hover:bg-zinc-800"
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-300/80 bg-white px-3 py-1 text-xs text-slate-700 transition hover:bg-slate-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-500/70 dark:border-white/15 dark:bg-zinc-900 dark:text-slate-100 dark:hover:bg-zinc-800"
               aria-label="Sıralamayı değiştir"
             >
               <ArrowUpDown size={14} className="text-slate-500 dark:text-slate-400" />
@@ -216,7 +216,7 @@ export default function EventsPage() {
                   <div className="flex flex-col sm:flex-row">
                     <div className="relative aspect-square w-full sm:w-1/3 sm:shrink-0 sm:self-start">
                       <img src={visual} alt="" className="h-full w-full object-cover" loading="lazy" />
-                      <div className="absolute inset-0 bg-gradient-to-br from-slate-950/45 via-slate-900/15 to-transparent" />
+                      <div className="absolute inset-0 bg-linear-to-br from-slate-950/45 via-slate-900/15 to-transparent" />
                     </div>
 
                     <div className="p-5 sm:w-2/3 sm:p-6">

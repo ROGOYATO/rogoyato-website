@@ -11,7 +11,7 @@ export default function ArduinoHomePage() {
       <section className="grid gap-6 lg:grid-cols-[1.15fr_1fr] lg:items-center">
         <div className="min-w-0">
           <Label>{arduinoTraining.term} · Ders planı</Label>
-          <h1 className="mt-3 font-hero text-4xl font-extrabold leading-tight text-slate-900 dark:text-white sm:text-5xl">
+          <h1 className="mt-3 font-hero text-4xl font-extrabold leading-tight text-slate-900 dark:text-white sm:text-5xl sm:leading-none">
             {arduinoTraining.title}
           </h1>
           <p className="mt-4 max-w-xl text-lg leading-relaxed text-slate-600 dark:text-slate-300">{arduinoTraining.summary}</p>
@@ -39,7 +39,7 @@ export default function ArduinoHomePage() {
             <span className="h-2.5 w-2.5 rounded-full bg-teal-300" />
             <span className="font-code ml-2 text-xs text-teal-100/70">egitim.ino</span>
           </div>
-          <pre className="font-code overflow-x-auto p-5 text-[0.82rem] leading-7 text-teal-50 sm:text-sm">
+          <pre className="font-code overflow-x-auto p-5 text-[0.82rem] leading-7 text-teal-50 sm:text-sm sm:leading-5">
             <span className="text-teal-300/60">{'// ROGOYATO · Arduino Eğitimi\n'}</span>
             <span className="text-orange-300">const char</span>
             {'* gun   = '}

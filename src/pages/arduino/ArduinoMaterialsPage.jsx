@@ -23,7 +23,7 @@ export default function ArduinoMaterialsPage() {
 
       <header>
         <Label>Öğrenci başına donanım</Label>
-        <h1 className="mt-1 font-hero text-3xl font-extrabold leading-tight text-slate-900 dark:text-white sm:text-4xl">Malzeme listesi</h1>
+        <h1 className="mt-1 font-hero text-3xl font-extrabold leading-tight text-slate-900 dark:text-white sm:text-4xl sm:leading-10">Malzeme listesi</h1>
         <p className="mt-3 max-w-3xl text-lg leading-relaxed text-slate-600 dark:text-slate-300">
           Eğitim boyunca ve yarışmada her öğrencinin kullanacağı parçalar. Altı çizili adlar Elektronikport’taki ürün veya kategori sayfasına gider.
         </p>
@@ -48,9 +48,9 @@ export default function ArduinoMaterialsPage() {
       <Panel>
         <h2 className="font-hero text-xl font-bold text-slate-900 dark:text-white">Ayrıca alınan parçalar</h2>
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[30rem] text-left text-sm">
+          <table className="w-full min-w-120 text-left text-sm">
             <thead>
-              <tr className="font-code border-b border-slate-300 text-xs uppercase tracking-[0.1em] text-slate-500 dark:border-white/15 dark:text-slate-400">
+              <tr className="font-code border-b border-slate-300 text-xs uppercase tracking-widest text-slate-500 dark:border-white/15 dark:text-slate-400">
                 <th className="py-2 pr-4 font-semibold">Ürün</th>
                 <th className="py-2 pr-4 font-semibold">Adet</th>
                 <th className="py-2 font-semibold">Programdaki kullanımı</th>

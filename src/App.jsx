@@ -50,7 +50,7 @@ function App() {
       <button
         type="button"
         onClick={toggleTheme}
-        className="fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-full border border-slate-300/80 bg-white px-3 py-2 text-slate-700 shadow-sm transition hover:bg-slate-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-slate-100 dark:hover:bg-zinc-800"
+        className="fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-full border border-slate-300/80 bg-white px-3 py-2 text-slate-700 shadow-xs transition hover:bg-slate-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-slate-100 dark:hover:bg-zinc-800"
         aria-label="Tema değiştir"
         title="Tema değiştir"
       >

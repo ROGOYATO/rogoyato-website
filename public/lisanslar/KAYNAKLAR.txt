@@ -1,0 +1,67 @@
+ROGOYATO Arduino Simülatörü — kullanılan açık kaynak yazılımlar ve kaynakları
+================================================================
+
+Simülatör, kodu tarayıcıda WebAssembly'e derlenmiş şu programlarla derler:
+
+  cc1plus      GCC 7.3.0 + Arduino'nun AVR yamaları     GPL-3.0-or-later
+  avr-as       GNU binutils 2.42                         GPL-3.0-or-later
+  avr-ld       GNU binutils 2.42                         GPL-3.0-or-later
+  avr-objcopy  GNU binutils 2.42                         GPL-3.0-or-later
+  (GMP 6.1.0, MPFR 3.1.4, MPC 1.0.3 ile)                 LGPL-3.0-or-later
+
+Bu programlar github.com/jeffrey-braam/arduino-ide projesindeki
+toolchain/build.sh ile kaynaktan derlenmiştir. Kullanılan sürüm:
+
+  https://github.com/jeffrey-braam/arduino-ide/tree/8c563b189cacc9953ee20fa51fad1a80da75673d/toolchain
+
+Karşılık gelen kaynak kodu (SHA-256 ile sabitlenmiş):
+
+  gcc-7.3.0.tar.xz        832ca6ae04636adbb430e865a1451adf6979ab44ca1c8374f61fba65645ce15c
+    https://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz
+  binutils-2.42.tar.xz    f6e4d41fd5fc778b06b7891457b3620da5ecea1006c6a4a41ae998109f85a800
+    https://ftp.gnu.org/gnu/binutils/binutils-2.42.tar.xz
+  gmp-6.1.0.tar.bz2       498449a994efeba527885c10405993427995d3f86b8768d8cdf8d9dd7c6b73e8
+    https://ftp.gnu.org/gnu/gmp/gmp-6.1.0.tar.bz2
+  mpfr-3.1.4.tar.bz2      d3103a80cdad2407ed581f3618c4bed04e0c92d1cf771a65ead662cc397f7775
+    https://ftp.gnu.org/gnu/mpfr/mpfr-3.1.4.tar.bz2
+  mpc-1.0.3.tar.gz        617decc6ea09889fb08ede330917a00b16809b8db88c29c31bfbb49cbf88ecc3
+    https://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz
+  atmel-patches-gcc.7.3.0-arduino2.patch
+                          96782c75dd11e994e1ab9250c41fc5cd81ba65bbcf44383cd9d660d01cc85f97
+    https://raw.githubusercontent.com/arduino/toolchain-avr/368b87a73e3677071fa44f2182c1ea4cc6a90557/avr-gcc-patches/atmel-patches-gcc.7.3.0-arduino2.patch
+
+Derlenmiş WebAssembly dosyalarının SHA-256 değerleri:
+
+  cc1plus.wasm      a87f8b925bf8dc03b5248b5711329719599dbbeacf059f69deeec7fce5f1560d
+  avr-as.wasm       fb0bab6b7f6eb01472d0c52d8ec3bd8f5e6a477df2b04162e1482827071be3db
+  avr-ld.wasm       8a22a25a18c344842d710319531fb7f53fcd314b7e6284e1cee02233a291770c
+  avr-objcopy.wasm  8c3671c0fe1171f7fcdce121858602a2df9cae44561e5b8be2664bdac9908bda
+
+Paketteki diğer parçalar:
+
+  avr-libc 2.0.0 başlıkları ve kütüphaneleri ............ avr-libc lisansı (BSD tarzı), avr-libc.txt
+  libgcc ................................................ GPL-3.0 + GCC Runtime Library Exception 3.1
+  Arduino AVR çekirdeği 1.8.8 ........................... LGPL-2.1-or-later
+    https://github.com/arduino/ArduinoCore-avr/tree/1.8.8
+  Servo 1.3.0 ........................................... LGPL-2.1-or-later
+  DHT sensor library 1.4.7, Adafruit Unified Sensor 1.1.15 .. MIT / Apache-2.0
+
+    https://github.com/arduino-libraries/Servo/tree/1.3.0
+    https://github.com/adafruit/DHT-sensor-library/tree/1.4.7
+    https://github.com/adafruit/Adafruit_Sensor/tree/1.1.15
+
+Simülatörün tarayıcıda kullandığı diğer açık kaynak yazılımlar:
+
+  avr8js 0.21.1 (ATmega328P emülatörü) .................. MIT, avr8js-MIT.txt
+    https://github.com/wokwi/avr8js
+  three.js 0.181 (3D görünüm) ........................... MIT, three.js-MIT.txt
+    https://github.com/mrdoob/three.js
+
+Paketi yeniden oluşturmak için sitenin deposundaki betiğe bakın:
+  https://github.com/ROGOYATO/rogoyato-website/blob/main/scripts/build-browser-compiler.mjs
+
+Lisans metinleri bu klasörde: GPL-3.0.txt, LGPL-3.0.txt, LGPL-2.1.txt,
+GCC-exception-3.1.txt, avr-libc.txt, Apache-2.0.txt, DHT-sensor-library-MIT.txt,
+avr8js-MIT.txt, three.js-MIT.txt.
+
+Aynı bilgiler sitede, simülatör sayfasının altında: https://rogoyato.com/#/arduino/simulator

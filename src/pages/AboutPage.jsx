@@ -99,7 +99,7 @@ export default function AboutPage() {
           <div className="flex flex-col items-center justify-between gap-6 rounded-2xl border border-slate-200 bg-slate-50 p-6 sm:p-8">
             <img src={`${publicBase}branding/preview/yatay_siyah.webp`} alt="Yatay Siyah Logo" className="h-24 w-full object-contain" />
             <div className="flex w-full flex-col gap-3 sm:flex-row">
-              <a href={`${publicBase}branding/SVG/yatay_siyah.svg`} download="ROGOYATO_Yatay_Siyah.svg" className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100">
+              <a href={`${publicBase}branding/SVG/yatay_siyah.svg`} download="ROGOYATO_Yatay_Siyah.svg" className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-xs transition hover:bg-slate-100">
                 <Download size={16} />
                 SVG İndir
               </a>
@@ -129,7 +129,7 @@ export default function AboutPage() {
           <div className="flex flex-col items-center justify-between gap-6 rounded-2xl border border-slate-200 bg-slate-50 p-6 sm:p-8">
             <img src={`${publicBase}branding/preview/kare_siyah.webp`} alt="Kare Siyah Logo" className="h-36 w-full object-contain" />
             <div className="flex w-full flex-col gap-3 sm:flex-row">
-              <a href={`${publicBase}branding/SVG/kare_siyah.svg`} download="ROGOYATO_Kare_Siyah.svg" className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100">
+              <a href={`${publicBase}branding/SVG/kare_siyah.svg`} download="ROGOYATO_Kare_Siyah.svg" className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-xs transition hover:bg-slate-100">
                 <Download size={16} />
                 SVG İndir
               </a>

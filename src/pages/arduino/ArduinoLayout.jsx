@@ -10,6 +10,7 @@ const navLinks = [
   { to: '/arduino/hafta/1', label: 'Haftalar', match: '/arduino/hafta' },
   { to: '/arduino/yarisma', label: 'Yarışma' },
   { to: '/arduino/malzemeler', label: 'Malzemeler' },
+  { to: '/arduino/simulator', label: 'Simülatör' },
 ]
 
 export default function ArduinoLayout() {
@@ -40,7 +41,7 @@ export default function ArduinoLayout() {
             ROGOYATO
           </Link>
 
-          <nav className="no-scrollbar -mx-1 flex w-full gap-1 overflow-x-auto px-1 sm:w-auto sm:flex-1 sm:justify-center md:order-none">
+          <nav className="no-scrollbar -mx-1 flex w-full gap-1 overflow-x-auto px-1 sm:w-auto sm:flex-1 sm:justify-center md:order-0">
             {navLinks.map((item) => {
               const forceActive = item.match && pathname.startsWith(item.match)
               return (
@@ -96,7 +97,7 @@ export default function ArduinoLayout() {
       <button
         type="button"
         onClick={toggleTheme}
-        className="fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-700 shadow-sm transition hover:bg-slate-100 dark:border-white/15 dark:bg-[#10201f] dark:text-slate-100 dark:hover:bg-[#16302e]"
+        className="fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-700 shadow-xs transition hover:bg-slate-100 dark:border-white/15 dark:bg-[#10201f] dark:text-slate-100 dark:hover:bg-[#16302e]"
         aria-label="Tema değiştir"
         title="Tema değiştir"
       >

@@ -11,13 +11,15 @@ export default function TeamApplyPage() {
       transition={{ duration: 0.45, ease: 'easeOut' }}
       className="space-y-6"
     >
-      <Link
-        to="/ekip"
-        className="inline-flex items-center gap-2 text-sm text-cyan-700 hover:text-cyan-800 dark:text-cyan-200 dark:hover:text-cyan-100"
-      >
-        <ArrowLeft size={16} />
-        Ekibimiz sayfasına dön
-      </Link>
+      <div>
+        <Link
+          to="/ekip"
+          className="inline-flex items-center gap-2 text-sm text-cyan-700 hover:text-cyan-800 dark:text-cyan-200 dark:hover:text-cyan-100"
+        >
+          <ArrowLeft size={16} />
+          Ekibimiz sayfasına dön
+        </Link>
+      </div>
 
       <PageTitleHero title="Ekibe Başvuru" />
 

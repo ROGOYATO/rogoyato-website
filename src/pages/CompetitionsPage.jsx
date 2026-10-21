@@ -95,7 +95,7 @@ export default function CompetitionsPage() {
       transition={{ duration: 0.45, ease: 'easeOut' }}
       className="relative space-y-8 overflow-hidden"
     >
-      <section className="relative isolate overflow-hidden rounded-[2rem] border border-cyan-200/70 bg-gradient-to-br from-cyan-50/90 via-white to-slate-100/90 p-7 shadow-[0_26px_64px_rgba(8,47,73,0.16)] dark:border-cyan-300/20 dark:bg-gradient-to-br dark:from-zinc-900/90 dark:via-zinc-950/85 dark:to-cyan-950/40 sm:p-10">
+      <section className="relative isolate overflow-hidden rounded-4xl border border-cyan-200/70 bg-linear-to-br from-cyan-50/90 via-white to-slate-100/90 p-7 shadow-[0_26px_64px_rgba(8,47,73,0.16)] dark:border-cyan-300/20 dark:bg-linear-to-br dark:from-zinc-900/90 dark:via-zinc-950/85 dark:to-cyan-950/40 sm:p-10">
         <img
           src={achievementsHeroImage}
           alt=""
@@ -108,13 +108,13 @@ export default function CompetitionsPage() {
           aria-hidden
           animate={{ y: [0, -10, 0] }}
           transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-          className="pointer-events-none absolute right-8 top-8 hidden rounded-full border border-white/35 bg-white/50 p-3 text-cyan-700 backdrop-blur md:block dark:border-white/10 dark:bg-zinc-900/55 dark:text-cyan-200"
+          className="pointer-events-none absolute right-8 top-8 hidden rounded-full border border-white/35 bg-white/50 p-3 text-cyan-700 backdrop-blur-sm md:block dark:border-white/10 dark:bg-zinc-900/55 dark:text-cyan-200"
         >
           <Trophy size={22} />
         </motion.div>
 
         <div className="relative">
-          <h1 className="font-hero mt-2 max-w-5xl text-4xl font-extrabold leading-[1.03] text-slate-900 dark:text-white sm:text-6xl">
+          <h1 className="font-hero mt-2 max-w-5xl text-4xl font-extrabold leading-[1.03] text-slate-900 dark:text-white sm:text-6xl sm:leading-none">
             Yarışmada Ölçen,
             <span className="block text-cyan-700 dark:text-cyan-200">Sahada Üreten Takım Ekosistemi</span>
           </h1>
@@ -128,7 +128,7 @@ export default function CompetitionsPage() {
                   key={item.label}
                   whileHover={{ y: -8, rotateX: 8, rotateY: -7, scale: 1.02 }}
                   transition={{ type: 'spring', stiffness: 220, damping: 18 }}
-                  className="rounded-2xl border border-white/60 bg-white/75 p-4 backdrop-blur-sm [transform-style:preserve-3d] dark:border-white/10 dark:bg-zinc-950/55"
+                  className="rounded-2xl border border-white/60 bg-white/75 p-4 backdrop-blur-xs transform-3d dark:border-white/10 dark:bg-zinc-950/55"
                 >
                   <div className="inline-flex rounded-full border border-cyan-300/45 bg-cyan-300/20 p-2 text-cyan-700 dark:border-cyan-300/30 dark:bg-cyan-400/10 dark:text-cyan-200">
                     <Icon size={16} />
@@ -143,7 +143,7 @@ export default function CompetitionsPage() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden rounded-[2rem] border border-slate-200/85 bg-white/92 p-7 shadow-[0_20px_48px_rgba(15,23,42,0.11)] dark:border-white/10 dark:bg-zinc-900/75 sm:p-10">
+      <section className="relative overflow-hidden rounded-4xl border border-slate-200/85 p-7 shadow-[0_20px_48px_rgba(15,23,42,0.11)] dark:border-white/10 dark:bg-zinc-900/75 sm:p-10">
         <div className="flex flex-wrap items-center gap-3">
           <span className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/45 bg-fuchsia-300/20 px-3 py-1 text-xs text-fuchsia-700 dark:border-fuchsia-300/30 dark:bg-fuchsia-400/10 dark:text-fuchsia-100">
             <Award size={13} />
@@ -156,7 +156,7 @@ export default function CompetitionsPage() {
         </div>
 
         <div className="relative mt-7">
-          <div className="pointer-events-none absolute left-8 right-8 top-12 hidden h-px bg-gradient-to-r from-transparent via-cyan-300/45 to-transparent md:block dark:via-cyan-300/25" />
+          <div className="pointer-events-none absolute left-8 right-8 top-12 hidden h-px bg-linear-to-r from-transparent via-cyan-300/45 to-transparent md:block dark:via-cyan-300/25" />
 
           <div className="grid gap-8 md:grid-cols-3">
             {competitionHighlights.map((item) => (
@@ -169,7 +169,7 @@ export default function CompetitionsPage() {
                 <motion.div
                   whileHover={{ rotateY: 8, rotateX: 6 }}
                   transition={{ type: 'spring', stiffness: 210, damping: 18 }}
-                  className="mx-auto flex h-28 w-28 items-center justify-center rounded-full border border-cyan-300/55 bg-cyan-200/30 shadow-[0_0_0_8px_rgba(255,255,255,0.75)] [transform-style:preserve-3d] dark:border-cyan-300/35 dark:bg-cyan-400/10 dark:shadow-[0_0_0_8px_rgba(24,24,27,0.55)]"
+                  className="mx-auto flex h-28 w-28 items-center justify-center rounded-full border border-cyan-300/55 bg-cyan-200/30 shadow-[0_0_0_8px_rgba(255,255,255,0.75)] transform-3d dark:border-cyan-300/35 dark:bg-cyan-400/10 dark:shadow-[0_0_0_8px_rgba(24,24,27,0.55)]"
                 >
                   <AnimatedMetricValue value={item.score} className="font-heading text-3xl text-cyan-800 dark:text-cyan-200" />
                 </motion.div>
@@ -184,7 +184,7 @@ export default function CompetitionsPage() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden rounded-[2rem] border border-slate-200/85 bg-gradient-to-br from-white via-slate-50 to-cyan-50/45 p-7 dark:border-white/10 dark:from-zinc-900/80 dark:via-zinc-900/70 dark:to-cyan-950/30 sm:p-10">
+      <section className="relative overflow-hidden rounded-4xl border border-slate-200/85 bg-linear-to-br from-white via-slate-50 to-cyan-50/45 p-7 dark:border-white/10 dark:from-zinc-900/80 dark:via-zinc-900/70 dark:to-cyan-950/30 sm:p-10">
         <div className="grid gap-8 lg:grid-cols-[1.12fr_1fr]">
           <div>
             <h2 className="font-heading text-3xl text-slate-900 dark:text-white">Takım ve Eğitim Motoru</h2>
@@ -203,7 +203,7 @@ export default function CompetitionsPage() {
                     {...linkProps}
                     whileHover={{ x: 7, y: -2, rotateX: 5, rotateY: -5 }}
                     transition={{ type: 'spring', stiffness: 210, damping: 16 }}
-                    className={`block rounded-2xl border border-slate-200/80 bg-white/82 p-4 [transform-style:preserve-3d] dark:border-white/10 dark:bg-zinc-950/45 ${team.url ? 'transition-colors hover:border-cyan-300/70 dark:hover:border-cyan-300/40' : ''}`}
+                    className={`block rounded-2xl border border-slate-200/80 p-4 transform-3d dark:border-white/10 dark:bg-zinc-950/45 ${team.url ? 'transition-colors hover:border-cyan-300/70 dark:hover:border-cyan-300/40' : ''}`}
                   >
                     <div className="flex items-start gap-3">
                       <span className="inline-flex rounded-full border border-cyan-300/55 bg-cyan-300/20 p-2 text-cyan-700 dark:border-cyan-300/35 dark:bg-cyan-400/10 dark:text-cyan-100">
@@ -226,12 +226,12 @@ export default function CompetitionsPage() {
           <div>
             <h3 className="font-heading text-2xl text-slate-900 dark:text-white">Eğitim Yol Haritası</h3>
             <div className="relative mt-4 pl-6">
-              <div className="pointer-events-none absolute left-2 top-2 h-[calc(100%-0.6rem)] w-px bg-gradient-to-b from-cyan-500/65 via-cyan-300/40 to-transparent" />
+              <div className="pointer-events-none absolute left-2 top-2 h-[calc(100%-0.6rem)] w-px bg-linear-to-b from-cyan-500/65 via-cyan-300/40 to-transparent" />
 
               <div className="space-y-4">
                 {trainingRoadmap.map((item) => (
                   <div key={`${item.term}-${item.title}`} className="relative">
-                    <span className="absolute -left-[1.18rem] top-1.5 h-2.5 w-2.5 rounded-full bg-cyan-500 shadow-[0_0_0_3px_rgba(34,211,238,0.20)]" />
+                    <span className="absolute left-[-1.18rem] top-1.5 h-2.5 w-2.5 rounded-full bg-cyan-500 shadow-[0_0_0_3px_rgba(34,211,238,0.20)]" />
                     <p className="text-xs uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">{item.term}</p>
                     {item.link ? (
                       <Link
@@ -253,7 +253,7 @@ export default function CompetitionsPage() {
         </div>
       </section>
 
-      <section className="rounded-[2rem] border border-cyan-200/70 bg-cyan-500/10 p-7 dark:border-cyan-300/25 dark:bg-cyan-400/10 sm:p-10">
+      <section className="rounded-4xl border border-cyan-200/70 bg-cyan-500/10 p-7 dark:border-cyan-300/25 dark:bg-cyan-400/10 sm:p-10">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="font-heading text-3xl text-cyan-900 dark:text-cyan-100">Saha Ritmi ve İvme</h2>
           <span className="inline-flex items-center gap-2 rounded-full border border-cyan-300/50 bg-white/70 px-3 py-1 text-xs text-cyan-900 dark:border-cyan-300/35 dark:bg-zinc-900/55 dark:text-cyan-100">

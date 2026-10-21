@@ -49,7 +49,7 @@ export default function HomePage() {
               type="button"
               onClick={handleLogoClick}
               aria-label="ROGOYATO logosu"
-              className="rounded-full outline-none transition hover:scale-[1.02] focus-visible:ring-2 focus-visible:ring-cyan-500/80"
+              className="rounded-full outline-hidden transition hover:scale-[1.02] focus-visible:ring-2 focus-visible:ring-cyan-500/80"
             >
               <img
                 src={logoImage}
@@ -98,7 +98,6 @@ export default function HomePage() {
               className="absolute inset-0 h-full w-full scale-105 object-cover blur-[2px] transition duration-300 group-hover:scale-110"
               loading="lazy"
             />
-            <div className="absolute inset-0 bg-slate-950/36 transition group-hover:bg-slate-950/42" />
             <div
               className="absolute inset-0"
               style={{
@@ -107,7 +106,7 @@ export default function HomePage() {
               }}
             />
             <div className="relative flex h-full items-center justify-center px-3 text-center">
-              <span className="font-hero-soft inline-flex rounded-full border border-white/20 bg-slate-950/42 px-4 py-2 text-2xl font-semibold tracking-[0.01em] text-white backdrop-blur-[1.5px] drop-shadow-[0_4px_14px_rgba(0,0,0,0.85)]">
+              <span className="font-hero-soft inline-flex rounded-full border border-white/20 px-4 py-2 text-2xl font-semibold tracking-[0.01em] text-white backdrop-blur-[1.5px] drop-shadow-[0_4px_14px_rgba(0,0,0,0.85)]">
                 {item.label}
               </span>
             </div>
