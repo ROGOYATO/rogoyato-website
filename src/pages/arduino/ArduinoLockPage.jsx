@@ -143,6 +143,7 @@ export default function ArduinoLockPage() {
                 <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
                   <span className="flex items-center gap-2 text-slate-800 dark:text-slate-100">
                     {item.title}
+                    <span className="font-code text-xs text-slate-400 dark:text-slate-500">{item.id}</span>
                     {open.exercises[item.id] ? <Badge isOpen /> : null}
                   </span>
                   <CodeCell id={item.id} code={item.code} shown={shown[item.id]} onToggle={toggle} onProject={setProjected} />
@@ -156,12 +157,22 @@ export default function ArduinoLockPage() {
       ))}
 
       <Panel>
-        <Label>Bir haftayı ya da uygulamayı herkese açmak</Label>
+        <Label>Herkese açmak</Label>
         <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-          Hafta geçince ya da eğitim bitince kodu sitenin deposundaki <code className="font-code">answers/open.json</code> dosyasına eklenir ve herkes için
-          açılır: Claude’a “2. haftayı herkese aç” demeniz ya da <code className="font-code">KILIT_SIFRESI=… node scripts/answers.mjs herkese-ac 2</code>{' '}
-          komutu yeterli. Geri kilitlemek için <code className="font-code">kapat 2</code>.
+          Kodu sitenin deposundaki <code className="font-code">src/pages/arduino/simulator/answers/open.json</code> dosyasına eklemek yeterli: haftanın kodu{' '}
+          <code className="font-code">weeks</code> altına hafta numarasıyla (yarışma 5), bir uygulamanın kodu <code className="font-code">exercises</code> altına
+          uygulamanın adıyla (listede kodun yanında yazar). Site yeniden yayınlanınca herkes için açılır; geri kilitlemek için satırı silin.
         </p>
+        <pre className="font-code mt-3 overflow-x-auto rounded-md bg-slate-950 p-3 text-xs leading-relaxed text-teal-100">
+          {`{
+  "weeks": {
+    "2": "XXXX-XXXX-XXXX"
+  },
+  "exercises": {
+    "dht11": "XXXX-XXXX-XXXX"
+  }
+}`}
+        </pre>
       </Panel>
 
       {projected && list ? (
