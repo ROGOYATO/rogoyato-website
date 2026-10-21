@@ -1,7 +1,8 @@
 // The exercises' answers: Blink's ships in examples.js, the rest are
-// encrypted one by one in the lock state (src/utils/lockState.js), read at
-// run time from the club's gist or data repository (answers/store.json) so
-// codes can be renewed and answers opened without a new release. An answer opens with its own code or with its
+// encrypted one by one in the lock state (src/utils/lockState.js). With a
+// gist or public data repository (answers/store.json) the state is read at
+// run time; with a private one the deploy fetches it into the site, and the
+// trainers' page starts that deploy after each change. An answer opens with its own code or with its
 // week's code, which this browser then remembers, or for everyone once the
 // trainers open it.
 import { useEffect, useState } from 'react'
@@ -14,11 +15,12 @@ const answers = new Map() // exercise id -> decrypted answer
 let statePromise = null
 let current = null
 
-// Before the gist exists the state ships with the site.
 const bundled = import.meta.glob('./answers/kilit.json', { import: 'default' })
+const EMPTY = { exercises: {}, weeks: {}, open: { weeks: {}, exercises: {} } }
+const external = (store.gist || store.repo) && !store.private
 
 export function loadState() {
-  statePromise ??= (store.gist || store.repo ? readPublic(store) : bundled['./answers/kilit.json']())
+  statePromise ??= (external ? readPublic(store) : (bundled['./answers/kilit.json']?.() ?? Promise.resolve(EMPTY)))
     .then((state) => {
       current = state
       return state

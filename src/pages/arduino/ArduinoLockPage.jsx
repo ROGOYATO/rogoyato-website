@@ -1,6 +1,6 @@
 import { Check, Copy, Eye, EyeOff, KeyRound, Loader2, LockOpen, Maximize2, RefreshCw, Unlock, Lock, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { create, describe, readLatest, save } from '../../utils/lockStore'
+import { create, describe, publish, readLatest, save } from '../../utils/lockStore'
 import { readList, recoverList, renewExercise, renewWeek, sealList, setOpen } from '../../utils/lockState'
 import { suggestPassphrase } from '../../utils/passphrase'
 import { loadState } from './simulator/answers'
@@ -11,6 +11,8 @@ const weekName = (week) => (Number(week) === 5 ? 'Yarışma' : `${week}. hafta`)
 const MASK = '••••-••••-••••'
 const TOKEN_KEY = 'rogoyato-kilit-anahtar'
 const configured = Boolean(store.gist || store.repo)
+const MISSING = 'Kilit verisi depoda henüz yok; önce aşağıdan “Depoya yükle” ile ilk kurulumu yapın.'
+const SPREAD = store.deploy ? 'Site yeniden yayınlanıyor; öğrencilere 1–2 dakika içinde yansır.' : 'Öğrencilere en geç 5 dakika içinde yansır.'
 const input =
   'font-code min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100 sm:max-w-sm'
 const primary = 'inline-flex items-center gap-2 rounded-md bg-teal-700 px-4 py-2 font-semibold text-white disabled:opacity-60 dark:bg-teal-400 dark:text-teal-950'
@@ -120,12 +122,15 @@ export default function ArduinoLockPage() {
     event.preventDefault()
     setWorking(true)
     setMessage(null)
-    const value = lock ? await readList(lock, password) : null
+    // With a key, the saved state: the site's copy can be a deploy behind.
+    const state = (canEdit && (await readLatest(store, token).catch(() => null))) || lock
+    const value = state ? await readList(state, password) : null
     setWorking(false)
     if (!value) {
       setMessage({ error: 'Şifre yanlış.' })
       return
     }
+    setLock(state)
     setList(value)
     setPagePassword(password)
     setPassword('')
@@ -139,13 +144,16 @@ export default function ArduinoLockPage() {
     setWorking(true)
     setMessage(null)
     try {
-      const value = await recoverList(lock, master)
+      const latest = canEdit ? await readLatest(store, token) : null
+      if (canEdit && !latest) throw new Error(MISSING)
+      const value = await recoverList(latest ?? lock, master)
       if (!value) throw new Error('Ana şifre yanlış.')
       if (canEdit) {
-        const latest = await readLatest(store, token)
-        await save(store, token, await sealList(latest, value, newPassword), 'Sayfa şifresini yenile')
-        setLock(await readLatest(store, token))
-        setMessage({ ok: 'Yeni sayfa şifresi kaydedildi.' })
+        const next = await sealList(latest, value, newPassword)
+        await save(store, token, next, 'Sayfa şifresini yenile')
+        await publish(store, token)
+        setLock(next)
+        setMessage({ ok: `Yeni sayfa şifresi kaydedildi. ${SPREAD}` })
       } else {
         setMessage({ error: 'Kodlar gösteriliyor ama yeni sayfa şifresi kaydedilmedi: GitHub anahtarı gerekli.' })
       }
@@ -168,13 +176,15 @@ export default function ArduinoLockPage() {
     setMessage(null)
     try {
       const latest = await readLatest(store, token)
+      if (!latest) throw new Error(MISSING)
       const latestList = await readList(latest, pagePassword)
       if (!latestList) throw new Error('Kayıttaki sayfa şifresi değişmiş; sayfayı yenileyip yeni şifreyle girin.')
       const result = await change(latest, latestList)
       await save(store, token, result.state, done)
+      await publish(store, token)
       setLock(result.state)
       setList(result.list)
-      setMessage({ ok: `${done}. Öğrencilere en geç 5 dakika içinde yansır.` })
+      setMessage({ ok: `${done}. ${SPREAD}` })
       return true
     } catch (error) {
       setMessage({ error: error.message })
@@ -221,6 +231,22 @@ export default function ArduinoLockPage() {
       setMessage({ error: error.message })
     } finally {
       setWorking(false)
+    }
+  }
+
+  // First upload into the configured data repository.
+  const upload = async () => {
+    setBusy('upload')
+    setMessage(null)
+    try {
+      if (await readLatest(store, token)) throw new Error('Kilit verisi depoda zaten var.')
+      await create(token, store, lock)
+      await publish(store, token)
+      setMessage({ ok: `Kilit verisi ${describe(store)} içine yüklendi. ${SPREAD}` })
+    } catch (error) {
+      setMessage({ error: error.message })
+    } finally {
+      setBusy(null)
     }
   }
 
@@ -350,19 +376,36 @@ export default function ArduinoLockPage() {
         <>
           <Panel>
             <Label>GitHub anahtarı</Label>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-              Değişiklikler {configured ? <code className="font-code">{describe(store)}</code> : 'kilit verisine'} kaydedilir. Gist için{' '}
-              <a href="https://github.com/settings/tokens/new?scopes=gist&description=ROGOYATO%20kilit" target="_blank" rel="noreferrer" className="underline">
-                “gist” izinli bir anahtar
-              </a>
-              , veri deposu için yalnızca o depoda “Contents: Read and write” izinli bir anahtar yeterli.
-            </p>
+            {store.private ? (
+              <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                Değişiklikler gizli <code className="font-code">{describe(store)}</code> deposuna kaydedilir ve site yeniden yayınlanır. Anahtar:{' '}
+                <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noreferrer" className="underline">
+                  fine-grained token
+                </a>
+                , Resource owner <b>{store.repo.owner}</b>, depolar <b>{store.repo.name}</b> ve <b>{store.deploy.name}</b>, izinler <b>Contents: Read and write</b> ve{' '}
+                <b>Actions: Read and write</b>.
+              </p>
+            ) : (
+              <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                Değişiklikler {configured ? <code className="font-code">{describe(store)}</code> : 'kilit verisine'} kaydedilir. Gist için{' '}
+                <a href="https://github.com/settings/tokens/new?scopes=gist&description=ROGOYATO%20kilit" target="_blank" rel="noreferrer" className="underline">
+                  “gist” izinli bir anahtar
+                </a>
+                , veri deposu için yalnızca o depoda “Contents: Read and write” izinli bir anahtar yeterli.
+              </p>
+            )}
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <input type="password" value={token} onChange={(event) => setToken(event.target.value.trim())} placeholder="ghp_… / github_pat_…" aria-label="GitHub anahtarı" className={input} />
               <label className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
                 <input type="checkbox" checked={rememberToken} onChange={(event) => setRememberToken(event.target.checked)} className="accent-teal-600" />
                 bu cihazda hatırla
               </label>
+              {configured && store.repo ? (
+                <button type="button" onClick={upload} disabled={!token || busy} className={small}>
+                  {busy === 'upload' ? <Loader2 size={13} className="animate-spin" /> : null}
+                  Depoya yükle (ilk kurulum)
+                </button>
+              ) : null}
             </div>
           </Panel>
 

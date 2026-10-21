@@ -1,3 +1,5 @@
 {
-  "gist": null
+  "repo": { "owner": "ROGOYATO", "name": "kilit-verisi", "branch": "main", "path": "kilit.json" },
+  "private": true,
+  "deploy": { "owner": "ROGOYATO", "name": "rogoyato-website", "workflow": "deploy.yml", "branch": "main" }
 }

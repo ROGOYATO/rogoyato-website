@@ -4,8 +4,9 @@
 // adding or editing answers and for the passwords.
 //
 // The state is read from the gist or data repository named in
-// src/pages/arduino/simulator/answers/store.json (saving there needs
-// GITHUB_TOKEN), or from the bundled answers/kilit.json before that exists.
+// src/pages/arduino/simulator/answers/store.json (a private repository, and
+// any saving, needs GITHUB_TOKEN; saving to a private one also starts the
+// site's deploy), or from the bundled answers/kilit.json before that exists.
 // Passwords come from the environment: KILIT_SIFRESI (master), SAYFA_SIFRESI (page).
 //
 //   node scripts/answers.mjs kodlar                 print every code (master or page password)
@@ -27,7 +28,7 @@ import { gunzipSync } from 'node:zlib'
 import { Toolchain, unpack } from '../src/pages/arduino/simulator/compiler/toolchain.js'
 import { EXAMPLES } from '../src/pages/arduino/simulator/examples.js'
 import { lockWith, randomCode, rekeyRecovery, unlockWith } from '../src/utils/answerLock.js'
-import { describe, readPublic, save } from '../src/utils/lockStore.js'
+import { describe, publish, readLatest, readPublic, save } from '../src/utils/lockStore.js'
 import { readList, recoverList, sealList, setOpen } from '../src/utils/lockState.js'
 import { suggestPassphrase } from '../src/utils/passphrase.js'
 
@@ -46,12 +47,19 @@ function secret(name) {
   return value
 }
 
-const loadState = async () => (external ? readPublic(STORE) : JSON.parse(readFileSync(BUNDLED, 'utf8')))
+async function loadState() {
+  if (!external) return JSON.parse(readFileSync(BUNDLED, 'utf8'))
+  if (!STORE.private) return readPublic(STORE)
+  const state = await readLatest(STORE, secret('GITHUB_TOKEN'))
+  if (!state) throw new Error(`${describe(STORE)} içinde kilit verisi yok; önce kilit sayfasından "Depoya yükle".`)
+  return state
+}
 
 async function storeState(state, message) {
   if (external) {
     await save(STORE, secret('GITHUB_TOKEN'), state, message)
-    console.log(`${describe(STORE)} güncellendi (öğrencilere en geç 5 dakikada yansır).`)
+    const deployed = await publish(STORE, secret('GITHUB_TOKEN'))
+    console.log(`${describe(STORE)} güncellendi (${deployed ? 'site yeniden yayınlanıyor, 1–2 dakika' : 'öğrencilere en geç 5 dakikada yansır'}).`)
   } else {
     writeFileSync(BUNDLED, `${JSON.stringify(state, null, 2)}\n`)
     console.log(`${DIR}kilit.json güncellendi; yayınlamak için commit'leyin.`)

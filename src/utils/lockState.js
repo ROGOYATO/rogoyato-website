@@ -1,5 +1,6 @@
 // The lock state: everything the simulator needs to lock and open answers,
-// in one JSON document kept in a gist (or bundled before the gist exists).
+// in one JSON document kept in a gist or data repository (src/utils/lockStore.js),
+// or bundled with the site before that exists.
 //
 //   exercises  { id: { week, iv, data } }   answer, opened by the exercise code
 //   weeks      { week: { iv, data } }       { codes: { id: code } }, opened by the week code
