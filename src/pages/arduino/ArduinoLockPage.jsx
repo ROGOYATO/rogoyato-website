@@ -1,15 +1,33 @@
-import { Check, Copy, Eye, EyeOff, KeyRound, Loader2, LockOpen, Maximize2, X } from 'lucide-react'
+import { Check, Copy, Eye, EyeOff, KeyRound, Loader2, LockOpen, Maximize2, RefreshCw, Unlock, Lock, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { openForPage } from '../../utils/answerLock'
-import open from './simulator/answers/open.json'
-import page from './simulator/answers/page.json'
+import { create, describe, readLatest, save } from '../../utils/lockStore'
+import { readList, recoverList, renewExercise, renewWeek, sealList, setOpen } from '../../utils/lockState'
+import { suggestPassphrase } from '../../utils/passphrase'
+import { loadState } from './simulator/answers'
+import store from './simulator/answers/store.json'
 import { Breadcrumb, Label, Panel } from './ArduinoParts'
 
 const weekName = (week) => (Number(week) === 5 ? 'Yarışma' : `${week}. hafta`)
 const MASK = '••••-••••-••••'
+const TOKEN_KEY = 'rogoyato-kilit-anahtar'
+const configured = Boolean(store.gist || store.repo)
+const input =
+  'font-code min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100 sm:max-w-sm'
+const primary = 'inline-flex items-center gap-2 rounded-md bg-teal-700 px-4 py-2 font-semibold text-white disabled:opacity-60 dark:bg-teal-400 dark:text-teal-950'
+const small =
+  'inline-flex items-center gap-1 rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 transition hover:border-teal-600 hover:text-teal-800 disabled:opacity-50 dark:border-white/15 dark:text-slate-300 dark:hover:text-teal-200'
 
-// A code that stays hidden until clicked, so the list can be on a projector.
-function CodeCell({ id, code, shown, onToggle, onProject }) {
+function storedToken() {
+  try {
+    return window.localStorage.getItem(TOKEN_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+// A code that stays hidden until clicked, so the list can be on a projector,
+// with the trainers' actions next to it.
+function CodeCell({ id, code, shown, isOpen, canEdit, busy, onToggle, onProject, onRenew, onOpen }) {
   const [copied, setCopied] = useState(false)
   const copy = async () => {
     try {
@@ -19,8 +37,9 @@ function CodeCell({ id, code, shown, onToggle, onProject }) {
       setCopied(false)
     }
   }
+  const icon = 'rounded-md p-1.5 text-slate-500 hover:text-teal-700 dark:text-slate-400 dark:hover:text-teal-300'
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center justify-end gap-1.5">
       <button
         type="button"
         onClick={() => onToggle(id)}
@@ -30,11 +49,19 @@ function CodeCell({ id, code, shown, onToggle, onProject }) {
         {shown ? <EyeOff size={15} /> : <Eye size={15} />}
         {shown ? code : MASK}
       </button>
-      <button type="button" onClick={() => onProject(id)} title="Tahtaya yansıt" aria-label="Tahtaya yansıt" className="rounded-md p-1.5 text-slate-500 hover:text-teal-700 dark:text-slate-400 dark:hover:text-teal-300">
+      <button type="button" onClick={() => onProject(id)} title="Tahtaya yansıt" aria-label="Tahtaya yansıt" className={icon}>
         <Maximize2 size={16} />
       </button>
-      <button type="button" onClick={copy} title="Kopyala" aria-label="Kopyala" className="rounded-md p-1.5 text-slate-500 hover:text-teal-700 dark:text-slate-400 dark:hover:text-teal-300">
+      <button type="button" onClick={copy} title="Kopyala" aria-label="Kopyala" className={icon}>
         {copied ? <Check size={16} /> : <Copy size={16} />}
+      </button>
+      <button type="button" onClick={() => onRenew(id)} disabled={!canEdit || busy} title="Yeni kod üret; eskisi geçersiz olur" className={small}>
+        {busy === `renew:${id}` ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+        Yenile
+      </button>
+      <button type="button" onClick={() => onOpen(id, !isOpen)} disabled={!canEdit || busy} className={small}>
+        {busy === `open:${id}` ? <Loader2 size={13} className="animate-spin" /> : isOpen ? <Lock size={13} /> : <Unlock size={13} />}
+        {isOpen ? 'Kilitle' : 'Herkese aç'}
       </button>
     </div>
   )
@@ -47,13 +74,31 @@ const Badge = ({ isOpen }) => (
 )
 
 // Not linked from anywhere: the trainers open it with the page password to
-// read the unlock codes. The password is never stored or sent.
+// read the unlock codes, renew them and open answers for everyone. Saving
+// needs a GitHub token allowed to edit the lock state (gist or data repo);
+// it stays in this browser only if asked. Passwords are never stored.
 export default function ArduinoLockPage() {
+  const [lock, setLock] = useState(null)
   const [password, setPassword] = useState('')
+  const [pagePassword, setPagePassword] = useState(null)
   const [list, setList] = useState(null)
-  const [state, setState] = useState('idle')
+  const [phase, setPhase] = useState('login') // login | recover | ready
+  const [working, setWorking] = useState(false)
+  const [message, setMessage] = useState(null)
+  const [busy, setBusy] = useState(null)
   const [shown, setShown] = useState({})
   const [projected, setProjected] = useState(null)
+  const [token, setToken] = useState(storedToken)
+  const [rememberToken, setRememberToken] = useState(Boolean(storedToken()))
+  const [master, setMaster] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [target, setTarget] = useState({ kind: 'gist', owner: 'ROGOYATO', name: 'kilit-verisi', branch: 'main', path: 'kilit.json' })
+  const [created, setCreated] = useState(null)
+  const canEdit = configured && Boolean(token)
+
+  useEffect(() => {
+    loadState().then(setLock, (error) => setMessage({ error: error.message }))
+  }, [])
 
   useEffect(() => {
     if (!projected) return undefined
@@ -62,31 +107,141 @@ export default function ArduinoLockPage() {
     return () => window.removeEventListener('keydown', close)
   }, [projected])
 
-  const submit = async (event) => {
+  useEffect(() => {
+    try {
+      if (rememberToken && token) window.localStorage.setItem(TOKEN_KEY, token)
+      else window.localStorage.removeItem(TOKEN_KEY)
+    } catch {
+      // Not remembering is fine.
+    }
+  }, [token, rememberToken])
+
+  const login = async (event) => {
     event.preventDefault()
-    setState('working')
-    const value = await openForPage(password, page)
-    setState(value ? 'idle' : 'wrong')
+    setWorking(true)
+    setMessage(null)
+    const value = lock ? await readList(lock, password) : null
+    setWorking(false)
+    if (!value) {
+      setMessage({ error: 'Şifre yanlış.' })
+      return
+    }
     setList(value)
+    setPagePassword(password)
+    setPassword('')
     setShown({})
+    setPhase('ready')
+  }
+
+  // With the master password: show the codes and set a new page password.
+  const recover = async (event) => {
+    event.preventDefault()
+    setWorking(true)
+    setMessage(null)
+    try {
+      const value = await recoverList(lock, master)
+      if (!value) throw new Error('Ana şifre yanlış.')
+      if (canEdit) {
+        const latest = await readLatest(store, token)
+        await save(store, token, await sealList(latest, value, newPassword), 'Sayfa şifresini yenile')
+        setLock(await readLatest(store, token))
+        setMessage({ ok: 'Yeni sayfa şifresi kaydedildi.' })
+      } else {
+        setMessage({ error: 'Kodlar gösteriliyor ama yeni sayfa şifresi kaydedilmedi: GitHub anahtarı gerekli.' })
+      }
+      setList(value)
+      setPagePassword(newPassword)
+      setMaster('')
+      setNewPassword('')
+      setPhase('ready')
+    } catch (error) {
+      setMessage({ error: error.message })
+    } finally {
+      setWorking(false)
+    }
+  }
+
+  // Every change starts from the newest saved state, so two trainers do not
+  // overwrite each other.
+  const act = async (key, change, done) => {
+    setBusy(key)
+    setMessage(null)
+    try {
+      const latest = await readLatest(store, token)
+      const latestList = await readList(latest, pagePassword)
+      if (!latestList) throw new Error('Kayıttaki sayfa şifresi değişmiş; sayfayı yenileyip yeni şifreyle girin.')
+      const result = await change(latest, latestList)
+      await save(store, token, result.state, done)
+      setLock(result.state)
+      setList(result.list)
+      setMessage({ ok: `${done}. Öğrencilere en geç 5 dakika içinde yansır.` })
+      return true
+    } catch (error) {
+      setMessage({ error: error.message })
+      return false
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const renew = (id) => {
+    const label = id.startsWith('hafta-') ? `${weekName(id.slice(6))} kodu` : `${list.exercises.find((item) => item.id === id).title} kodu`
+    if (!window.confirm(`${label} yenilensin mi? Eski kodu girmiş öğrencilerde cevap yeniden kilitlenir.`)) return
+    act(
+      `renew:${id}`,
+      (latest, latestList) => (id.startsWith('hafta-') ? renewWeek(latest, latestList, id.slice(6), pagePassword) : renewExercise(latest, latestList, id, pagePassword)),
+      `${label} yenilendi`,
+    )
+  }
+
+  const openFor = (id, isOpen) => {
+    const [kind, key] = id.startsWith('hafta-') ? ['weeks', id.slice(6)] : ['exercises', id]
+    const label = kind === 'weeks' ? weekName(key) : list.exercises.find((item) => item.id === key).title
+    act(`open:${id}`, async (latest, latestList) => ({ state: setOpen(latest, latestList, kind, key, isOpen), list: latestList }), `${label} ${isOpen ? 'herkese açıldı' : 'yeniden kilitlendi'}`)
+  }
+
+  const changePassword = async (event) => {
+    event.preventDefault()
+    const next = newPassword
+    const ok = await act('password', async (latest, latestList) => ({ state: await sealList(latest, latestList, next), list: latestList }), 'Sayfa şifresi değiştirildi')
+    if (ok) {
+      setPagePassword(next)
+      setNewPassword('')
+    }
+  }
+
+  const setup = async (event) => {
+    event.preventDefault()
+    setWorking(true)
+    setMessage(null)
+    try {
+      const where = target.kind === 'gist' ? {} : { repo: { owner: target.owner, name: target.name, branch: target.branch, path: target.path } }
+      setCreated(await create(token, where, lock))
+    } catch (error) {
+      setMessage({ error: error.message })
+    } finally {
+      setWorking(false)
+    }
   }
 
   const toggle = (id) => setShown((current) => ({ ...current, [id]: !current[id] }))
+  const open = lock?.open ?? { weeks: {}, exercises: {} }
   const entries = list
-    ? Object.entries(list.weeks).map(([week, code]) => ({
-        week,
-        code,
-        exercises: list.exercises.filter((item) => String(item.week) === week),
-      }))
+    ? Object.entries(list.weeks).map(([week, code]) => ({ week, code, exercises: list.exercises.filter((item) => String(item.week) === week) }))
     : []
   const lookup = (id) => {
-    if (id.startsWith('hafta-')) {
-      const week = id.slice(6)
-      return { title: `${weekName(week)}: tüm uygulamalar`, code: list.weeks[week] }
-    }
+    if (id.startsWith('hafta-')) return { title: `${weekName(id.slice(6))}: tüm uygulamalar`, code: list.weeks[id.slice(6)] }
     const item = list.exercises.find((exercise) => exercise.id === id)
     return { title: item.title, code: item.code }
   }
+  const cell = (id, code, isOpen) => (
+    <CodeCell id={id} code={code} shown={shown[id]} isOpen={isOpen} canEdit={canEdit} busy={busy} onToggle={toggle} onProject={setProjected} onRenew={renew} onOpen={openFor} />
+  )
+  const suggest = (
+    <button type="button" onClick={() => setNewPassword(suggestPassphrase())} className="text-sm text-slate-500 underline hover:text-teal-700 dark:text-slate-400">
+      öner
+    </button>
+  )
 
   return (
     <div className="space-y-6">
@@ -96,34 +251,73 @@ export default function ArduinoLockPage() {
         <h1 className="mt-1 font-hero text-3xl font-extrabold leading-tight text-slate-900 dark:text-white">Simülatör kilit kodları</h1>
         <p className="mt-2 max-w-3xl leading-relaxed text-slate-600 dark:text-slate-300">
           Sayfa şifresini girince kodlar gelir; her kod tıklanana kadar gizli kalır. Bir uygulamanın kodu yalnızca o uygulamanın, haftanın kodu o haftadaki tüm
-          uygulamaların “Kodu göster” ve “Bağlantıları göster” butonlarını açar. Şifre hiçbir yere gönderilmez ve kaydedilmez.
+          uygulamaların “Kodu göster” ve “Bağlantıları göster” butonlarını açar. Buradan her kodu yenileyebilir, cevapları herkese açıp kilitleyebilirsiniz.
         </p>
       </div>
 
-      <Panel>
-        <form onSubmit={submit} className="flex flex-wrap items-center gap-2">
-          <KeyRound size={18} className="text-teal-700 dark:text-teal-300" />
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="Sayfa şifresi"
-            autoComplete="current-password"
-            aria-label="Sayfa şifresi"
-            className="font-code min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100 sm:max-w-sm"
-          />
-          <button type="submit" disabled={!password || state === 'working'} className="inline-flex items-center gap-2 rounded-md bg-teal-700 px-4 py-2 font-semibold text-white disabled:opacity-60 dark:bg-teal-400 dark:text-teal-950">
-            {state === 'working' ? <Loader2 size={16} className="animate-spin" /> : <LockOpen size={16} />}
-            Aç
-          </button>
-          {list ? (
-            <button type="button" onClick={() => setShown({})} className="text-sm text-slate-500 underline hover:text-teal-700 dark:text-slate-400">
-              hepsini gizle
+      {phase === 'login' ? (
+        <Panel>
+          <form onSubmit={login} className="flex flex-wrap items-center gap-2">
+            <KeyRound size={18} className="text-teal-700 dark:text-teal-300" />
+            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Sayfa şifresi" autoComplete="current-password" aria-label="Sayfa şifresi" className={input} />
+            <button type="submit" disabled={!password || working || !lock} className={primary}>
+              {working ? <Loader2 size={16} className="animate-spin" /> : <LockOpen size={16} />}
+              Aç
             </button>
+            <button type="button" onClick={() => setPhase('recover')} className="text-sm text-slate-500 underline hover:text-teal-700 dark:text-slate-400">
+              şifremi unuttum
+            </button>
+          </form>
+        </Panel>
+      ) : null}
+
+      {phase === 'recover' ? (
+        <Panel>
+          <Label>Ana şifreyle kurtarma</Label>
+          <form onSubmit={recover} className="mt-3 space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <input type="password" value={master} onChange={(event) => setMaster(event.target.value)} placeholder="Ana şifre" aria-label="Ana şifre" className={input} />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <input value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="Yeni sayfa şifresi" aria-label="Yeni sayfa şifresi" className={input} />
+              {suggest}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="submit" disabled={!master || newPassword.length < 12 || working} className={primary}>
+                {working ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
+                Kurtar
+              </button>
+              <button type="button" onClick={() => setPhase('login')} className="text-sm text-slate-500 underline dark:text-slate-400">
+                vazgeç
+              </button>
+            </div>
+            {configured ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <input type="password" value={token} onChange={(event) => setToken(event.target.value.trim())} placeholder="GitHub anahtarı (kaydetmek için)" aria-label="GitHub anahtarı" className={input} />
+              </div>
+            ) : null}
+          </form>
+        </Panel>
+      ) : null}
+
+      {message ? (
+        <p className={`rounded-md px-3 py-2 text-sm ${message.error ? 'bg-rose-50 text-rose-800 dark:bg-rose-500/10 dark:text-rose-200' : 'bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200'}`}>
+          {message.error ?? message.ok}
+        </p>
+      ) : null}
+
+      {phase === 'ready' ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <button type="button" onClick={() => setShown({})} className="text-sm text-slate-500 underline hover:text-teal-700 dark:text-slate-400">
+            hepsini gizle
+          </button>
+          {!canEdit ? (
+            <span className="text-sm text-slate-500 dark:text-slate-400">
+              {configured ? 'Kod yenilemek ve herkese açmak için aşağıya GitHub anahtarını girin.' : 'Kod yenilemek ve herkese açmak için önce aşağıdaki kurulumu yapın.'}
+            </span>
           ) : null}
-          {state === 'wrong' ? <p className="w-full text-sm text-rose-700 dark:text-rose-300">Şifre yanlış.</p> : null}
-        </form>
-      </Panel>
+        </div>
+      ) : null}
 
       {entries.map(({ week, code, exercises }) => (
         <Panel key={week}>
@@ -132,48 +326,98 @@ export default function ArduinoLockPage() {
               <h2 className="font-hero text-xl font-bold text-slate-900 dark:text-white">{weekName(week)}</h2>
               <Badge isOpen={Boolean(open.weeks[week])} />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <span className="text-sm text-slate-500 dark:text-slate-400">Haftanın kodu (tüm uygulamalar)</span>
-              <CodeCell id={`hafta-${week}`} code={code} shown={shown[`hafta-${week}`]} onToggle={toggle} onProject={setProjected} />
+              {cell(`hafta-${week}`, code, Boolean(open.weeks[week]))}
             </div>
           </div>
-          {exercises.length ? (
-            <ul className="mt-4 divide-y divide-slate-200 border-t border-slate-200 dark:divide-white/10 dark:border-white/10">
-              {exercises.map((item) => (
-                <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
-                  <span className="flex items-center gap-2 text-slate-800 dark:text-slate-100">
-                    {item.title}
-                    <span className="font-code text-xs text-slate-400 dark:text-slate-500">{item.id}</span>
-                    {open.exercises[item.id] ? <Badge isOpen /> : null}
-                  </span>
-                  <CodeCell id={item.id} code={item.code} shown={shown[item.id]} onToggle={toggle} onProject={setProjected} />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Bu haftada kilitli uygulama yok.</p>
-          )}
+          <ul className="mt-4 divide-y divide-slate-200 border-t border-slate-200 dark:divide-white/10 dark:border-white/10">
+            {exercises.map((item) => (
+              <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
+                <span className="flex items-center gap-2 text-slate-800 dark:text-slate-100">
+                  {item.title}
+                  <span className="font-code text-xs text-slate-400 dark:text-slate-500">{item.id}</span>
+                  {open.exercises[item.id] ? <Badge isOpen /> : null}
+                </span>
+                {cell(item.id, item.code, Boolean(open.exercises[item.id]))}
+              </li>
+            ))}
+          </ul>
         </Panel>
       ))}
 
-      <Panel>
-        <Label>Herkese açmak</Label>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-          Kodu sitenin deposundaki <code className="font-code">src/pages/arduino/simulator/answers/open.json</code> dosyasına eklemek yeterli: haftanın kodu{' '}
-          <code className="font-code">weeks</code> altına hafta numarasıyla (yarışma 5), bir uygulamanın kodu <code className="font-code">exercises</code> altına
-          uygulamanın adıyla (listede kodun yanında yazar). Site yeniden yayınlanınca herkes için açılır; geri kilitlemek için satırı silin.
-        </p>
-        <pre className="font-code mt-3 overflow-x-auto rounded-md bg-slate-950 p-3 text-xs leading-relaxed text-teal-100">
-          {`{
-  "weeks": {
-    "2": "XXXX-XXXX-XXXX"
-  },
-  "exercises": {
-    "dht11": "XXXX-XXXX-XXXX"
-  }
-}`}
-        </pre>
-      </Panel>
+      {phase === 'ready' ? (
+        <>
+          <Panel>
+            <Label>GitHub anahtarı</Label>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+              Değişiklikler {configured ? <code className="font-code">{describe(store)}</code> : 'kilit verisine'} kaydedilir. Gist için{' '}
+              <a href="https://github.com/settings/tokens/new?scopes=gist&description=ROGOYATO%20kilit" target="_blank" rel="noreferrer" className="underline">
+                “gist” izinli bir anahtar
+              </a>
+              , veri deposu için yalnızca o depoda “Contents: Read and write” izinli bir anahtar yeterli.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <input type="password" value={token} onChange={(event) => setToken(event.target.value.trim())} placeholder="ghp_… / github_pat_…" aria-label="GitHub anahtarı" className={input} />
+              <label className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
+                <input type="checkbox" checked={rememberToken} onChange={(event) => setRememberToken(event.target.checked)} className="accent-teal-600" />
+                bu cihazda hatırla
+              </label>
+            </div>
+          </Panel>
+
+          {configured ? (
+            <Panel>
+              <Label>Sayfa şifresini değiştir</Label>
+              <form onSubmit={changePassword} className="mt-3 flex flex-wrap items-center gap-2">
+                <input value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="Yeni sayfa şifresi" aria-label="Yeni sayfa şifresi" className={input} />
+                {suggest}
+                <button type="submit" disabled={!canEdit || newPassword.length < 12 || busy} className={primary}>
+                  Kaydet
+                </button>
+              </form>
+            </Panel>
+          ) : (
+            <Panel>
+              <Label>İlk kurulum</Label>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                Kilit verisi şu an sitenin içinde; yenilemek ve herkese açmak için bir kez dışarıya taşınması gerekir. Gist kişisel hesapta açılır (organizasyonların
+                gist’i olmaz); veri deposu organizasyonda önceden boş olarak oluşturulmalıdır.
+              </p>
+              <form onSubmit={setup} className="mt-3 space-y-2 text-sm">
+                <div className="flex flex-wrap gap-4 text-slate-700 dark:text-slate-200">
+                  {[
+                    ['gist', 'Gist (anahtarın sahibinin hesabında)'],
+                    ['repo', 'Veri deposu'],
+                  ].map(([kind, text]) => (
+                    <label key={kind} className="flex items-center gap-1.5">
+                      <input type="radio" name="kind" checked={target.kind === kind} onChange={() => setTarget({ ...target, kind })} className="accent-teal-600" />
+                      {text}
+                    </label>
+                  ))}
+                </div>
+                {target.kind === 'repo' ? (
+                  <div className="flex flex-wrap gap-2">
+                    {['owner', 'name', 'branch', 'path'].map((field) => (
+                      <input key={field} value={target[field]} onChange={(event) => setTarget({ ...target, [field]: event.target.value })} aria-label={field} className="font-code w-40 rounded-md border border-slate-300 bg-white px-2 py-1 dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100" />
+                    ))}
+                  </div>
+                ) : null}
+                <button type="submit" disabled={!token || working} className={primary}>
+                  {working ? <Loader2 size={16} className="animate-spin" /> : null}
+                  Oluştur
+                </button>
+              </form>
+              {created ? (
+                <div className="mt-3 text-sm text-slate-700 dark:text-slate-200">
+                  <p>Oluşturuldu. Son adım: bu satırı Claude’a gönderin; sitenin ayarına (answers/store.json) bir kez yazılacak.</p>
+                  <pre className="font-code mt-2 overflow-x-auto rounded-md bg-slate-950 p-3 text-xs text-teal-100">{JSON.stringify(created)}</pre>
+                </div>
+              ) : null}
+            </Panel>
+          )}
+        </>
+      ) : null}
 
       {projected && list ? (
         <button

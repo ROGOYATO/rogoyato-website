@@ -1,18 +1,24 @@
-// Manages the simulator's locked answers. The master password (KILIT_SIFRESI)
-// derives every code; the page password (SAYFA_SIFRESI) opens the trainers'
-// page at #/arduino/kilit. Nothing readable is written into the repository.
+// Maintains the simulator's lock state (src/utils/lockState.js): the encrypted
+// answers, the open list and the code list. Renewing codes and opening
+// answers is done on the trainers' page (#/arduino/kilit); this script is for
+// adding or editing answers and for the passwords.
 //
-//   node scripts/answers.mjs kodlar                    print every week and exercise code
-//   node scripts/answers.mjs ac                        decrypt into answers.local.json (git-ignored) to edit
-//   node scripts/answers.mjs kilitle                   encrypt answers.local.json (or the current answers again)
-//   node scripts/answers.mjs herkese-ac <hafta|id>     open a week or one exercise for everyone (answers/open.json)
-//   node scripts/answers.mjs kapat <hafta|id>          lock it again
-//   node scripts/answers.mjs sayfa-sifresi             re-seal the trainers' page under SAYFA_SIFRESI
-//   node scripts/answers.mjs yeni-parola               suggest a page password (5 words and a number)
-//   YENI_SIFRE=... node scripts/answers.mjs sifre-degistir   re-encrypt everything under a new master password
+// The state is read from the gist or data repository named in
+// src/pages/arduino/simulator/answers/store.json (saving there needs
+// GITHUB_TOKEN), or from the bundled answers/kilit.json before that exists.
+// Passwords come from the environment: KILIT_SIFRESI (master), SAYFA_SIFRESI (page).
+//
+//   node scripts/answers.mjs kodlar                 print every code (master or page password)
+//   node scripts/answers.mjs ac                     decrypt answers into answers.local.json (git-ignored)
+//   node scripts/answers.mjs kilitle                encrypt answers.local.json (new exercises get new codes;
+//                                                   needs KILIT_SIFRESI and SAYFA_SIFRESI)
+//   node scripts/answers.mjs herkese-ac <hafta|id>  open a week or one exercise for everyone
+//   node scripts/answers.mjs kapat <hafta|id>       lock it again
+//   node scripts/answers.mjs sayfa-sifresi          set SAYFA_SIFRESI as the page password (with KILIT_SIFRESI)
+//   YENI_SIFRE=... node scripts/answers.mjs sifre-degistir   new master password; codes stay the same
+//   node scripts/answers.mjs yeni-parola            suggest a page password
 //
 // answers.local.json: { "<exercise id>": { "week": 2, "code": "...", "wires": [...] } }
-import { randomInt } from 'node:crypto'
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -20,38 +26,19 @@ import { pathToFileURL } from 'node:url'
 import { gunzipSync } from 'node:zlib'
 import { Toolchain, unpack } from '../src/pages/arduino/simulator/compiler/toolchain.js'
 import { EXAMPLES } from '../src/pages/arduino/simulator/examples.js'
-import { exerciseCode, lockWith, masterKey, sealForPage, unlockWith, weekCode } from '../src/utils/answerLock.js'
+import { lockWith, randomCode, rekeyRecovery, unlockWith } from '../src/utils/answerLock.js'
+import { describe, readPublic, save } from '../src/utils/lockStore.js'
+import { readList, recoverList, sealList, setOpen } from '../src/utils/lockState.js'
+import { suggestPassphrase } from '../src/utils/passphrase.js'
 
 const ROOT = new URL('../', import.meta.url)
 const DIR = 'src/pages/arduino/simulator/answers/'
-const LOCKED = new URL(`${DIR}locked.json`, ROOT)
-const OPEN = new URL(`${DIR}open.json`, ROOT)
-const PAGE = new URL(`${DIR}page.json`, ROOT)
+const STORE = JSON.parse(readFileSync(new URL(`${DIR}store.json`, ROOT), 'utf8'))
+const BUNDLED = new URL(`${DIR}kilit.json`, ROOT)
 const LOCAL = new URL('answers.local.json', ROOT)
-
-// Page passwords are five of these words and a number: easy to remember,
-// about 46 bits to guess.
-const WORDS = (
-  'ada adim agac akil akrep alarm alev altin ambar anahtar anten arena arma armut asker aslan atlas avci ayna ' +
-  'ayva bahar balik balon bambu banka bando baraj bardak bayrak bekci beton biber bilet bisiklet bitki bobin boya ' +
-  'bulut burun cadde canta cennet cep ceviz cimen damla dalga dans defne defter deniz deve dolap domates dut ' +
-  'duvar ekmek elma elmas emek erik eser fanus fener fidan filiz fincan firin fitil gemi gezgin giyim gol gonca ' +
-  'guvercin hamak harita hasat hava havuz hazine hediye hilal hurma inci irmak istasyon iz jeton kabak kafes ' +
-  'kahve kalem kale kamera kanal kanat kanepe kaplan karanfil kardelen kartal kartpostal kasa kavak kayak kaya ' +
-  'kedi kelebek kemer kerpic kiraz kitap koala kompas konak korsan koy kral kum kumru kupa kurabiye kurt kutu ' +
-  'labirent lale lamba leylek limon lira lokum maden manav mandal mantar marul masa masal mavi mekik mektup ' +
-  'merdiven mermer meyve mimar mineral misafir model motor mozaik muz nane nehir nergis nokta ocak orkide orman ' +
-  'otel otobus pamuk papatya park pasta patika pencere pergel pirinc pilot piyano planet portakal pusula radar ' +
-  'rakam ray robot roket ruzgar saat saksi salkim sandal sarmasik saray sayfa sedir sehpa servi sinema sincap ' +
-  'sirket sokak sonbahar soba sofra sohbet somun sorgu sopa sulu tabak tabela tahta takvim talep tarla tavuk ' +
-  'tekne telefon tepe terazi tilki tohum top toprak tren tuval tuz umut uzay vadi vagon valiz vapur vazo veri ' +
-  'yaka yaprak yarim yayla yelken yildiz yogurt yol yonca yorgan yumak yunus yuva zambak zeytin zil zirve zurna ' +
-  'atom bina bulmaca cetvel cizgi dergi dinamo ekran enerji fosil'
-).split(' ')
-
-const readJson = (url, fallback) => (existsSync(url) ? JSON.parse(readFileSync(url, 'utf8')) : fallback)
-const writeJson = (url, value) => writeFileSync(url, `${JSON.stringify(value, null, 2)}\n`)
+const external = Boolean(STORE.gist || STORE.repo)
 const title = (id) => EXAMPLES.find((example) => example.id === id)?.title ?? id
+const weekName = (week) => (Number(week) === 5 ? 'Yarışma' : `${week}. hafta`)
 
 function secret(name) {
   const value = process.env[name]
@@ -59,26 +46,31 @@ function secret(name) {
   return value
 }
 
-// Every code the master password derives, for the exercises that have answers.
-async function codes(password, ids) {
-  const master = await masterKey(password)
-  const exercises = {}
-  for (const id of ids) exercises[id] = await exerciseCode(master, id)
-  const weeks = {}
-  for (const week of [1, 2, 3, 4, 5]) weeks[week] = await weekCode(master, week)
-  return { exercises, weeks }
+const loadState = async () => (external ? readPublic(STORE) : JSON.parse(readFileSync(BUNDLED, 'utf8')))
+
+async function storeState(state, message) {
+  if (external) {
+    await save(STORE, secret('GITHUB_TOKEN'), state, message)
+    console.log(`${describe(STORE)} güncellendi (öğrencilere en geç 5 dakikada yansır).`)
+  } else {
+    writeFileSync(BUNDLED, `${JSON.stringify(state, null, 2)}\n`)
+    console.log(`${DIR}kilit.json güncellendi; yayınlamak için commit'leyin.`)
+  }
 }
 
-const lockedIds = () => Object.keys(readJson(LOCKED, { exercises: {} }).exercises)
+// The code list, from the master password or the page password.
+async function codeList(state) {
+  const list = process.env.KILIT_SIFRESI ? await recoverList(state, process.env.KILIT_SIFRESI) : process.env.SAYFA_SIFRESI ? await readList(state, process.env.SAYFA_SIFRESI) : null
+  if (!list) throw new Error('KILIT_SIFRESI ya da SAYFA_SIFRESI gerekli (ve doğru olmalı).')
+  return list
+}
 
-async function decryptAll(password) {
-  const locked = readJson(LOCKED, { exercises: {} })
-  const { exercises } = await codes(password, Object.keys(locked.exercises))
+async function decryptAll(state, list) {
   const answers = {}
-  for (const [id, payload] of Object.entries(locked.exercises)) {
-    const opened = await unlockWith(exercises[id], `uygulama-${id}`, payload)
-    if (!opened) throw new Error(`${id} açılamadı: ana şifre yanlış.`)
-    answers[id] = { week: payload.week, code: opened.code, wires: opened.wires }
+  for (const item of list.exercises) {
+    const answer = await unlockWith(item.code, `uygulama-${item.id}`, state.exercises[item.id])
+    if (!answer) throw new Error(`${item.id} açılamadı.`)
+    answers[item.id] = { week: item.week, code: answer.code, wires: answer.wires }
   }
   return answers
 }
@@ -96,65 +88,61 @@ async function compiler() {
   return new Toolchain(files, factories)
 }
 
-async function sealPage(all, pagePassword) {
-  const list = Object.entries(all.exercises).map(([id, code]) => ({ id, title: title(id), week: readJson(LOCKED, { exercises: {} }).exercises[id]?.week, code }))
-  writeJson(PAGE, await sealForPage(pagePassword, { weeks: all.weeks, exercises: list }))
-}
-
-async function encryptAll(password, answers, pagePassword) {
-  const all = await codes(password, Object.keys(answers))
+// Re-encrypts every answer, keeping existing codes; new exercises and
+// weeks get new random codes.
+async function encryptAll(state, list, answers) {
   const toolchain = await compiler()
-  const exercises = {}
+  const next = { ...state, exercises: {}, weeks: {} }
+  const nextList = { weeks: { ...list.weeks }, exercises: [] }
   const byWeek = {}
   for (const [id, answer] of Object.entries(answers)) {
     const built = await toolchain.build(answer.code)
     if (!built.ok) throw new Error(`${id} derlenemedi:\n${built.errors}`)
-    exercises[id] = { week: answer.week, ...(await lockWith(all.exercises[id], `uygulama-${id}`, { code: answer.code, wires: answer.wires, hex: built.hex })) }
-    ;(byWeek[answer.week] ??= {})[id] = all.exercises[id]
-    console.log(`${id}: ${answer.week}. hafta, ${built.flash} bayt`)
+    const code = list.exercises.find((item) => item.id === id)?.code ?? randomCode()
+    nextList.weeks[answer.week] ??= randomCode()
+    nextList.exercises.push({ id, title: title(id), week: answer.week, code })
+    next.exercises[id] = { week: answer.week, ...(await lockWith(code, `uygulama-${id}`, { code: answer.code, wires: answer.wires, hex: built.hex })) }
+    ;(byWeek[answer.week] ??= {})[id] = code
+    console.log(`${id}: ${weekName(answer.week)}, ${built.flash} bayt`)
   }
-  // A week code opens the list of that week's exercise codes.
-  const weeks = {}
-  for (const [week, list] of Object.entries(byWeek)) weeks[week] = await lockWith(all.weeks[week], `hafta-${week}`, { codes: list })
-  writeJson(LOCKED, { version: 2, exercises, weeks })
-  if (pagePassword) await sealPage(all, pagePassword)
-  else if (!existsSync(PAGE)) console.log('SAYFA_SIFRESI verilmedi: kilit sayfası güncellenmedi.')
-  return all
+  for (const [week, codes] of Object.entries(byWeek)) next.weeks[week] = await lockWith(nextList.weeks[week], `hafta-${week}`, { codes })
+  return { state: await sealList(next, nextList, secret('SAYFA_SIFRESI')), list: nextList }
 }
 
 const [command, argument] = process.argv.slice(2)
 if (command === 'kodlar') {
-  const all = await codes(secret('KILIT_SIFRESI'), lockedIds())
-  for (const [week, code] of Object.entries(all.weeks)) console.log(`${week === '5' ? 'Yarışma' : `${week}. hafta`} (tümü): ${code}`)
-  for (const [id, code] of Object.entries(all.exercises)) console.log(`  ${title(id)}: ${code}`)
+  const list = await codeList(await loadState())
+  for (const [week, code] of Object.entries(list.weeks)) {
+    console.log(`${weekName(week)} (tümü): ${code}`)
+    for (const item of list.exercises.filter((exercise) => String(exercise.week) === week)) console.log(`  ${item.title} [${item.id}]: ${item.code}`)
+  }
 } else if (command === 'ac') {
-  writeJson(LOCAL, await decryptAll(secret('KILIT_SIFRESI')))
+  const state = await loadState()
+  writeFileSync(LOCAL, `${JSON.stringify(await decryptAll(state, await codeList(state)), null, 2)}\n`)
   console.log(`Cevaplar ${LOCAL.pathname} dosyasına yazıldı. Düzenleyip "kilitle" ile şifreleyin; bu dosyayı commit'lemeyin.`)
 } else if (command === 'kilitle') {
-  const password = secret('KILIT_SIFRESI')
-  await encryptAll(password, readJson(LOCAL, null) ?? (await decryptAll(password)), process.env.SAYFA_SIFRESI)
-  console.log('answers/locked.json güncellendi.')
+  if (!existsSync(LOCAL)) throw new Error('Önce "ac" ile answers.local.json oluşturun.')
+  const state = await loadState()
+  const result = await encryptAll(state, await codeList(state), JSON.parse(readFileSync(LOCAL, 'utf8')))
+  await storeState(result.state, 'Cevapları güncelle')
 } else if (command === 'herkese-ac' || command === 'kapat') {
-  const all = await codes(secret('KILIT_SIFRESI'), lockedIds())
-  const open = readJson(OPEN, { weeks: {}, exercises: {} })
-  const kind = all.weeks[argument] ? 'weeks' : all.exercises[argument] ? 'exercises' : null
-  if (!kind) throw new Error(`Hafta numarası (1–5) ya da uygulama adı verin: ${Object.keys(all.exercises).join(', ')}`)
-  if (command === 'kapat') delete open[kind][argument]
-  else open[kind][argument] = all[kind][argument]
-  writeJson(OPEN, open)
-  console.log(`${kind === 'weeks' ? `${argument}. hafta` : title(argument)} ${command === 'kapat' ? 'yeniden kilitlendi' : 'herkese açıldı'}.`)
+  const state = await loadState()
+  const list = await codeList(state)
+  const kind = list.weeks[argument] ? 'weeks' : list.exercises.some((item) => item.id === argument) ? 'exercises' : null
+  if (!kind) throw new Error(`Hafta numarası (1–5) ya da uygulama adı verin: ${list.exercises.map((item) => item.id).join(', ')}`)
+  await storeState(setOpen(state, list, kind, argument, command === 'herkese-ac'), `${argument} ${command === 'kapat' ? 'kilitlendi' : 'açıldı'}`)
 } else if (command === 'sayfa-sifresi') {
-  await sealPage(await codes(secret('KILIT_SIFRESI'), lockedIds()), secret('SAYFA_SIFRESI'))
-  console.log('Kilit sayfası yeni şifreyle mühürlendi.')
-} else if (command === 'yeni-parola') {
-  console.log([...Array.from({ length: 5 }, () => WORDS[randomInt(WORDS.length)]), randomInt(10, 100)].join('-'))
+  const state = await loadState()
+  const list = await recoverList(state, secret('KILIT_SIFRESI'))
+  if (!list) throw new Error('Ana şifre yanlış.')
+  await storeState(await sealList(state, list, secret('SAYFA_SIFRESI')), 'Sayfa şifresini değiştir')
 } else if (command === 'sifre-degistir') {
-  const answers = await decryptAll(secret('KILIT_SIFRESI'))
-  const all = await encryptAll(secret('YENI_SIFRE'), answers, secret('SAYFA_SIFRESI'))
-  const open = readJson(OPEN, { weeks: {}, exercises: {} })
-  for (const kind of ['weeks', 'exercises']) for (const key of Object.keys(open[kind])) open[kind][key] = all[kind][key]
-  writeJson(OPEN, open)
-  console.log('Yeni ana şifreyle şifrelendi; eski kodlar artık çalışmaz.')
+  const state = await loadState()
+  const recovery = await rekeyRecovery(state.recovery, secret('KILIT_SIFRESI'), secret('YENI_SIFRE'))
+  if (!recovery) throw new Error('Ana şifre yanlış.')
+  await storeState({ ...state, recovery }, 'Ana şifreyi değiştir')
+} else if (command === 'yeni-parola') {
+  console.log(suggestPassphrase())
 } else {
-  console.log(readFileSync(new URL(import.meta.url), 'utf8').split('\n').slice(0, 15).join('\n'))
+  console.log(readFileSync(new URL(import.meta.url), 'utf8').split('\n').slice(0, 22).join('\n'))
 }
