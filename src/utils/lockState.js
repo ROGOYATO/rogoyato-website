@@ -4,7 +4,7 @@
 //
 //   exercises  { id: { week, iv, data } }   answer, opened by the exercise code
 //   weeks      { week: { iv, data } }       { codes: { id: code } }, opened by the week code
-//   open       { weeks: { week: code }, exercises: { id: code } }   open to everyone
+//   open       { exercises: { id: code }, weeks: { week: code } }   open to everyone (weeks: older states only)
 //   page       { iv, data }                 code list, opened by the page password
 //   recovery   { publicKey, privateKey }    RSA key, private half under the master password
 //   escrow     { key, iv, data }            code list again, opened by the recovery key
@@ -53,11 +53,21 @@ export async function renewWeek(state, list, week, pagePassword) {
   return { state: await sealList(next, nextList, pagePassword), list: nextList }
 }
 
-// Opening publishes the code in the state; closing removes it.
+// Opening publishes the exercises' own codes in the state; closing removes
+// them. A week opens as each of its exercises, never as the week code, so
+// one exercise can be locked again on its own. (Older states may still hold
+// an open week code: it is turned into its exercises first.)
 export function setOpen(state, list, kind, key, isOpen) {
   const next = clone(state)
-  const code = kind === 'weeks' ? list.weeks[key] : list.exercises.find((exercise) => exercise.id === key)?.code
-  if (isOpen) next.open[kind][key] = code
-  else delete next.open[kind][key]
+  const inWeek = (week) => list.exercises.filter((exercise) => String(exercise.week) === String(week))
+  const week = kind === 'weeks' ? key : list.exercises.find((exercise) => exercise.id === key)?.week
+  if (next.open.weeks[week]) {
+    delete next.open.weeks[week]
+    for (const exercise of inWeek(week)) next.open.exercises[exercise.id] = exercise.code
+  }
+  for (const exercise of kind === 'weeks' ? inWeek(key) : list.exercises.filter((item) => item.id === key)) {
+    if (isOpen) next.open.exercises[exercise.id] = exercise.code
+    else delete next.open.exercises[exercise.id]
+  }
   return next
 }

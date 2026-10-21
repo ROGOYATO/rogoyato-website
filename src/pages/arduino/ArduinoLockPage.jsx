@@ -29,7 +29,7 @@ function storedToken() {
 
 // A code that stays hidden until clicked, so the list can be on a projector,
 // with the trainers' actions next to it.
-function CodeCell({ id, code, shown, isOpen, byWeek, canEdit, busy, onToggle, onProject, onRenew, onOpen }) {
+function CodeCell({ id, code, shown, isOpen, canEdit, busy, onToggle, onProject, onRenew, onOpen }) {
   const [copied, setCopied] = useState(false)
   const copy = async () => {
     try {
@@ -61,17 +61,10 @@ function CodeCell({ id, code, shown, isOpen, byWeek, canEdit, busy, onToggle, on
         {busy === `renew:${id}` ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
         Yenile
       </button>
-      {byWeek && !isOpen ? (
-        <button type="button" disabled title="Hafta kilitlenince bu da kilitlenir" className={small}>
-          <Unlock size={13} />
-          Hafta açık
-        </button>
-      ) : (
-        <button type="button" onClick={() => onOpen(id, !isOpen)} disabled={!canEdit || busy} className={small}>
-          {busy === `open:${id}` ? <Loader2 size={13} className="animate-spin" /> : isOpen ? <Lock size={13} /> : <Unlock size={13} />}
-          {isOpen ? 'Kilitle' : 'Herkese aç'}
-        </button>
-      )}
+      <button type="button" onClick={() => onOpen(id, !isOpen)} disabled={!canEdit || busy} className={small}>
+        {busy === `open:${id}` ? <Loader2 size={13} className="animate-spin" /> : isOpen ? <Lock size={13} /> : <Unlock size={13} />}
+        {isOpen ? (id.startsWith('hafta-') ? 'Hepsini kilitle' : 'Kilitle') : id.startsWith('hafta-') ? 'Hepsini aç' : 'Herkese aç'}
+      </button>
     </div>
   )
 }
@@ -235,8 +228,10 @@ export default function ArduinoLockPage() {
     const item = list.exercises.find((exercise) => exercise.id === id)
     return { title: item.title, code: item.code }
   }
-  const cell = (id, code, isOpen, byWeek = false) => (
-    <CodeCell id={id} code={code} shown={shown[id]} isOpen={isOpen} byWeek={byWeek} canEdit={canEdit} busy={busy} onToggle={toggle} onProject={setProjected} onRenew={renew} onOpen={openFor} />
+  // Open to everyone with its own code (or, in older states, its week's code).
+  const openToAll = (item) => Boolean(open.exercises[item.id] || open.weeks[item.week])
+  const cell = (id, code, isOpen) => (
+    <CodeCell id={id} code={code} shown={shown[id]} isOpen={isOpen} canEdit={canEdit} busy={busy} onToggle={toggle} onProject={setProjected} onRenew={renew} onOpen={openFor} />
   )
   const suggest = (
     <button type="button" onClick={() => setNewPassword(suggestPassphrase())} className="text-sm text-slate-500 underline hover:text-teal-700 dark:text-slate-400">
@@ -293,11 +288,11 @@ export default function ArduinoLockPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <h2 className="font-hero text-xl font-bold text-slate-900 dark:text-white">{weekName(week)}</h2>
-              <Badge isOpen={Boolean(open.weeks[week])} />
+              <Badge isOpen={exercises.some(openToAll)} label={exercises.every(openToAll) ? 'herkese açık' : exercises.some(openToAll) ? 'kısmen açık' : 'kilitli'} />
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
               <span className="text-sm text-slate-500 dark:text-slate-400">Haftanın kodu (tüm uygulamalar)</span>
-              {cell(`hafta-${week}`, code, Boolean(open.weeks[week]))}
+              {cell(`hafta-${week}`, code, exercises.every(openToAll))}
             </div>
           </div>
           <ul className="mt-4 divide-y divide-slate-200 border-t border-slate-200 dark:divide-white/10 dark:border-white/10">
@@ -306,9 +301,9 @@ export default function ArduinoLockPage() {
                 <span className="flex items-center gap-2 text-slate-800 dark:text-slate-100">
                   {item.title}
                   <span className="font-code text-xs text-slate-400 dark:text-slate-500">{item.id}</span>
-                  {open.exercises[item.id] ? <Badge isOpen /> : open.weeks[week] ? <Badge isOpen label="hafta ile açık" /> : null}
+                  {openToAll(item) ? <Badge isOpen /> : null}
                 </span>
-                {cell(item.id, item.code, Boolean(open.exercises[item.id]), Boolean(open.weeks[week]))}
+                {cell(item.id, item.code, openToAll(item))}
               </li>
             ))}
           </ul>
