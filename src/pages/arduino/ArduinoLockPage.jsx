@@ -1,7 +1,7 @@
 import { Check, Copy, Eye, EyeOff, KeyRound, Loader2, LockOpen, Maximize2, RefreshCw, Unlock, Lock, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { create, describe, publish, readLatest, save } from '../../utils/lockStore'
-import { readList, recoverList, renewExercise, renewWeek, sealList, setOpen } from '../../utils/lockState'
+import { readList, renewExercise, renewWeek, sealList, setOpen } from '../../utils/lockState'
 import { suggestPassphrase } from '../../utils/passphrase'
 import { loadState } from './simulator/answers'
 import store from './simulator/answers/store.json'
@@ -29,7 +29,7 @@ function storedToken() {
 
 // A code that stays hidden until clicked, so the list can be on a projector,
 // with the trainers' actions next to it.
-function CodeCell({ id, code, shown, isOpen, canEdit, busy, onToggle, onProject, onRenew, onOpen }) {
+function CodeCell({ id, code, shown, isOpen, byWeek, canEdit, busy, onToggle, onProject, onRenew, onOpen }) {
   const [copied, setCopied] = useState(false)
   const copy = async () => {
     try {
@@ -61,17 +61,24 @@ function CodeCell({ id, code, shown, isOpen, canEdit, busy, onToggle, onProject,
         {busy === `renew:${id}` ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
         Yenile
       </button>
-      <button type="button" onClick={() => onOpen(id, !isOpen)} disabled={!canEdit || busy} className={small}>
-        {busy === `open:${id}` ? <Loader2 size={13} className="animate-spin" /> : isOpen ? <Lock size={13} /> : <Unlock size={13} />}
-        {isOpen ? 'Kilitle' : 'Herkese aç'}
-      </button>
+      {byWeek && !isOpen ? (
+        <button type="button" disabled title="Hafta kilitlenince bu da kilitlenir" className={small}>
+          <Unlock size={13} />
+          Hafta açık
+        </button>
+      ) : (
+        <button type="button" onClick={() => onOpen(id, !isOpen)} disabled={!canEdit || busy} className={small}>
+          {busy === `open:${id}` ? <Loader2 size={13} className="animate-spin" /> : isOpen ? <Lock size={13} /> : <Unlock size={13} />}
+          {isOpen ? 'Kilitle' : 'Herkese aç'}
+        </button>
+      )}
     </div>
   )
 }
 
-const Badge = ({ isOpen }) => (
+const Badge = ({ isOpen, label }) => (
   <span className={`rounded-full px-2 py-0.5 text-xs ${isOpen ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-200' : 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-300'}`}>
-    {isOpen ? 'herkese açık' : 'kilitli'}
+    {label ?? (isOpen ? 'herkese açık' : 'kilitli')}
   </span>
 )
 
@@ -84,7 +91,7 @@ export default function ArduinoLockPage() {
   const [password, setPassword] = useState('')
   const [pagePassword, setPagePassword] = useState(null)
   const [list, setList] = useState(null)
-  const [phase, setPhase] = useState('login') // login | recover | ready
+  const [phase, setPhase] = useState('login') // login | ready
   const [working, setWorking] = useState(false)
   const [message, setMessage] = useState(null)
   const [busy, setBusy] = useState(null)
@@ -92,7 +99,6 @@ export default function ArduinoLockPage() {
   const [projected, setProjected] = useState(null)
   const [token, setToken] = useState(storedToken)
   const [rememberToken, setRememberToken] = useState(Boolean(storedToken()))
-  const [master, setMaster] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [target, setTarget] = useState({ kind: 'gist', owner: 'ROGOYATO', name: 'kilit-verisi', branch: 'main', path: 'kilit.json' })
   const [created, setCreated] = useState(null)
@@ -136,37 +142,6 @@ export default function ArduinoLockPage() {
     setPassword('')
     setShown({})
     setPhase('ready')
-  }
-
-  // With the master password: show the codes and set a new page password.
-  const recover = async (event) => {
-    event.preventDefault()
-    setWorking(true)
-    setMessage(null)
-    try {
-      const latest = canEdit ? await readLatest(store, token) : null
-      if (canEdit && !latest) throw new Error(MISSING)
-      const value = await recoverList(latest ?? lock, master)
-      if (!value) throw new Error('Ana şifre yanlış.')
-      if (canEdit) {
-        const next = await sealList(latest, value, newPassword)
-        await save(store, token, next, 'Sayfa şifresini yenile')
-        await publish(store, token)
-        setLock(next)
-        setMessage({ ok: `Yeni sayfa şifresi kaydedildi. ${SPREAD}` })
-      } else {
-        setMessage({ error: 'Kodlar gösteriliyor ama yeni sayfa şifresi kaydedilmedi: GitHub anahtarı gerekli.' })
-      }
-      setList(value)
-      setPagePassword(newPassword)
-      setMaster('')
-      setNewPassword('')
-      setPhase('ready')
-    } catch (error) {
-      setMessage({ error: error.message })
-    } finally {
-      setWorking(false)
-    }
   }
 
   // Every change starts from the newest saved state, so two trainers do not
@@ -260,8 +235,8 @@ export default function ArduinoLockPage() {
     const item = list.exercises.find((exercise) => exercise.id === id)
     return { title: item.title, code: item.code }
   }
-  const cell = (id, code, isOpen) => (
-    <CodeCell id={id} code={code} shown={shown[id]} isOpen={isOpen} canEdit={canEdit} busy={busy} onToggle={toggle} onProject={setProjected} onRenew={renew} onOpen={openFor} />
+  const cell = (id, code, isOpen, byWeek = false) => (
+    <CodeCell id={id} code={code} shown={shown[id]} isOpen={isOpen} byWeek={byWeek} canEdit={canEdit} busy={busy} onToggle={toggle} onProject={setProjected} onRenew={renew} onOpen={openFor} />
   )
   const suggest = (
     <button type="button" onClick={() => setNewPassword(suggestPassphrase())} className="text-sm text-slate-500 underline hover:text-teal-700 dark:text-slate-400">
@@ -290,38 +265,6 @@ export default function ArduinoLockPage() {
               {working ? <Loader2 size={16} className="animate-spin" /> : <LockOpen size={16} />}
               Aç
             </button>
-            <button type="button" onClick={() => setPhase('recover')} className="text-sm text-slate-500 underline hover:text-teal-700 dark:text-slate-400">
-              şifremi unuttum
-            </button>
-          </form>
-        </Panel>
-      ) : null}
-
-      {phase === 'recover' ? (
-        <Panel>
-          <Label>Ana şifreyle kurtarma</Label>
-          <form onSubmit={recover} className="mt-3 space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <input type="password" value={master} onChange={(event) => setMaster(event.target.value)} placeholder="Ana şifre" aria-label="Ana şifre" className={input} />
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <input value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="Yeni sayfa şifresi" aria-label="Yeni sayfa şifresi" className={input} />
-              {suggest}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button type="submit" disabled={!master || newPassword.length < 12 || working} className={primary}>
-                {working ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
-                Kurtar
-              </button>
-              <button type="button" onClick={() => setPhase('login')} className="text-sm text-slate-500 underline dark:text-slate-400">
-                vazgeç
-              </button>
-            </div>
-            {configured ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <input type="password" value={token} onChange={(event) => setToken(event.target.value.trim())} placeholder="GitHub anahtarı (kaydetmek için)" aria-label="GitHub anahtarı" className={input} />
-              </div>
-            ) : null}
           </form>
         </Panel>
       ) : null}
@@ -363,9 +306,9 @@ export default function ArduinoLockPage() {
                 <span className="flex items-center gap-2 text-slate-800 dark:text-slate-100">
                   {item.title}
                   <span className="font-code text-xs text-slate-400 dark:text-slate-500">{item.id}</span>
-                  {open.exercises[item.id] ? <Badge isOpen /> : null}
+                  {open.exercises[item.id] ? <Badge isOpen /> : open.weeks[week] ? <Badge isOpen label="hafta ile açık" /> : null}
                 </span>
-                {cell(item.id, item.code, Boolean(open.exercises[item.id]))}
+                {cell(item.id, item.code, Boolean(open.exercises[item.id]), Boolean(open.weeks[week]))}
               </li>
             ))}
           </ul>
