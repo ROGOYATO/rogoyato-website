@@ -13,7 +13,7 @@
 //   node scripts/answers.mjs ac                     decrypt answers into answers.local.json (git-ignored)
 //   node scripts/answers.mjs kilitle                encrypt answers.local.json (new exercises get new codes;
 //                                                   needs KILIT_SIFRESI and SAYFA_SIFRESI)
-//   node scripts/answers.mjs herkese-ac <hafta|id>  open a week or one exercise for everyone
+//   node scripts/answers.mjs herkese-ac <hafta|id>  open one exercise, or every exercise of a week, for everyone
 //   node scripts/answers.mjs kapat <hafta|id>       lock it again
 //   node scripts/answers.mjs sayfa-sifresi          set SAYFA_SIFRESI as the page password (with KILIT_SIFRESI)
 //   YENI_SIFRE=... node scripts/answers.mjs sifre-degistir   new master password; codes stay the same
