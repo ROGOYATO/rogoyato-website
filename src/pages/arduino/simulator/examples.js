@@ -1,6 +1,6 @@
 // The simulator's exercises, following the training weeks. Each starts with
 // an empty sketch and its parts placed but unwired. Blink's answer is here;
-// the others are encrypted one by one in answers/locked.json and open with
+// the others are encrypted one by one in the lock state and open with
 // their own code or their week's (src/utils/answerLock.js, scripts/answers.mjs).
 
 // Breadboard layouts: the board sits beside the digital header and parts

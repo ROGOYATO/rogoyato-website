@@ -31,6 +31,13 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # The simulator's lock state can live in a private repository; the
+      # trainers' page saves there and starts this workflow.
+      - name: Fetch lock state
+        run: node scripts/fetch-lock-state.mjs
+        env:
+          KILIT_TOKEN: ${{ secrets.KILIT_TOKEN }}
+
       - name: Build
         run: npm run build
         env:

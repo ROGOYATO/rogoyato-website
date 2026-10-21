@@ -1,14 +1,52 @@
 // The exercises' answers: Blink's ships in examples.js, the rest are
-// encrypted one by one (answers/locked.json). An answer opens with its own
-// code or with its week's code, which this browser then remembers, or for
-// everyone once the code is published in answers/open.json.
+// encrypted one by one in the lock state (src/utils/lockState.js). With a
+// gist or public data repository (answers/store.json) the state is read at
+// run time; with a private one the deploy fetches it into the site, and the
+// trainers' page starts that deploy after each change. An answer opens with its own code or with its
+// week's code, which this browser then remembers, or for everyone once the
+// trainers open it.
+import { useEffect, useState } from 'react'
 import { normalizeCode, unlockWith } from '../../../utils/answerLock'
-import locked from './answers/locked.json'
-import open from './answers/open.json'
+import { readPublic } from '../../../utils/lockStore'
+import store from './answers/store.json'
 
 const STORAGE_KEY = 'rogoyato-kilit-kodlari-v2'
 const answers = new Map() // exercise id -> decrypted answer
-const weekLists = new Map() // week -> { exercise id: code }
+let statePromise = null
+let current = null
+
+const bundled = import.meta.glob('./answers/kilit.json', { import: 'default' })
+const EMPTY = { exercises: {}, weeks: {}, open: { weeks: {}, exercises: {} } }
+const external = (store.gist || store.repo) && !store.private
+
+export function loadState() {
+  statePromise ??= (external ? readPublic(store) : (bundled['./answers/kilit.json']?.() ?? Promise.resolve(EMPTY)))
+    .then((state) => {
+      current = state
+      return state
+    })
+    .catch((error) => {
+      statePromise = null
+      throw error
+    })
+  return statePromise
+}
+
+// The lock state for components: null while loading, { error } on failure.
+export function useLockState() {
+  const [state, setState] = useState(current)
+  useEffect(() => {
+    let alive = true
+    loadState().then(
+      (value) => alive && setState(value),
+      (error) => alive && setState({ error: error.message }),
+    )
+    return () => {
+      alive = false
+    }
+  }, [])
+  return state
+}
 
 function saved() {
   try {
@@ -22,54 +60,63 @@ function saved() {
 function remember(kind, key, code) {
   try {
     const value = saved()
-    value[kind][key] = normalizeCode(code)
+    if (code) value[kind][key] = normalizeCode(code)
+    else delete value[kind][key]
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(value))
   } catch {
     // Without storage the answer stays open for this visit only.
   }
 }
 
-export const hasAnswer = (example) => Boolean(example.answer || locked.exercises[example.id])
+export const hasAnswer = (example, state) => Boolean(example.answer || state?.exercises?.[example.id])
 
 // Whether this browser already holds a code for the exercise (not yet checked).
-export function seemsOpen(example) {
+export function seemsOpen(example, state) {
   const mine = saved()
+  const open = state?.open ?? { weeks: {}, exercises: {} }
   return Boolean(example.answer || open.exercises[example.id] || open.weeks[example.week] || mine.exercises[example.id] || mine.weeks[example.week])
 }
 
-async function openWithCode(example, code) {
-  const value = await unlockWith(code, `uygulama-${example.id}`, locked.exercises[example.id])
+async function openWithCode(state, example, code) {
+  const value = await unlockWith(code, `uygulama-${example.id}`, state.exercises[example.id])
   if (value) answers.set(example.id, value)
   return value
 }
 
-async function weekList(week, code) {
-  if (weekLists.has(week)) return weekLists.get(week)
-  const value = (await unlockWith(code, `hafta-${week}`, locked.weeks[week]))?.codes ?? null
-  if (value) weekLists.set(week, value)
-  return value
+async function openWithWeekCode(state, example, code) {
+  const list = (await unlockWith(code, `hafta-${example.week}`, state.weeks[example.week]))?.codes
+  return list?.[example.id] ? openWithCode(state, example, list[example.id]) : null
 }
 
-// The answer if this browser may see it, otherwise null (locked).
+// The answer if this browser may see it, otherwise null (locked). Codes
+// remembered here that were renewed since are forgotten.
 export async function getAnswer(example) {
   if (example.answer) return example.answer
   if (answers.has(example.id)) return answers.get(example.id)
+  const state = await loadState()
+  const { open } = state
+  if (open.exercises[example.id] && (await openWithCode(state, example, open.exercises[example.id]))) return answers.get(example.id)
+  if (open.weeks[example.week] && (await openWithWeekCode(state, example, open.weeks[example.week]))) return answers.get(example.id)
   const mine = saved()
-  const own = open.exercises[example.id] ?? mine.exercises[example.id]
-  if (own && (await openWithCode(example, own))) return answers.get(example.id)
-  const weekCode = open.weeks[example.week] ?? mine.weeks[example.week]
-  const fromWeek = weekCode ? (await weekList(example.week, weekCode))?.[example.id] : null
-  return fromWeek ? openWithCode(example, fromWeek) : null
+  if (mine.exercises[example.id]) {
+    if (await openWithCode(state, example, mine.exercises[example.id])) return answers.get(example.id)
+    remember('exercises', example.id, null)
+  }
+  if (mine.weeks[example.week]) {
+    if (await openWithWeekCode(state, example, mine.weeks[example.week])) return answers.get(example.id)
+    remember('weeks', example.week, null)
+  }
+  return null
 }
 
 // Tries a code: the exercise's own, or its week's. True when it opens.
 export async function unlock(example, code) {
-  if (await openWithCode(example, code)) {
+  const state = await loadState()
+  if (await openWithCode(state, example, code)) {
     remember('exercises', example.id, code)
     return true
   }
-  const list = await weekList(example.week, code)
-  if (list?.[example.id] && (await openWithCode(example, list[example.id]))) {
+  if (await openWithWeekCode(state, example, code)) {
     remember('weeks', example.week, code)
     return true
   }
