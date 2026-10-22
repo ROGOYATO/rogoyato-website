@@ -434,7 +434,7 @@ export default function SimulatorPage() {
               >
                 {project.circuit.parts.length ? (
                   <ul className="flex flex-wrap gap-2">
-                    {[...project.circuit.parts.filter((part) => part.id === selectedPart?.id), ...project.circuit.parts.filter((part) => part.id !== selectedPart?.id)].map((part) => (
+                    {project.circuit.parts.map((part) => (
                       <li key={part.id}>
                         <button
                           type="button"
