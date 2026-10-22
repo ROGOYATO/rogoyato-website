@@ -1,6 +1,6 @@
 // Runs a compiled sketch against a wired circuit (and optionally the robot
 // car). Free of DOM code so it can run in a Web Worker or in Node tests.
-import { resolveCar, resolveCircuit } from './catalog.js'
+import { SEGMENT_NAMES, resolveCar, resolveCircuit } from './catalog.js'
 import { RobotCar } from './car.js'
 import { createPart } from './parts.js'
 import { ArduinoUno, CLOCK_HZ } from './uno.js'
@@ -102,6 +102,11 @@ export class Simulation {
       if (id === '__nets') {
         for (const [led, brightness] of Object.entries(part.state.leds ?? {})) parts[led] = { brightness }
         for (const [button, pressed] of Object.entries(part.state.buttons ?? {})) parts[button] = { pressed }
+        for (const [buzzer, state] of Object.entries(part.state.buzzers ?? {})) parts[buzzer] = state
+        // An RGB LED as { red, green, blue }, a display as { segments }.
+        for (const [id, levels] of Object.entries(part.state.channels ?? {})) {
+          parts[id] = 'red' in levels ? levels : { segments: SEGMENT_NAMES.map((_, channel) => levels[channel] ?? 0) }
+        }
         parts.__nets = { shorted: part.state.shorted }
       } else {
         parts[id] = { ...part.state }

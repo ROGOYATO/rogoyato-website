@@ -67,7 +67,14 @@ export default function BenchView({ circuit, inputs, selection, dark, frameKey, 
       <div className="pointer-events-none absolute bottom-3 left-3 max-w-[calc(100%-9rem)] rounded-md bg-slate-900/75 px-3 py-1.5 text-xs text-white backdrop-blur-sm">
         {wiring ? (
           <span>
-            <span className="text-amber-300">{wiring}</span> seçildi. Kablonun öbür ucu için bir pine ya da breadboard deliğine tıklayın (iptal: Esc ya da boş alan).
+            <span className="text-amber-300">{wiring}</span> seçildi. Kablonun öbür ucu için bir pine ya da breadboard deliğine tıklayın (iptal: Esc, sağ tık ya da boş alan).{' '}
+            <button
+              type="button"
+              onClick={() => benchRef.current?.cancelWiring()}
+              className="pointer-events-auto ml-1 rounded border border-white/40 px-1.5 py-0.5 font-semibold text-white hover:bg-white/15"
+            >
+              İptal
+            </button>
           </span>
         ) : (
           'Pine ya da breadboard deliğine tıklayıp kablo çekin · parçayı breadboard’a sürükleyip takın · butona basılı tutun'

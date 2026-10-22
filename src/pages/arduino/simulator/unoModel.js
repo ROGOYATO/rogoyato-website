@@ -14,8 +14,8 @@ export const UNO_SIZE = { width: 6.858, depth: 5.334 }
 // Board millimetres (x from the USB end, y up from the power header) to the
 // scene's centimetres around the board's centre (z grows towards the power
 // header).
-const bx = (x) => x / 10 - UNO_SIZE.width / 2
-const bz = (y) => UNO_SIZE.depth / 2 - y / 10
+export const bx = (x) => x / 10 - UNO_SIZE.width / 2
+export const bz = (y) => UNO_SIZE.depth / 2 - y / 10
 
 // Every header hole, in the pinout's order. A hole that is another pin
 // under a second name (SDA is A4) keeps that name as its anchor.
@@ -25,7 +25,7 @@ const HEADERS = {
   power: { from: bx(27.94), count: 8, z: bz(2.54) }, // NC … VIN, away from the USB end
   analog: { from: bx(50.8), count: 6, z: bz(2.54) }, // A0 … A5
 }
-function unoPinLayout() {
+export function unoPinLayout() {
   const pins = []
   const { digitalLow, digitalHigh, power, analog } = HEADERS
   for (let i = 0; i < 8; i += 1) pins.push({ id: `D${i}`, x: digitalLow.from - i * HEADER_PITCH, z: digitalLow.z })
@@ -96,7 +96,7 @@ const infoFor = (element) =>
   null
 
 // The board's outline as a shape (shape y is -z), arcs included.
-function outlineShape() {
+export function outlineShape() {
   const segments = board.outline.map(([x1, y1, x2, y2, curve]) => ({ from: [bx(x1), -bz(y1)], to: [bx(x2), -bz(y2)], curve }))
   const chain = [segments.shift()]
   while (segments.length) {
@@ -321,8 +321,8 @@ function drawBoardTop(scale, bump) {
 // The parts, each built around its own origin (centimetres; its x along the
 // footprint's x, its z = −footprint y) and then put where the CAD file says.
 
-const tin = () => metal('#d5d8db', 0.32)
-const plastic = (color, roughness = 0.5) => mat(color, { roughness })
+export const tin = () => metal('#d5d8db', 0.32)
+export const plastic = (color, roughness = 0.5) => mat(color, { roughness })
 
 // The part's body box from the CAD outline: [centreX, centreZ, width, depth].
 function footprint(element) {
@@ -331,17 +331,17 @@ function footprint(element) {
 }
 
 // A two-terminal chip (resistor, capacitor, inductor) along its x.
-function chipPart(group, length, width, height, body, ends = tin()) {
+export function chipPart(group, length, width, height, body, ends = tin()) {
   group.add(box(length * 0.62, height, width, body, 0, 0.16 + height / 2, 0))
   for (const side of [-1, 1]) group.add(box(length * 0.2, height + 0.004, width + 0.004, ends, (side * length * 0.4), 0.16 + height / 2, 0))
 }
 
 // Gull-wing leads from the body's sides out to the pads.
-function leads(group, points, height = 0.03) {
+export function leads(group, points, height = 0.03) {
   for (const [x, z, w, d] of points) group.add(box(w, height, d, tin(), x, 0.16 + height / 2, z))
 }
 
-const BUILD = {
+export const BUILD = {
   'DIL28-3'(group) {
     // The ATmega328P in its socket; pin 1 (the notch) at the footprint's -x.
     group.add(box(3.75, 0.2, 0.98, plastic('#1a1a1a', 0.7), 0, 0.26, 0))
@@ -492,13 +492,10 @@ function header(group, element) {
 
 // ---------------------------------------------------------------------------
 
-export function buildUno() {
-  const group = new THREE.Group()
-  group.name = 'uno'
+// The board itself: the outline cut from a slab with `colour` and
+// `heights` canvases on top.
+export function boardSlab(colour, heights, edge, info) {
   const { width, depth } = UNO_SIZE
-  const scale = 240
-  const colour = drawBoardTop(scale, false)
-  const heights = drawBoardTop(scale, true)
   const top = new THREE.MeshPhysicalMaterial({
     map: topTexture(colour, width, depth),
     bumpMap: topTexture(heights, width, depth, false),
@@ -507,28 +504,28 @@ export function buildUno() {
     clearcoat: 0.4,
     clearcoatRoughness: 0.3,
   })
-  const pcb = slab(outlineShape(), 0.16, [top, mat('#0d5f63', { roughness: 0.6 })])
-  pcb.userData = { kind: 'uno', info: 'Arduino Uno R3 · sürükleyerek taşıyabilirsiniz' }
-  group.add(pcb)
+  const pcb = slab(outlineShape(), 0.16, [top, mat(edge, { roughness: 0.6 })])
+  pcb.userData = { kind: 'uno', info }
+  return pcb
+}
 
-  // Every part from the CAD file, in place.
-  const named = {}
-  for (const element of board.elements) {
-    const build = BUILD[element.package]
-    if (!build) continue
-    const part = new THREE.Group()
-    part.position.set(bx(element.x), 0, bz(element.y))
-    part.rotation.y = (element.rot * Math.PI) / 180
-    named[element.name] = build(part, element)
-    const info = infoFor(element)
-    part.traverse((child) => {
-      if (child.isMesh) child.userData = { kind: child.userData.kind ?? 'uno', info }
-    })
-    group.add(part)
-  }
+// One part at its place on the board (board millimetres, Eagle rotation),
+// tagged with what it is for the hover text.
+export function placePart(group, element, build, info) {
+  const part = new THREE.Group()
+  part.position.set(bx(element.x), 0, bz(element.y))
+  part.rotation.y = (element.rot * Math.PI) / 180
+  const result = build(part, element)
+  part.traverse((child) => {
+    if (child.isMesh) child.userData = { kind: child.userData.kind ?? 'uno', info }
+  })
+  group.add(part)
+  return result
+}
 
-  // The holes of the female headers: a dark pit with a contact, and the
-  // invisible sphere that takes clicks.
+// The holes of the female headers: a dark pit with a contact, and the
+// invisible sphere that takes clicks.
+export function headerHoles(group) {
   const markers = []
   const pit = mat('#030303', { roughness: 1 })
   const contact = GOLD()
@@ -542,6 +539,26 @@ export function buildUno() {
     group.add(hole, spring, hit)
     markers.push(hit)
   }
+  return markers
+}
+
+// The official board's parts by name (the clone keeps its connectors and
+// headers where they are).
+export const unoElement = (name) => board.elements.find((element) => element.name === name)
+
+export function buildUno() {
+  const group = new THREE.Group()
+  group.name = 'uno'
+  const scale = 240
+  group.add(boardSlab(drawBoardTop(scale, false), drawBoardTop(scale, true), '#0d5f63', 'Arduino Uno R3 (resmî) · sürükleyerek taşıyabilirsiniz'))
+
+  // Every part from the CAD file, in place.
+  const named = {}
+  for (const element of board.elements) {
+    const build = BUILD[element.package]
+    if (build) named[element.name] = placePart(group, element, build, infoFor(element))
+  }
+  const markers = headerHoles(group)
 
   const { L: ledL, TX: ledTx, RX: ledRx, RESET: resetCap } = named
   return {

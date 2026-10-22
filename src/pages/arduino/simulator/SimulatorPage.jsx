@@ -1,5 +1,5 @@
 import { Bot, Check, Cpu, Loader2, Lock, LockOpen, Play, Plus, RotateCcw, Square, Volume2, VolumeX } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   PART_CATALOG,
@@ -51,12 +51,22 @@ function projectFromExample(example) {
   }
 }
 
+// Cars saved before the battery pack and the motors were parts of their own
+// get them, wired as the chassis comes.
+function withChassis(carCircuit) {
+  const chassis = CAR_EXAMPLE.carCircuit
+  const missing = chassis.parts.filter((part) => !carCircuit.parts.some((p) => p.id === part.id))
+  if (!missing.length) return carCircuit
+  const added = new Set(missing.map((part) => part.id))
+  return { ...carCircuit, parts: [...carCircuit.parts, ...missing], wires: [...carCircuit.wires, ...chassis.wires.filter((wire) => added.has(wire.from.part))] }
+}
+
 function loadSaved() {
   try {
     for (const key of OLD_STORAGE_KEYS) window.localStorage.removeItem(key)
     const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY))
     // Projects saved before the breadboard used { part, pin, uno } wires.
-    if (saved?.code && saved?.circuit) return { ...saved, circuit: normalizeCircuit(saved.circuit), carCircuit: saved.carCircuit ? normalizeCircuit(saved.carCircuit) : clone(CAR_EXAMPLE.carCircuit) }
+    if (saved?.code && saved?.circuit) return { ...saved, circuit: normalizeCircuit(saved.circuit), carCircuit: saved.carCircuit ? withChassis(normalizeCircuit(saved.carCircuit)) : clone(CAR_EXAMPLE.carCircuit) }
   } catch {
     // Storage can be unavailable (private mode); start from an example.
   }
@@ -74,7 +84,7 @@ function useDarkMode() {
 }
 
 // Rough footprint radius of each part on the mat, in cm.
-const FOOTPRINT = { breadboard: 9, motorDriver: 8, ultrasonic: 3.2, servo: 2.6, sevenSegment: 2.4, irSensor: 2 }
+const FOOTPRINT = { breadboard: 9, motorDriver: 2.6, ttMotor: 4.5, battery: 4.3, ultrasonic: 3.2, servo: 2.6, sevenSegment: 2.4, irSensor: 2 }
 const footprint = (type) => FOOTPRINT[type] ?? 1.6
 
 function nextPosition(circuit, type) {
@@ -95,6 +105,17 @@ export default function SimulatorPage() {
     return requested ? projectFromExample(requested) : (loadSaved() ?? projectFromExample(EXAMPLES[0]))
   })
   const [selection, setSelection] = useState(null)
+  // A chip clicked in the parts list stays under the pointer while the
+  // inspector above it opens, closes or changes height.
+  const chipAnchor = useRef(null)
+  useLayoutEffect(() => {
+    const anchor = chipAnchor.current
+    chipAnchor.current = null
+    const chip = anchor && document.querySelector(`[data-part-chip="${CSS.escape(anchor.id)}"]`)
+    if (!chip) return
+    const moved = chip.getBoundingClientRect().top - anchor.top
+    if (Math.abs(moved) > 1) window.scrollBy({ top: moved, behavior: 'instant' })
+  }, [selection])
   // The Uno always starts locked (on every visit and every exercise), so a
   // drag meant for the camera does not knock it aside; unlocking it lasts
   // for this visit only.
@@ -491,7 +512,15 @@ export default function SimulatorPage() {
             <>
               {selection?.partId === UNO_ID ? (
                 <PanelCard title="Seçili parça">
-                  <UnoInspector running={running} locked={Boolean(locked[UNO_ID])} onToggleLock={() => toggleLock(UNO_ID)} onRotate={() => rotate(UNO_ID)} onReset={sim.resetBoard} />
+                  <UnoInspector
+                    running={running}
+                    board={unoPlacement(project.circuit).board}
+                    onBoard={(board) => setCircuit('circuit', (circuit) => ({ ...circuit, uno: { ...unoPlacement(circuit), board } }))}
+                    locked={Boolean(locked[UNO_ID])}
+                    onToggleLock={() => toggleLock(UNO_ID)}
+                    onRotate={() => rotate(UNO_ID)}
+                    onReset={sim.resetBoard}
+                  />
                 </PanelCard>
               ) : selectedPart ? (
                 <PanelCard title="Seçili parça">
@@ -559,7 +588,7 @@ export default function SimulatorPage() {
                         ].map(([group, test]) => (
                           <optgroup key={group} label={group}>
                             {Object.entries(PART_CATALOG)
-                              .filter(test)
+                              .filter((entry) => !entry[1].legacy && test(entry))
                               .map(([type, definition]) => (
                                 <option key={type} value={type}>
                                   {definition.name}
@@ -582,7 +611,11 @@ export default function SimulatorPage() {
                         <button
                           type="button"
                           aria-pressed={chosen}
-                          onClick={() => setSelection(chosen ? null : { partId: id })}
+                          data-part-chip={id}
+                          onClick={(event) => {
+                            chipAnchor.current = { id, top: event.currentTarget.getBoundingClientRect().top }
+                            setSelection(chosen ? null : { partId: id })
+                          }}
                           className={`font-code inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-sm transition ${chosen ? 'border-teal-600 bg-teal-50 text-teal-900 dark:border-teal-300/60 dark:bg-teal-400/10 dark:text-teal-100' : 'border-slate-300 text-slate-700 hover:border-teal-600 hover:text-teal-800 dark:border-white/15 dark:text-slate-200'}`}
                         >
                           {chosen ? <Check size={13} /> : null}

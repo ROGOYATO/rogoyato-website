@@ -28,6 +28,7 @@ import {
   unoPlacement,
 } from '../../../utils/avrSim/catalog'
 import { buildPart } from './models'
+import { buildUnoClone } from './unoClone'
 import { buildUno } from './unoModel'
 
 const WIRE_PALETTE = ['#f97316', '#22c55e', '#3b82f6', '#a855f7', '#eab308', '#ec4899', '#14b8a6', '#f43f5e', '#84cc16', '#06b6d4']
@@ -184,10 +185,7 @@ export class Bench3D {
     this.scene.add(mat)
     this.floor = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
 
-    this.uno = buildUno()
-    this.scene.add(this.uno.group)
-    // The Uno's outline at the origin, unturned; moved and turned per circuit.
-    this.unoOutline = bodyBox(this.uno.group, new Set(this.uno.markers))
+    this.setBoard('ch340')
 
     this.raycaster = new THREE.Raycaster()
     this.pointer = new THREE.Vector2()
@@ -294,10 +292,26 @@ export class Bench3D {
     this.layout()
   }
 
+  // The kit's CH340 clone or the official R3; both have their headers in
+  // the same places, so wires stay where they are.
+  setBoard(kind) {
+    if (this.uno && this.boardKind === kind) return
+    if (this.uno) {
+      this.scene.remove(this.uno.group)
+      this.uno.group.traverse((child) => child.geometry?.dispose())
+    }
+    this.boardKind = kind
+    this.uno = kind === 'r3' ? buildUno() : buildUnoClone()
+    this.scene.add(this.uno.group)
+    // The Uno's outline at the origin, unturned; moved and turned per circuit.
+    this.unoOutline = bodyBox(this.uno.group, new Set(this.uno.markers))
+  }
+
   // Places every part from the circuit: plugged-in parts (and anything
   // resting on a breadboard) sit on top of the board.
   layout() {
     this.invalidate()
+    this.setBoard(unoPlacement(this.circuit).board)
     const { position, rotation } = unoPlacement(this.circuit)
     this.uno.group.position.set(position[0], 0, position[1])
     this.uno.group.rotation.y = (rotation * Math.PI) / 180
@@ -547,7 +561,9 @@ export class Bench3D {
 
   onPointerDown(event) {
     this.invalidate()
-    // Only the main button picks, drags and wires; the right button pans.
+    // Only the main button picks, drags and wires; the right button pans,
+    // and a right click that does not pan cancels a wire being drawn.
+    if (event.button === 2) this.rightDown = { x: event.clientX, y: event.clientY }
     if (event.button !== 0) return
     const hit = this.pick(event)
     this.down = { x: event.clientX, y: event.clientY, hit }
@@ -696,6 +712,12 @@ export class Bench3D {
 
   onPointerUp(event) {
     this.invalidate()
+    if (event.button === 2) {
+      const click = this.rightDown && Math.hypot(event.clientX - this.rightDown.x, event.clientY - this.rightDown.y) < 5
+      this.rightDown = null
+      if (click && this.pending) this.cancelWiring()
+      return
+    }
     this.controls.enabled = true
     if (this.resetting) {
       // Like the real button: the program starts again on release.

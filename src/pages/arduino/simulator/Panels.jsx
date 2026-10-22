@@ -19,6 +19,7 @@ import {
   directStripUno,
   freeHole,
   normalizeWire,
+  lightLux,
   partLabel,
   pluggedParts,
 } from '../../../utils/avrSim/catalog'
@@ -363,13 +364,19 @@ function EndSelect({ circuit, label, value, onChange }) {
   )
 }
 
-function Slider({ label, min, max, step = 1, value, unit = '', onChange }) {
+// Lux on the LDR's log-scale slider: 0.1 (moonlight) to 10 000.
+const formatLux = (light) => {
+  const lux = lightLux(light)
+  return lux >= 100 ? Math.round(lux / 10) * 10 : lux >= 10 ? Math.round(lux) : lux.toFixed(1)
+}
+
+function Slider({ label, min, max, step = 1, value, unit = '', format = (v) => v, onChange }) {
   return (
     <label className="block">
       <span className="flex justify-between text-sm text-slate-700 dark:text-slate-200">
         <span>{label}</span>
         <span className="font-code text-teal-700 dark:text-teal-300">
-          {value}
+          {format(value)}
           {unit}
         </span>
       </span>
@@ -418,9 +425,10 @@ export function PartControls({ part, inputs, onInput }) {
         </button>
       )
     case 'potentiometer':
-      return <Slider label="Konum (analogRead)" min={0} max={1023} value={value.value ?? 512} onChange={(v) => onInput('value', v)} />
+      // The shaft turns through 300°.
+      return <Slider label="Mil açısı" min={0} max={1023} value={value.value ?? 512} format={(v) => Math.round((v / 1023) * 300)} unit="°" onChange={(v) => onInput('value', v)} />
     case 'ldr':
-      return <Slider label="Ortam ışığı" min={0} max={100} unit="%" value={value.light ?? 50} onChange={(v) => onInput('light', v)} />
+      return <Slider label="Ortam ışığı" min={0} max={100} value={value.light ?? 50} format={formatLux} unit=" lux" onChange={(v) => onInput('light', v)} />
     case 'ultrasonic':
       return <Slider label="Engel mesafesi" min={2} max={450} unit=" cm" value={value.distance ?? 50} onChange={(v) => onInput('distance', v)} />
     case 'dht11':
@@ -475,7 +483,7 @@ export function LockButton({ locked, onToggle }) {
 
 const lockedNote = 'Konumu kilitli: üstünden sürükleyince kamera döner. Taşımak için kilidi açın.'
 
-export function UnoInspector({ running, locked, onToggleLock, onRotate, onReset }) {
+export function UnoInspector({ running, locked, board, onBoard, onToggleLock, onRotate, onReset }) {
   const [noRoom, setNoRoom] = useState(false)
   return (
     <div className="space-y-3">
@@ -518,6 +526,27 @@ export function UnoInspector({ running, locked, onToggleLock, onRotate, onReset 
         <RotateCcw size={14} />
         Reset
       </button>
+      {/* Both boards have their headers in the same places. */}
+      <fieldset>
+        <legend className="mb-1.5 text-sm text-slate-600 dark:text-slate-300">Kart</legend>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            ['ch340', 'Kitteki kart', 'Uno R3 klon · CH340, SMD'],
+            ['r3', 'Resmî Uno R3', 'Arduino A000066'],
+          ].map(([kind, title, note]) => (
+            <button
+              key={kind}
+              type="button"
+              aria-pressed={board === kind}
+              onClick={() => onBoard(kind)}
+              className={`rounded-md border px-2 py-1.5 text-left text-sm transition ${board === kind ? 'border-teal-700 bg-teal-50 text-teal-900 dark:border-teal-300/60 dark:bg-teal-400/10 dark:text-teal-100' : 'border-slate-300 text-slate-700 hover:border-teal-600 dark:border-white/15 dark:text-slate-200'}`}
+            >
+              <span className="block font-semibold">{title}</span>
+              <span className="block text-xs text-slate-500 dark:text-slate-400">{note}</span>
+            </button>
+          ))}
+        </div>
+      </fieldset>
     </div>
   )
 }
@@ -846,7 +875,8 @@ export function CarHud({ car }) {
 export function CarWiring({ circuit, onWire }) {
   const wireFor = (part, pin) => directUnoPin(circuit, part, pin)
   const groups = [
-    { part: 'driver', title: 'L298N motor sürücü', pins: PART_CATALOG.motorDriver.pins },
+    // The motors and the battery pack are wired with the chassis.
+    { part: 'driver', title: 'L298N motor sürücü', pins: PART_CATALOG.motorDriver.pins.filter((pin) => pin.kind === 'signal' || pin.kind === 'gnd'), note: 'Motorlar OUT1–OUT4’e, 4×AA pil +12V ve GND’ye takılı. GND’yi Arduino GND’sine de bağlayın.' },
     ...['left', 'center', 'right'].map((side) => ({ part: `ir-${side}`, title: `KH-09 ${{ left: 'sol', center: 'orta', right: 'sağ' }[side]} sensör`, pins: PART_CATALOG.irSensor.pins })),
   ]
   return (
@@ -854,6 +884,7 @@ export function CarWiring({ circuit, onWire }) {
       {groups.map((group) => (
         <div key={group.part}>
           <p className="mb-1.5 text-sm font-semibold text-slate-800 dark:text-slate-100">{group.title}</p>
+          {group.note ? <p className="mb-1.5 text-xs text-slate-600 dark:text-slate-300">{group.note}</p> : null}
           <div className="space-y-1.5">
             {group.pins.map((pin) => (
               <div key={pin.id} className="grid grid-cols-[3.5rem_1fr] items-center gap-2">
