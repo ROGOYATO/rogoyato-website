@@ -488,7 +488,13 @@ export default function SimulatorPage() {
                   </div>
                 </PanelCard>
               ) : null}
-              <ConnectionsPanel circuit={project.circuit} selection={selection} onSelect={setSelection} />
+              <ConnectionsPanel
+                circuit={project.circuit}
+                selection={selection}
+                onSelect={setSelection}
+                onWire={(part, pin, uno) => wireToUno('circuit', part, pin, uno)}
+                onConnect={(from, to) => setCircuit('circuit', (circuit) => connectEndpoints(circuit, from, to))}
+              />
               {issues.length ? (
                 <PanelCard title="Devre kontrolü">
                   <IssuesList issues={issues} />

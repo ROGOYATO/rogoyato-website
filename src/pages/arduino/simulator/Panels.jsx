@@ -1,4 +1,4 @@
-import { AlertTriangle, CircleX, Eraser, RotateCw, Send, Trash2 } from 'lucide-react'
+import { AlertTriangle, CircleX, Eraser, Plus, RotateCw, Send, Trash2 } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 import {
   PART_CATALOG,
@@ -36,10 +36,11 @@ const selectClass =
   'font-code w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-800 focus:border-teal-600 focus:outline-hidden dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100'
 
 const PIN_OPTIONS = [
-  ...UNO_DIGITAL.map((pin) => ({ pin, note: PWM_PINS.has(pin) ? '~PWM' : pin === 'D0' || pin === 'D1' ? 'Serial' : 'dijital' })),
-  ...UNO_ANALOG.map((pin) => ({ pin, note: 'analog' })),
-  ...UNO_POWER.map((pin) => ({ pin, note: 'güç' })),
+  ...UNO_DIGITAL.map((pin) => ({ value: pin, label: pin, note: PWM_PINS.has(pin) ? '~PWM' : pin === 'D0' || pin === 'D1' ? 'Serial' : 'dijital' })),
+  ...UNO_ANALOG.map((pin) => ({ value: pin, label: pin, note: 'analog' })),
+  ...UNO_POWER.map((pin) => ({ value: pin, label: pin, note: 'güç' })),
 ]
+const lower = (text) => text.trim().toLocaleLowerCase('tr')
 
 // What students type: "d9", "9", "a0", "gnd", "5v", "3.3v".
 const cleanPin = (text) => text.toUpperCase().replace(/\s+/g, '').replace(/^PIN/, '').replace(',', '.')
@@ -54,40 +55,39 @@ function parsePin(text) {
 function suggestPins(text) {
   const typed = cleanPin(text)
   if (!typed) return PIN_OPTIONS
-  const words = text.trim().toLocaleLowerCase('tr')
-  const byName = PIN_OPTIONS.filter(({ pin }) => pin.startsWith(typed) || (/^\d/.test(typed) && pin.startsWith(`D${typed}`)) || pin === parsePin(text))
-  const byNote = words.length > 1 ? PIN_OPTIONS.filter(({ pin, note }) => !byName.some((option) => option.pin === pin) && note.toLocaleLowerCase('tr').includes(words)) : []
+  const byName = PIN_OPTIONS.filter(({ value }) => value.startsWith(typed) || (/^\d/.test(typed) && value.startsWith(`D${typed}`)) || value === parsePin(text))
+  const byNote = lower(text).length > 1 ? PIN_OPTIONS.filter((option) => !byName.includes(option) && lower(option.note).includes(lower(text))) : []
   return [...byName, ...byNote]
 }
 
-// A pin box that suggests while typing; focusing it lists every pin.
-// Empty means "boşta".
-export function PinSelect({ value, onChange, label }) {
+// A text box that suggests while typing; focusing it lists every option.
+// noneLabel adds an option that clears it (an empty box clears it too).
+function SuggestBox({ label, value, display, suggest, parse, onChange, placeholder, noneLabel, unknown }) {
   const [draft, setDraft] = useState(null) // the text being typed, null when not editing
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(-1) // the option picked with the arrow keys
   const [error, setError] = useState('')
   const id = useId()
-  const options = draft ? suggestPins(draft) : [...(value ? [{ pin: null, note: 'kabloyu sök' }] : []), ...PIN_OPTIONS]
-  // Enter takes the first suggestion when the text is not a pin yet.
-  const highlighted = active >= 0 ? active : draft && !parsePin(draft) ? 0 : -1
+  const options = draft ? suggest(draft) : [...(noneLabel && value ? [{ value: null, label: noneLabel, note: 'kabloyu sök' }] : []), ...suggest('')]
+  // Enter takes the first suggestion when the text does not name one yet.
+  const highlighted = active >= 0 ? active : draft && !parse(draft) ? 0 : -1
 
   const close = () => {
     setDraft(null)
     setOpen(false)
     setActive(-1)
   }
-  const choose = (pin) => {
+  const choose = (next) => {
     setError('')
-    if (pin !== value) onChange(pin)
+    if (next !== value) onChange(next)
     close()
   }
   const commit = () => {
     if (draft === null) return close()
-    if (!draft.trim()) return choose(null)
-    const pin = parsePin(draft)
-    if (pin) return choose(pin)
-    setError(`“${draft.trim()}” diye bir pin yok.`)
+    if (!draft.trim()) return noneLabel ? choose(null) : close()
+    const next = parse(draft)
+    if (next) return choose(next)
+    setError(unknown(draft.trim()))
     close()
   }
   const onKeyDown = (event) => {
@@ -97,7 +97,7 @@ export function PinSelect({ value, onChange, label }) {
       setActive((current) => (Math.max(current, -1) + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length)
     } else if (event.key === 'Enter') {
       event.preventDefault()
-      if (open && options[highlighted]) choose(options[highlighted].pin)
+      if (open && options[highlighted]) choose(options[highlighted].value)
       else commit()
     } else if (event.key === 'Escape') {
       close()
@@ -105,7 +105,7 @@ export function PinSelect({ value, onChange, label }) {
   }
 
   return (
-    <div className="relative">
+    <div className="relative min-w-0">
       <input
         role="combobox"
         aria-label={label}
@@ -113,22 +113,21 @@ export function PinSelect({ value, onChange, label }) {
         aria-controls={`${id}-list`}
         aria-autocomplete="list"
         aria-activedescendant={open && options[highlighted] ? `${id}-${highlighted}` : undefined}
-        value={draft ?? value ?? ''}
-        placeholder="— boşta —"
+        value={draft ?? (value ? display(value) : '')}
+        placeholder={placeholder}
         autoComplete="off"
-        autoCapitalize="characters"
         spellCheck={false}
         onFocus={(event) => {
           setOpen(true)
           event.target.select()
         }}
+        onClick={() => setOpen(true)}
         onChange={(event) => {
           setDraft(event.target.value)
           setError('')
           setOpen(true)
           setActive(-1)
         }}
-        onClick={() => setOpen(true)}
         onKeyDown={onKeyDown}
         onBlur={commit}
         className={selectClass}
@@ -141,23 +140,91 @@ export function PinSelect({ value, onChange, label }) {
         >
           {options.map((option, index) => (
             <li
-              key={option.pin ?? 'none'}
+              key={option.value ?? 'none'}
               id={`${id}-${index}`}
               role="option"
-              aria-selected={option.pin === value}
+              aria-selected={option.value === value}
               onMouseDown={(event) => event.preventDefault()}
-              onClick={() => choose(option.pin)}
+              onClick={() => choose(option.value)}
               onMouseEnter={() => setActive(index)}
               className={`flex cursor-pointer justify-between gap-3 px-2 py-1 ${index === highlighted ? 'bg-teal-50 text-teal-900 dark:bg-teal-400/10 dark:text-teal-100' : 'text-slate-800 dark:text-slate-100'}`}
             >
-              <span className={option.pin === value ? 'font-semibold' : ''}>{option.pin ?? '— boşta —'}</span>
-              <span className="text-xs text-slate-500 dark:text-slate-400">{option.note}</span>
+              <span className={`truncate ${option.value === value ? 'font-semibold' : ''}`}>{option.label}</span>
+              <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400">{option.note}</span>
             </li>
           ))}
         </ul>
       ) : null}
       {error ? <p className="mt-1 text-xs text-rose-700 dark:text-rose-300">{error}</p> : null}
     </div>
+  )
+}
+
+// The Uno pin a part pin is wired to; empty means "boşta".
+export function PinSelect({ value, onChange, label }) {
+  return (
+    <SuggestBox
+      label={label}
+      value={value}
+      display={(pin) => pin}
+      suggest={suggestPins}
+      parse={parsePin}
+      onChange={onChange}
+      placeholder="— boşta —"
+      noneLabel="— boşta —"
+      unknown={(text) => `“${text}” diye bir pin yok.`}
+    />
+  )
+}
+
+// Wire ends as text: "P:<part>:<pin>" or "U:<pin>".
+const endFromKey = (key) => (key.startsWith('U:') ? { uno: key.slice(2) } : { part: key.slice(2, key.indexOf(':', 2)), pin: key.slice(key.indexOf(':', 2) + 1) })
+const HOLE = /^([a-j]\d{1,2}|[TB][+-]\d{1,2})$/i
+// "pot s" finds "Potansiyometre · S": every typed word starts a word of the label.
+const wordsMatch = (label, text) => {
+  const words = lower(label).split(/[\s·]+/)
+  return lower(text)
+    .split(/\s+/)
+    .every((typed) => words.some((word) => word.startsWith(typed)))
+}
+
+// One end of a new wire: a part pin, an Uno pin or (typed) a breadboard hole.
+function EndSelect({ circuit, label, value, onChange }) {
+  const board = circuit.parts.find((part) => part.type === 'breadboard')
+  const holes = board ? breadboardHoles().byId : null
+  const partPins = circuit.parts
+    .filter((part) => part.type !== 'breadboard')
+    .flatMap((part) => PART_CATALOG[part.type].pins.map((pin) => ({ value: `P:${part.id}:${pin.id}`, label: `${partLabel(part)} · ${pin.label}`, note: '' })))
+  const unoPins = PIN_OPTIONS.map((option) => ({ ...option, value: `U:${option.value}`, label: `Uno ${option.label}` }))
+  const hole = (text) => {
+    const typed = text.trim().replace(/^([tb])/i, (letter) => letter.toUpperCase())
+    const id = HOLE.test(typed) ? (/^[a-j]/i.test(typed) ? typed.toLowerCase() : typed) : null
+    return holes && id && holes.has(id) ? { value: `P:${board.id}:${id}`, label: `Breadboard · ${describeHole(id)}`, note: '' } : null
+  }
+  const suggest = (text) => {
+    if (!text.trim()) return [...partPins, ...unoPins]
+    const found = hole(text)
+    const pins = suggestPins(text).map((option) => ({ ...option, value: `U:${option.value}`, label: `Uno ${option.label}` }))
+    // "d13" is both an Uno pin and a hole: the pin comes first.
+    return [...partPins.filter((option) => wordsMatch(option.label, text)), ...(cleanPin(text) ? pins : []), ...(found ? [found] : [])]
+  }
+  const parse = (text) => {
+    const exact = [...partPins, ...unoPins].find((option) => lower(option.label) === lower(text))
+    const pin = parsePin(text.replace(/^uno\s*/i, ''))
+    const only = suggest(text)
+    return exact?.value ?? (pin ? `U:${pin}` : null) ?? hole(text)?.value ?? (only.length === 1 ? only[0].value : null)
+  }
+  return (
+    <SuggestBox
+      label={label}
+      value={value}
+      display={(key) => describeEndpoint(circuit, endFromKey(key))}
+      suggest={suggest}
+      parse={parse}
+      onChange={onChange}
+      placeholder="parça pini, Uno pini ya da a12"
+      unknown={(text) => `“${text}” bulunamadı.`}
+    />
   )
 }
 
@@ -323,22 +390,26 @@ export function PartInspector({ part, circuit, inputs, state, onInput, onWire, o
   )
 }
 
-// The circuit's connections, under the parts: the wires as built, or every
-// part pin and the Uno pins it reaches (directly or through the breadboard).
-// Whatever touches the selection comes first.
-export function ConnectionsPanel({ circuit, selection, onSelect }) {
+// The circuit's connections, under the parts: the wires as built (with a
+// form to add one), or every part pin with the Uno pin it is wired to. The
+// order stays put; whatever touches the selection is highlighted.
+export function ConnectionsPanel({ circuit, selection, onSelect, onWire, onConnect }) {
   const [view, setView] = useState('wires')
-  const { nets } = buildNets(circuit)
+  const [adding, setAdding] = useState(null) // { from, to } while adding a wire
+  const { nets, plugged } = buildNets(circuit)
   const selectedPart = circuit.parts.find((part) => part.id === selection?.partId)
   const selectedNets = new Set((selectedPart ? PART_CATALOG[selectedPart.type].pins : []).map((pin) => nets.find(`P:${selectedPart.id}:${pin.id}`)))
   const touches = (wire) =>
     wire.id === selection?.wireId || (selectedPart && [wire.from, wire.to].some((end) => end.part === selectedPart.id || selectedNets.has(nets.find(endpointKey(end)))))
   const wires = circuit.wires.map(normalizeWire)
   const parts = circuit.parts.filter((part) => part.type !== 'breadboard')
-  const first = (list, test) => [...list.filter(test), ...list.filter((item) => !test(item))]
   const row = (active) => `rounded-md px-2 py-1 ${active ? 'bg-teal-50 dark:bg-teal-400/10' : ''}`
   const tab = (active) =>
     `rounded px-2 py-0.5 text-xs transition ${active ? 'bg-teal-700 text-white dark:bg-teal-400 dark:text-teal-950' : 'text-slate-600 hover:text-teal-700 dark:text-slate-300 dark:hover:text-teal-300'}`
+  const add = () => {
+    onConnect(endFromKey(adding.from), endFromKey(adding.to))
+    setAdding(null)
+  }
   return (
     <PanelCard
       title="Bağlantılar"
@@ -354,40 +425,72 @@ export function ConnectionsPanel({ circuit, selection, onSelect }) {
       }
     >
       {view === 'wires' ? (
-        wires.length ? (
-          <ul className="font-code space-y-0.5 text-sm">
-            {first(wires, touches).map((wire) => (
-              <li key={wire.id}>
-                <button
-                  type="button"
-                  onClick={() => onSelect({ wireId: wire.id })}
-                  className={`${row(touches(wire))} block w-full text-left text-slate-700 hover:text-teal-700 dark:text-slate-200 dark:hover:text-teal-300 ${wire.id === selection?.wireId ? 'font-semibold' : ''}`}
-                >
-                  {describeEndpoint(circuit, wire.from)} ↔ {describeEndpoint(circuit, wire.to)}
+        <div className="space-y-3">
+          {wires.length ? (
+            <ul className="font-code space-y-0.5 text-sm">
+              {wires.map((wire) => (
+                <li key={wire.id}>
+                  <button
+                    type="button"
+                    onClick={() => onSelect({ wireId: wire.id })}
+                    className={`${row(touches(wire))} block w-full text-left text-slate-700 hover:text-teal-700 dark:text-slate-200 dark:hover:text-teal-300 ${wire.id === selection?.wireId ? 'font-semibold' : ''}`}
+                  >
+                    {describeEndpoint(circuit, wire.from)} ↔ {describeEndpoint(circuit, wire.to)}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-slate-500 dark:text-slate-400">Henüz bağlantı yok.</p>
+          )}
+          {adding ? (
+            <div className="space-y-2 rounded-md border border-slate-200 p-2 dark:border-white/10">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-2">
+                <EndSelect circuit={circuit} label="Kablonun bir ucu" value={adding.from} onChange={(from) => setAdding((current) => ({ ...current, from }))} />
+                <span className="font-code pt-1.5 text-slate-500">↔</span>
+                <EndSelect circuit={circuit} label="Kablonun öbür ucu" value={adding.to} onChange={(to) => setAdding((current) => ({ ...current, to }))} />
+              </div>
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={add} disabled={!adding.from || !adding.to || adding.from === adding.to} className="rounded-md bg-teal-700 px-3 py-1 text-sm font-semibold text-white disabled:opacity-50 dark:bg-teal-400 dark:text-teal-950">
+                  Ekle
                 </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-slate-500 dark:text-slate-400">Henüz bağlantı yok.</p>
-        )
+                <button type="button" onClick={() => setAdding(null)} className="text-sm text-slate-500 underline dark:text-slate-400">
+                  vazgeç
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button type="button" onClick={() => setAdding({ from: null, to: null })} className="font-code inline-flex items-center gap-1 rounded-md border border-slate-300 px-2.5 py-1 text-sm text-slate-700 hover:border-teal-600 hover:text-teal-800 dark:border-white/15 dark:text-slate-200">
+              <Plus size={13} />
+              Kablo ekle
+            </button>
+          )}
+        </div>
       ) : parts.length ? (
-        <ul className="space-y-0.5 text-sm">
-          {first(parts, (part) => part.id === selectedPart?.id).map((part) => (
-            <li key={part.id} className={`${row(part.id === selectedPart?.id)} grid grid-cols-[minmax(0,9rem)_1fr] gap-2`}>
-              <button type="button" onClick={() => onSelect({ partId: part.id })} className="truncate text-left text-slate-800 hover:text-teal-700 dark:text-slate-100 dark:hover:text-teal-300">
+        <ul className="space-y-2 text-sm">
+          {parts.map((part) => (
+            <li key={part.id} className={row(part.id === selectedPart?.id)}>
+              <button type="button" onClick={() => onSelect({ partId: part.id })} className="text-left font-semibold text-slate-800 hover:text-teal-700 dark:text-slate-100 dark:hover:text-teal-300">
                 {partLabel(part)}
               </button>
-              <span className="font-code flex flex-wrap gap-x-3 text-xs leading-5 text-slate-600 dark:text-slate-300">
+              <div className="mt-1 space-y-1">
                 {PART_CATALOG[part.type].pins.map((pin) => {
                   const uno = describeNet(nets, `P:${part.id}:${pin.id}`)
+                  const direct = directUnoPin(circuit, part.id, pin.id)
+                  const hole = plugged.get(part.id)?.holes?.[pin.id]
+                  // Reached some other way than a direct wire: through the breadboard.
+                  const via = uno.length && !direct ? `${hole ? `${hole} deliği ` : ''}→ ${uno.join(', ')}` : null
                   return (
-                    <span key={pin.id} className={uno.length ? '' : 'text-slate-400 dark:text-slate-500'}>
-                      {pin.label} → {uno.length ? uno.join(', ') : 'boşta'}
-                    </span>
+                    <div key={pin.id} className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-2">
+                      <span className="font-code text-xs text-slate-700 dark:text-slate-200">
+                        {pin.label}
+                        {via ? <span className="block text-[0.7rem] leading-tight text-slate-500 dark:text-slate-400">{via}</span> : null}
+                      </span>
+                      <PinSelect label={`${partLabel(part)} ${pin.label}`} value={direct} onChange={(next) => onWire(part.id, pin.id, next)} />
+                    </div>
                   )
                 })}
-              </span>
+              </div>
             </li>
           ))}
         </ul>

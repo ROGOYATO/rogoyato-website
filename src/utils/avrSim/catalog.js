@@ -348,8 +348,12 @@ export function connectEndpoints(circuit, a, b) {
 // Uno (or remove it when uno is null).
 export function setDirectUnoPin(circuit, partId, pinId, uno) {
   const direct = (end, other) => end.part === partId && end.pin === pinId && other.uno
-  const wires = circuit.wires.map(normalizeWire).filter((wire) => !direct(wire.from, wire.to) && !direct(wire.to, wire.from))
-  if (uno) wires.push({ id: newWireId(), from: { part: partId, pin: pinId }, to: { uno } })
+  const isDirect = (wire) => direct(wire.from, wire.to) || direct(wire.to, wire.from)
+  const all = circuit.wires.map(normalizeWire)
+  const at = all.findIndex(isDirect)
+  const wires = all.filter((wire) => !isDirect(wire))
+  // A changed wire keeps its place in the list.
+  if (uno) wires.splice(at < 0 ? wires.length : at, 0, { id: at < 0 ? newWireId() : all[at].id, from: { part: partId, pin: pinId }, to: { uno } })
   return { ...circuit, wires }
 }
 
