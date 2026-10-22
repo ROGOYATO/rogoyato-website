@@ -17,10 +17,26 @@ import {
   holeWorldPosition,
   movePart,
   normalizeWire,
+  pluggedParts,
 } from '../../../utils/avrSim/catalog'
 import { buildPart, buildUno } from './models'
 
 const WIRE_PALETTE = ['#f97316', '#22c55e', '#3b82f6', '#a855f7', '#eab308', '#ec4899', '#14b8a6', '#f43f5e', '#84cc16', '#06b6d4']
+
+// The solid bodies of a model, left after pin markers, labels and see-through
+// effects (hit areas, sound cones).
+function bodyBox(group, skip) {
+  const box = new THREE.Box3()
+  group.updateMatrixWorld(true)
+  group.traverse((child) => {
+    if (!child.isMesh || skip.has(child)) return
+    const materials = [child.material].flat()
+    if (materials.every((material) => material.transparent && material.opacity < 0.5)) return
+    child.geometry.computeBoundingBox()
+    box.union(child.geometry.boundingBox.clone().applyMatrix4(child.matrixWorld))
+  })
+  return box
+}
 
 const isPower = (end) => ['5V', '3V3', 'VIN'].includes(end.uno) || /^[TB]\+/.test(end.pin ?? '')
 const isGround = (end) => end.uno === 'GND' || /^[TB]-/.test(end.pin ?? '')
@@ -337,9 +353,66 @@ export class Bench3D {
       const point = this.floorPoint(event)
       if (entry && point) {
         this.controls.enabled = false
-        this.drag = { partId: data.partId, offset: [point.x - entry.part.position[0], point.z - entry.part.position[1]], base: this.circuit, moved: false }
+        const moving = this.movingWith(this.circuit, data.partId)
+        this.drag = { partId: data.partId, offset: [point.x - entry.part.position[0], point.z - entry.part.position[1]], base: this.circuit, moved: false, moving, overlapping: this.overlaps(this.circuit, moving) }
       }
     }
+  }
+
+  // The part being dragged and, for a breadboard, what is plugged into it.
+  movingWith(circuit, partId) {
+    const riders = [...pluggedParts(circuit)].filter(([, info]) => info.board === partId).map(([id]) => id)
+    return new Set([partId, ...riders])
+  }
+
+  // A part's outline on the mat at rotation 0 around its origin (cached).
+  outline(entry) {
+    if (!entry.outline) {
+      const { group } = entry.model
+      const [position, rotation] = [group.position.clone(), group.rotation.y]
+      group.position.set(0, 0, 0)
+      group.rotation.y = 0
+      entry.outline = bodyBox(group, new Set(entry.model.markers))
+      group.position.copy(position)
+      group.rotation.y = rotation
+      group.updateMatrixWorld(true)
+    }
+    return entry.outline
+  }
+
+  // Where a part would cover the mat: [minX, maxX, minZ, maxZ].
+  footprint(part) {
+    const entry = this.parts.get(part.id)
+    if (!entry) return null
+    const box = this.outline(entry)
+    const turn = ((part.rotation ?? 0) * Math.PI) / 180
+    const up = new THREE.Vector3(0, 1, 0)
+    const corners = [
+      [box.min.x, box.min.z],
+      [box.max.x, box.min.z],
+      [box.min.x, box.max.z],
+      [box.max.x, box.max.z],
+    ].map(([x, z]) => new THREE.Vector3(x, 0, z).applyAxisAngle(up, turn))
+    const xs = corners.map((corner) => corner.x + part.position[0])
+    const zs = corners.map((corner) => corner.z + part.position[1])
+    return [Math.min(...xs), Math.max(...xs), Math.min(...zs), Math.max(...zs)]
+  }
+
+  // Pairs ("a|b") of a moving part and something it runs into. Parts may
+  // rest on a breadboard; the Uno and other parts are solid.
+  overlaps(circuit, moving) {
+    this.unoBox ??= bodyBox(this.uno.group, new Set(this.uno.markers))
+    const uno = { id: 'uno', box: [this.unoBox.min.x, this.unoBox.max.x, this.unoBox.min.z, this.unoBox.max.z] }
+    const solids = circuit.parts.map((part) => ({ id: part.id, board: part.type === 'breadboard', box: this.footprint(part) })).filter((item) => item.box)
+    const hit = (a, b, gap = 0.03) => a[0] < b[1] - gap && b[0] < a[1] - gap && a[2] < b[3] - gap && b[2] < a[3] - gap
+    const pairs = new Set()
+    for (const item of solids.filter((solid) => moving.has(solid.id))) {
+      for (const other of [uno, ...solids.filter((solid) => !moving.has(solid.id))]) {
+        if (item.board !== Boolean(other.board) && other.id !== 'uno') continue
+        if (hit(item.box, other.box)) pairs.add(`${item.id}|${other.id}`)
+      }
+    }
+    return pairs
   }
 
   onPointerMove(event) {
@@ -352,10 +425,17 @@ export class Bench3D {
         if (point) {
           const x = Math.max(-30, Math.min(30, point.x - this.drag.offset[0]))
           const z = Math.max(-17, Math.min(25, point.z - this.drag.offset[1]))
-          this.drag.position = [x, z]
-          // Preview exactly what the page will do on release (snap, carry).
-          this.circuit = movePart(this.drag.base, this.drag.partId, [x, z])
-          this.layout()
+          // Preview exactly what the page will do on release (snap, carry);
+          // a spot that runs into another part (or the Uno) is refused and
+          // the part stays where it last fitted.
+          const candidate = movePart(this.drag.base, this.drag.partId, [x, z])
+          const blocked = [...this.overlaps(candidate, this.drag.moving)].some((pair) => !this.drag.overlapping.has(pair))
+          this.renderer.domElement.style.cursor = blocked ? 'not-allowed' : 'grabbing'
+          if (!blocked) {
+            this.drag.position = [x, z]
+            this.circuit = candidate
+            this.layout()
+          }
         }
       }
       return
