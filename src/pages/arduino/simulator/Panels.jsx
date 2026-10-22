@@ -1,4 +1,4 @@
-import { AlertTriangle, CircleX, Eraser, Plus, RotateCcw, RotateCw, Send, Trash2 } from 'lucide-react'
+import { AlertTriangle, CircleX, Eraser, Lock, LockOpen, Plus, RotateCcw, RotateCw, Send, Trash2 } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 import {
   PART_CATALOG,
@@ -457,7 +457,25 @@ const OPTION_LABELS = { color: 'Renk', ohms: 'Değer' }
 
 // The Uno in the parts list: it can be moved and turned, and its reset
 // button restarts the running program.
-export function UnoInspector({ running, onRotate, onReset }) {
+// Locks a part where it is: dragging it then turns the camera instead.
+export function LockButton({ locked, onToggle }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={locked}
+      title={locked ? 'Konumu kilitli: kilidi aç' : 'Konumu kilitle'}
+      aria-label={locked ? 'Kilidi aç' : 'Konumu kilitle'}
+      className={`rounded-md border p-1.5 ${locked ? 'border-amber-500 bg-amber-50 text-amber-700 dark:border-amber-400/60 dark:bg-amber-400/10 dark:text-amber-200' : 'border-slate-300 text-slate-600 hover:border-teal-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300'}`}
+    >
+      {locked ? <Lock size={15} /> : <LockOpen size={15} />}
+    </button>
+  )
+}
+
+const lockedNote = 'Konumu kilitli: üstünden sürükleyince kamera döner. Taşımak için kilidi açın.'
+
+export function UnoInspector({ running, locked, onToggleLock, onRotate, onReset }) {
   const [noRoom, setNoRoom] = useState(false)
   return (
     <div className="space-y-3">
@@ -465,24 +483,30 @@ export function UnoInspector({ running, onRotate, onReset }) {
         <div>
           <p className="font-semibold text-slate-900 dark:text-white">Arduino Uno</p>
           <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-            Sürükleyerek taşıyın; kablolar pinlerinde kalır. Kartın köşesindeki kırmızı RESET butonu çalışan programı baştan başlatır: setup() yeniden
-            çalışır, kod yeniden derlenmez. ~ işaretli pinler (D3, D5, D6, D9, D10, D11) analogWrite ile PWM verebilir.
+            Sürükleyerek taşıyın; kablolar pinlerinde kalır. Kartın köşesindeki RESET butonu çalışan programı baştan başlatır: setup() yeniden
+            çalışır, kod yeniden derlenmez. ~ işaretli pinler (3, 5, 6, 9, 10, 11) analogWrite ile PWM verebilir. Parçaların üstüne gelince ne
+            oldukları yazar.
           </p>
+          {locked ? <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">{lockedNote}</p> : null}
           {noRoom ? <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">Döndürmek için yer yok: önce kartı boş bir yere taşıyın.</p> : null}
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            if (onRotate()) return
-            setNoRoom(true)
-            setTimeout(() => setNoRoom(false), 2500)
-          }}
-          title="Döndür"
-          aria-label="Döndür"
-          className="shrink-0 rounded-md border border-slate-300 p-1.5 text-slate-600 hover:border-teal-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300"
-        >
-          <RotateCw size={15} />
-        </button>
+        <div className="flex shrink-0 gap-1">
+          <LockButton locked={locked} onToggle={onToggleLock} />
+          <button
+            type="button"
+            disabled={locked}
+            onClick={() => {
+              if (onRotate()) return
+              setNoRoom(true)
+              setTimeout(() => setNoRoom(false), 2500)
+            }}
+            title={locked ? 'Kilitliyken döndürülemez' : 'Döndür'}
+            aria-label="Döndür"
+            className="rounded-md border border-slate-300 p-1.5 text-slate-600 hover:border-teal-600 hover:text-teal-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:text-slate-300"
+          >
+            <RotateCw size={15} />
+          </button>
+        </div>
       </div>
       <button
         type="button"
@@ -498,7 +522,7 @@ export function UnoInspector({ running, onRotate, onReset }) {
   )
 }
 
-export function PartInspector({ part, circuit, inputs, state, onInput, onWire, onStrip, onRotate, onDelete, onProp }) {
+export function PartInspector({ part, circuit, inputs, state, locked, onToggleLock, onInput, onWire, onStrip, onRotate, onDelete, onProp }) {
   const [noRoom, setNoRoom] = useState(false)
   const definition = PART_CATALOG[part.type]
   const { nets, plugged } = buildNets(circuit)
@@ -509,19 +533,22 @@ export function PartInspector({ part, circuit, inputs, state, onInput, onWire, o
         <div>
           <p className="font-semibold text-slate-900 dark:text-white">{partLabel(part)}</p>
           <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{definition.help}</p>
+          {locked ? <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">{lockedNote}</p> : null}
           {noRoom ? <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">Döndürmek için yer yok: önce parçayı boş bir yere taşıyın.</p> : null}
         </div>
         <div className="flex shrink-0 gap-1">
+          <LockButton locked={locked} onToggle={onToggleLock} />
           <button
             type="button"
+            disabled={locked}
             onClick={() => {
               if (onRotate()) return
               setNoRoom(true)
               setTimeout(() => setNoRoom(false), 2500)
             }}
-            title="Döndür"
+            title={locked ? 'Kilitliyken döndürülemez' : 'Döndür'}
             aria-label="Döndür"
-            className="rounded-md border border-slate-300 p-1.5 text-slate-600 hover:border-teal-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300"
+            className="rounded-md border border-slate-300 p-1.5 text-slate-600 hover:border-teal-600 hover:text-teal-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:text-slate-300"
           >
             <RotateCw size={15} />
           </button>

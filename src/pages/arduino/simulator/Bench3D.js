@@ -23,6 +23,7 @@ import {
   holeWorldPosition,
   movePart,
   normalizeWire,
+  partLabel,
   pluggedParts,
   unoPlacement,
 } from '../../../utils/avrSim/catalog'
@@ -445,6 +446,25 @@ export class Bench3D {
     this.scene.add(this.highlight)
   }
 
+  // Parts locked in place ({ id: true }): dragging one turns the camera.
+  setLocked(locked) {
+    this.locked = locked ?? {}
+  }
+
+  // Whether a drag on this part would move something locked (a breadboard
+  // carries what is plugged into it).
+  isLocked(partId) {
+    return [...this.movingWith(this.circuit, partId)].some((id) => this.locked?.[id])
+  }
+
+  // The part (or the Uno) a hit belongs to.
+  partOf(hit) {
+    const data = hit?.object.userData
+    if (data?.kind === 'uno' || data?.kind === 'reset') return UNO_ID
+    if (data?.kind === 'part' || data?.kind === 'board' || data?.kind === 'press') return data.partId
+    return null
+  }
+
   setSnapshot(snapshot, inputs) {
     this.snapshot = snapshot
     this.inputs = inputs ?? {}
@@ -541,7 +561,7 @@ export class Bench3D {
       this.controls.enabled = false
       this.resetting = true
       this.uno.setReset(true)
-    } else if (data.kind === 'part' || data.kind === 'board' || data.kind === 'uno') {
+    } else if ((data.kind === 'part' || data.kind === 'board' || data.kind === 'uno') && !this.isLocked(data.kind === 'uno' ? UNO_ID : data.partId)) {
       const partId = data.kind === 'uno' ? UNO_ID : data.partId
       const position = partId === UNO_ID ? unoPlacement(this.circuit).position : this.parts.get(partId)?.part.position
       const point = this.floorPoint(event)
@@ -652,10 +672,15 @@ export class Bench3D {
     const target = this.target(hit)
     this.setHover(target)
     const kind = hit?.object.userData.kind
-    this.renderer.domElement.style.cursor = target || kind === 'press' || kind === 'reset' ? 'pointer' : kind === 'part' || kind === 'board' || kind === 'uno' ? 'grab' : 'default'
+    const owner = this.partOf(hit)
+    const fixed = owner && this.isLocked(owner)
+    this.renderer.domElement.style.cursor = target || kind === 'press' || kind === 'reset' ? 'pointer' : (kind === 'part' || kind === 'board' || kind === 'uno') && !fixed ? 'grab' : 'default'
     const rect = this.renderer.domElement.getBoundingClientRect()
-    // A pin or hole tells where it goes; a part of the Uno tells what it is.
-    const text = target ? this.describe(target.end) : hit?.object.userData.info
+    // A pin or hole tells where it goes; a part tells what it is (a part of
+    // the Uno, what it does) and whether it is locked.
+    const entry = owner && owner !== UNO_ID ? this.parts.get(owner) : null
+    const named = hit?.object.userData.info ?? (entry ? partLabel(entry.part) : null)
+    const text = target ? this.describe(target.end) : named && `${named}${fixed ? ' · konumu kilitli' : ''}`
     this.handlers.onHover?.(text ? { text, x: event.clientX - rect.left, y: event.clientY - rect.top } : null)
 
     if (this.pending) {
@@ -707,6 +732,8 @@ export class Bench3D {
     const target = this.target(hit)
     if (target) this.clickTarget(target)
     else if (data?.kind === 'wire') this.handlers.onSelect?.({ wireId: data.wireId })
+    // A click on a locked part (which did not start a drag) selects it.
+    else if (this.partOf(hit) && data?.kind !== 'press') this.handlers.onSelect?.({ partId: this.partOf(hit) })
     else {
       this.cancelWiring()
       this.handlers.onSelect?.(null)

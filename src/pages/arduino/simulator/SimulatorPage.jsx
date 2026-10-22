@@ -1,4 +1,4 @@
-import { Bot, Check, Cpu, Loader2, Play, Plus, RotateCcw, Square, Volume2, VolumeX } from 'lucide-react'
+import { Bot, Check, Cpu, Loader2, Lock, LockOpen, Play, Plus, RotateCcw, Square, Volume2, VolumeX } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
@@ -170,6 +170,13 @@ export default function SimulatorPage() {
   }
 
   const update = (changes) => setProject((current) => ({ ...current, ...changes }))
+  // Parts locked where they are ({ id: true }, the Uno is UNO_ID). Kept out
+  // of the circuit so locking does not restart a running sketch.
+  const locked = project.locked ?? {}
+  const toggleLock = (id) => setProject((current) => ({ ...current, locked: { ...current.locked, [id]: !current.locked?.[id] } }))
+  const benchIds = [UNO_ID, ...project.circuit.parts.map((part) => part.id)]
+  const allLocked = benchIds.every((id) => locked[id])
+  const lockAll = (value) => update({ locked: value ? Object.fromEntries(benchIds.map((id) => [id, true])) : {} })
   const setCircuit = (key, fn) => setProject((current) => ({ ...current, [key]: fn(current[key]) }))
 
   // Turns a part a quarter; if it would then run into another part or the
@@ -455,6 +462,7 @@ export default function SimulatorPage() {
                 onMovePart={(id, position) => setCircuit('circuit', (circuit) => movePart(circuit, id, position))}
                 onPress={(id, pressed) => setInput(id, 'pressed', pressed)}
                 onReset={() => running && sim.resetBoard()}
+                locked={locked}
                 apiRef={benchApi}
               />
             ) : (
@@ -471,7 +479,7 @@ export default function SimulatorPage() {
             <>
               {selection?.partId === UNO_ID ? (
                 <PanelCard title="Seçili parça">
-                  <UnoInspector running={running} onRotate={() => rotate(UNO_ID)} onReset={sim.resetBoard} />
+                  <UnoInspector running={running} locked={Boolean(locked[UNO_ID])} onToggleLock={() => toggleLock(UNO_ID)} onRotate={() => rotate(UNO_ID)} onReset={sim.resetBoard} />
                 </PanelCard>
               ) : selectedPart ? (
                 <PanelCard title="Seçili parça">
@@ -480,6 +488,8 @@ export default function SimulatorPage() {
                     circuit={project.circuit}
                     inputs={project.inputs[selectedPart.id]}
                     state={sim.hud?.parts?.[selectedPart.id]}
+                    locked={Boolean(locked[selectedPart.id])}
+                    onToggleLock={() => toggleLock(selectedPart.id)}
                     onInput={(key, value) => setInput(selectedPart.id, key, value)}
                     onWire={(part, pin, uno) => wireToUno('circuit', part, pin, uno)}
                     onStrip={stripToUno}
@@ -513,31 +523,42 @@ export default function SimulatorPage() {
               <PanelCard
                 title="Parçalar"
                 actions={
-                  <label className="relative">
-                    <span className="sr-only">Parça ekle</span>
-                    <select
-                      value=""
-                      onChange={(event) => event.target.value && addPart(event.target.value)}
-                      className="font-code appearance-none rounded-md bg-teal-700 py-1 pl-7 pr-3 text-xs font-semibold text-white dark:bg-teal-400 dark:text-teal-950"
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => lockAll(!allLocked)}
+                      title={allLocked ? 'Bütün parçaların kilidini aç' : 'Bütün parçaları yerinde kilitle'}
+                      className="font-code inline-flex items-center gap-1 rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:border-teal-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300"
                     >
-                      <option value="">Parça ekle</option>
-                      {[
-                        ['Breadboard ve elemanlar', ([type, definition]) => type === 'breadboard' || definition.bare],
-                        ['Modüller', ([type, definition]) => type !== 'breadboard' && !definition.bare],
-                      ].map(([group, test]) => (
-                        <optgroup key={group} label={group}>
-                          {Object.entries(PART_CATALOG)
-                            .filter(test)
-                            .map(([type, definition]) => (
-                              <option key={type} value={type}>
-                                {definition.name}
-                              </option>
-                            ))}
-                        </optgroup>
-                      ))}
-                    </select>
-                    <Plus size={13} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-white dark:text-teal-950" />
-                  </label>
+                      {allLocked ? <LockOpen size={12} /> : <Lock size={12} />}
+                      {allLocked ? 'Kilitleri aç' : 'Hepsini kilitle'}
+                    </button>
+                    <label className="relative">
+                      <span className="sr-only">Parça ekle</span>
+                      <select
+                        value=""
+                        onChange={(event) => event.target.value && addPart(event.target.value)}
+                        className="font-code appearance-none rounded-md bg-teal-700 py-1 pl-7 pr-3 text-xs font-semibold text-white dark:bg-teal-400 dark:text-teal-950"
+                      >
+                        <option value="">Parça ekle</option>
+                        {[
+                          ['Breadboard ve elemanlar', ([type, definition]) => type === 'breadboard' || definition.bare],
+                          ['Modüller', ([type, definition]) => type !== 'breadboard' && !definition.bare],
+                        ].map(([group, test]) => (
+                          <optgroup key={group} label={group}>
+                            {Object.entries(PART_CATALOG)
+                              .filter(test)
+                              .map(([type, definition]) => (
+                                <option key={type} value={type}>
+                                  {definition.name}
+                                </option>
+                              ))}
+                          </optgroup>
+                        ))}
+                      </select>
+                      <Plus size={13} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-white dark:text-teal-950" />
+                    </label>
+                  </div>
                 }
               >
                 {/* The Uno comes first; it can be moved and turned but not removed. */}
@@ -554,6 +575,7 @@ export default function SimulatorPage() {
                         >
                           {chosen ? <Check size={13} /> : null}
                           {label}
+                          {locked[id] ? <Lock size={11} className="text-amber-600 dark:text-amber-300" aria-label="kilitli" /> : null}
                         </button>
                       </li>
                     )
