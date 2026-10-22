@@ -26,7 +26,8 @@ import {
   pluggedParts,
   unoPlacement,
 } from '../../../utils/avrSim/catalog'
-import { buildPart, buildUno } from './models'
+import { buildPart } from './models'
+import { buildUno } from './unoModel'
 
 const WIRE_PALETTE = ['#f97316', '#22c55e', '#3b82f6', '#a855f7', '#eab308', '#ec4899', '#14b8a6', '#f43f5e', '#84cc16', '#06b6d4']
 
@@ -68,7 +69,8 @@ function describeUnoPin(pin, anchor) {
   if (pin === 'A4') return 'A4 · analog giriş · I2C SDA'
   if (pin === 'A5') return 'A5 · analog giriş · I2C SCL'
   if (pin.startsWith('A')) return `${pin} · analog giriş`
-  return `${pin}${PWM_PINS.has(pin) ? ' · PWM (~)' : ''}${pin === 'D0' ? ' · Serial RX' : pin === 'D1' ? ' · Serial TX' : ''}`
+  const extra = { D0: 'Serial RX', D1: 'Serial TX', D2: 'kesme 0 (attachInterrupt)', D3: 'kesme 1 (attachInterrupt)', D10: 'SPI SS', D11: 'SPI MOSI', D12: 'SPI MISO', D13: 'SPI SCK · kart üstündeki L LED’i (LED_BUILTIN)' }[pin]
+  return [`${pin} · dijital pin`, PWM_PINS.has(pin) ? 'PWM (~)' : null, extra].filter(Boolean).join(' · ')
 }
 
 // A self-healing cutting mat: a 1 cm grid with every fifth line stronger,
@@ -652,7 +654,9 @@ export class Bench3D {
     const kind = hit?.object.userData.kind
     this.renderer.domElement.style.cursor = target || kind === 'press' || kind === 'reset' ? 'pointer' : kind === 'part' || kind === 'board' || kind === 'uno' ? 'grab' : 'default'
     const rect = this.renderer.domElement.getBoundingClientRect()
-    this.handlers.onHover?.(target ? { text: this.describe(target.end), x: event.clientX - rect.left, y: event.clientY - rect.top } : null)
+    // A pin or hole tells where it goes; a part of the Uno tells what it is.
+    const text = target ? this.describe(target.end) : hit?.object.userData.info
+    this.handlers.onHover?.(text ? { text, x: event.clientX - rect.left, y: event.clientY - rect.top } : null)
 
     if (this.pending) {
       const start = this.endPosition(this.pending.end)

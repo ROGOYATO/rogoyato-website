@@ -71,7 +71,7 @@ export default function BenchView({ circuit, inputs, selection, dark, frameKey, 
       </div>
       {hover ? (
         <div
-          className="font-code pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-md bg-slate-900 px-2 py-1 text-xs text-white shadow-lg"
+          className="font-code pointer-events-none absolute z-10 w-max max-w-72 -translate-x-1/2 -translate-y-full rounded-md bg-slate-900 px-2 py-1 text-xs leading-snug text-white shadow-lg"
           style={{ left: hover.x, top: hover.y - 10 }}
         >
           {hover.text}

@@ -76,12 +76,20 @@ Simülatörün tarayıcıda kullandığı diğer açık kaynak yazılımlar:
   three.js 0.181 (3D görünüm) ........................... MIT, three.js-MIT.txt
     https://github.com/mrdoob/three.js
 
+3D tezgâhtaki Arduino Uno'nun kartı (kenarı, delikleri, bakır yolları,
+pedleri ve parçalarının yeri), Arduino'nun Uno Rev3 (A000066) tasarım
+dosyalarından üretilmiştir. O dosyalar ve bu türetilmiş veri
+(src/pages/arduino/simulator/unoBoard.json) CC BY-SA 4.0 lisanslıdır,
+CC-BY-SA-4.0.txt. Arduino® Arduino AG'nin tescilli markasıdır.
+    https://docs.arduino.cc/hardware/uno-rev3/ (CAD dosyaları)
+    https://github.com/ROGOYATO/rogoyato-website/blob/main/scripts/build-uno-board.mjs
+
 Paketleri yeniden oluşturmak için sitenin deposundaki betiklere bakın:
   https://github.com/ROGOYATO/rogoyato-website/blob/main/scripts/build-browser-compiler.mjs
   https://github.com/ROGOYATO/rogoyato-website/blob/main/scripts/build-library-pack.mjs
 
 Lisans metinleri bu klasörde: GPL-3.0.txt, LGPL-3.0.txt, LGPL-2.1.txt,
 GCC-exception-3.1.txt, avr-libc.txt, Apache-2.0.txt, DHT-sensor-library-MIT.txt,
-avr8js-MIT.txt, three.js-MIT.txt.
+avr8js-MIT.txt, three.js-MIT.txt, CC-BY-SA-4.0.txt.
 
 Aynı bilgiler sitede, simülatör sayfasının altında: https://rogoyato.com/#/arduino/simulator
