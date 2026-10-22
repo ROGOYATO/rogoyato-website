@@ -17,6 +17,7 @@ import {
   holeWorldPosition,
   normalizeWire,
   partLabel,
+  pluggedParts,
 } from '../../../utils/avrSim/catalog'
 
 // titleLang: an English title ("Serial Monitor") is upper-cased with an
@@ -237,17 +238,44 @@ function EndSelect({ circuit, label, value, onChange }) {
         return { value: `P:${board.id}:${id}`, label: `hat hattı ${name} ${prefix}`, title: id, note: `Breadboard · ${name}` }
       })
     : []
+  // For each leg plugged into the board, a free hole in its column (the
+  // outermost one), the usual place for a jumper to it.
+  const columns = []
+  if (board) {
+    const { byId, list } = breadboardHoles()
+    const plugged = [...pluggedParts(circuit)].filter(([, info]) => info.board === board.id)
+    const used = new Set([
+      ...plugged.flatMap(([, info]) => Object.values(info.holes)),
+      ...circuit.wires.map(normalizeWire).flatMap((wire) => [wire.from, wire.to].filter((end) => end.part === board.id).map((end) => end.pin)),
+    ])
+    for (const [partId, info] of plugged) {
+      const part = circuit.parts.find((p) => p.id === partId)
+      for (const [pinId, holeId] of Object.entries(info.holes)) {
+        const leg = byId.get(holeId)
+        if (!leg || leg.rail) continue
+        const outer = leg.strip.endsWith('t') ? 'abcde' : 'jihgf'
+        const free = list.filter((item) => item.strip === leg.strip && !used.has(item.id)).sort((a, b) => outer.indexOf(a.row) - outer.indexOf(b.row))[0]
+        const pin = PART_CATALOG[part.type].pins.find((p) => p.id === pinId)?.label ?? pinId
+        if (!free) continue
+        // Two legs in one column share the suggestion.
+        const name = `${partLabel(part)} ${pin}`
+        const same = columns.find((option) => option.value === `P:${board.id}:${free.id}`)
+        if (same) {
+          same.label += ` ${name}`
+          same.note = same.note.replace(' ile aynı sütun', `, ${name} ile aynı sütun`)
+        } else {
+          columns.push({ value: `P:${board.id}:${free.id}`, label: `${name} sütunu ${free.id}`, title: free.id, note: `${name} ile aynı sütun` })
+        }
+      }
+    }
+  }
   const suggest = (text) => {
-    if (!text.trim()) return [...partPins, ...unoPins]
+    if (!text.trim()) return [...partPins, ...columns, ...rails, ...unoPins]
     const found = hole(text)
     const pins = suggestPins(text).map(asUno)
+    const extra = [...columns, ...rails].filter((option) => option.value !== found?.value && wordsMatch(option.label, text))
     // "d13" is both an Uno pin and a hole: the pin comes first.
-    return [
-      ...partPins.filter((option) => wordsMatch(option.label, text)),
-      ...(cleanPin(text) ? pins : []),
-      ...(found ? [found] : []),
-      ...rails.filter((option) => option.value !== found?.value && wordsMatch(option.label, text)),
-    ]
+    return [...partPins.filter((option) => wordsMatch(option.label, text)), ...(cleanPin(text) ? pins : []), ...(found ? [found] : []), ...extra]
   }
   const parse = (text) => {
     const exact = [...partPins, ...unoPins].find((option) => lower(option.label) === lower(text))
@@ -488,7 +516,10 @@ export function ConnectionsPanel({ circuit, selection, onSelect, onWire, onConne
                 <EndSelect circuit={circuit} label="Kablonun öbür ucu" value={adding.to} onChange={(to) => setAdding((current) => ({ ...current, to }))} />
               </div>
               {circuit.parts.some((part) => part.type === 'breadboard') ? (
-                <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">Breadboard deliği için harf ve sütun numarasını (a12, j17), güç hatları için “hat” yazın.</p>
+                <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                  Breadboard: listede, takılı parçaların bacaklarıyla aynı sütundaki boş delikler ve güç hatları hazır. Başka bir delik için satır harfini ve sütun numarasını
+                  yazın (ör. a12): harfler (a–j) breadboard’un kenarlarında, numaralar sütunların yanında yazar; 3B görünümde deliğin üstüne gelince adı da çıkar.
+                </p>
               ) : null}
               <div className="flex items-center gap-3">
                 <button type="button" onClick={add} disabled={!adding.from || !adding.to || adding.from === adding.to} className="rounded-md bg-teal-700 px-3 py-1 text-sm font-semibold text-white disabled:opacity-50 dark:bg-teal-400 dark:text-teal-950">
