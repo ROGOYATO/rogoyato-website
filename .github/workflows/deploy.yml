@@ -38,6 +38,12 @@ jobs:
         env:
           KILIT_TOKEN: ${{ secrets.KILIT_TOKEN }}
 
+      # The Arduino Library Manager's list of libraries, for the simulator's
+      # compiler; if it cannot be fetched, the browser fetches it itself.
+      - name: Build library index
+        run: node scripts/build-library-index.mjs
+        continue-on-error: true
+
       - name: Build
         run: npm run build
         env:

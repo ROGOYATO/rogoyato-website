@@ -23,6 +23,8 @@ import CarView from './CarView'
 import CodeEditor from './CodeEditor'
 import Licenses from './Licenses'
 import AnswerBar from './AnswerBar'
+import LibraryList from './LibraryList'
+import RunButtons from './RunButtons'
 import { compileSketch, rememberCompiled } from './compile'
 import { onCompilerProgress, preloadCompiler } from './compiler/browserCompiler'
 import { EXAMPLES } from './examples'
@@ -139,18 +141,29 @@ export default function SimulatorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project.circuit, project.carCircuit, project.mode])
 
-  const run = async () => {
+  // The code the last good build came from (the "Çalıştır" piece runs it).
+  const [built, setBuilt] = useState(null)
+  const build = async (prefer = project.prefer ?? {}) => {
     setCompile({ state: 'compiling' })
+    setDownload(null)
     const started = performance.now()
-    const result = await compileSketch(project.code)
+    const result = await compileSketch(project.code, prefer)
     if (!result.ok) {
       setCompile({ state: 'error', ...result })
-      return
+      return null
     }
     hexRef.current = result.hex
-    setCompile({ state: 'ok', source: result.source, size: result.size, seconds: (performance.now() - started) / 1000 })
+    setBuilt(project.code)
+    setCompile({ state: 'ok', source: result.source, size: result.size, libraries: result.libraries, seconds: (performance.now() - started) / 1000 })
+    return result.hex
+  }
+  const runBuilt = () => {
+    if (!hexRef.current) return
     setCarResetToken((token) => token + 1)
-    launch(result.hex)
+    launch(hexRef.current)
+  }
+  const run = async (prefer) => {
+    if (await build(prefer)) runBuilt()
   }
 
   const update = (changes) => setProject((current) => ({ ...current, ...changes }))
@@ -290,15 +303,15 @@ export default function SimulatorPage() {
                 Durdur
               </button>
             ) : null}
-            <button
-              type="button"
-              onClick={run}
-              disabled={compile.state === 'compiling'}
-              className="inline-flex items-center gap-2 rounded-md bg-teal-700 px-4 py-2 font-semibold text-white hover:bg-teal-800 disabled:opacity-60 dark:bg-teal-400 dark:text-teal-950 dark:hover:bg-teal-300"
-            >
-              {compile.state === 'compiling' ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
-              {compile.state === 'compiling' ? 'Derleniyor…' : running ? 'Yeniden derle' : 'Derle ve çalıştır'}
-            </button>
+            <RunButtons
+              compiling={compile.state === 'compiling'}
+              running={running}
+              canRun={built !== null}
+              stale={built !== null && built !== project.code}
+              onBuildAndRun={() => run()}
+              onBuild={() => build()}
+              onRun={runBuilt}
+            />
           </div>
         </div>
         {example ? (
@@ -340,19 +353,46 @@ export default function SimulatorPage() {
             </div>
             <div className="font-code border-t border-slate-200 bg-slate-50 px-3 py-2 text-xs dark:border-white/10 dark:bg-[#0f1d1f]">
               {compile.state === 'error' ? (
-                <pre className="max-h-40 overflow-auto whitespace-pre-wrap text-rose-700 dark:text-rose-300">{compile.errors}</pre>
+                <>
+                  <pre className="max-h-40 overflow-auto whitespace-pre-wrap text-rose-700 dark:text-rose-300">{compile.errors}</pre>
+                  {Object.keys(project.prefer ?? {}).length ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        update({ prefer: {} })
+                        run({})
+                      }}
+                      className="mt-1 text-slate-600 underline hover:text-teal-700 dark:text-slate-300 dark:hover:text-teal-300"
+                    >
+                      kütüphane seçimlerini sıfırla
+                    </button>
+                  ) : null}
+                </>
               ) : compile.state === 'ok' ? (
-                <p className="text-emerald-700 dark:text-emerald-300">
-                  {compile.source === 'example'
-                    ? 'Hazır derlenmiş örnek yüklendi.'
-                    : `${compile.source === 'browser' ? 'Tarayıcıda derlendi' : 'Derlendi'} (${compile.seconds.toFixed(1)} s).`}{' '}
-                  {compile.size?.split('\n')[0]}
-                </p>
+                <>
+                  <p className="text-emerald-700 dark:text-emerald-300">
+                    {compile.source === 'example'
+                      ? 'Hazır derlenmiş örnek yüklendi.'
+                      : `${compile.source === 'browser' ? 'Tarayıcıda derlendi' : 'Derlendi'} (${compile.seconds.toFixed(1)} s).`}{' '}
+                    {compile.size?.split('\n')[0]}
+                  </p>
+                  <LibraryList
+                    libraries={compile.libraries}
+                    prefer={project.prefer ?? {}}
+                    onPrefer={(header, name) => {
+                      const prefer = { ...project.prefer, [header]: name }
+                      update({ prefer })
+                      run(prefer)
+                    }}
+                  />
+                </>
               ) : compile.state === 'compiling' ? (
                 <p className="text-slate-500 dark:text-slate-400">
                   {download && !download.preparing && download.loaded < download.total
                     ? `Derleyici indiriliyor (yalnızca ilk seferde): ${(download.loaded / 1e6).toFixed(1)} / ${(download.total / 1e6).toFixed(1)} MB`
-                    : 'GCC ile derleniyor…'}
+                    : download?.library
+                      ? `Kütüphane: ${download.library}… (ilk seferde biraz sürebilir)`
+                      : 'GCC ile derleniyor…'}
                 </p>
               ) : (
                 <p className="text-slate-500 dark:text-slate-400">Hazır. “Derle ve çalıştır” ile başlatın.</p>
@@ -360,7 +400,7 @@ export default function SimulatorPage() {
               {sim.runtimeError ? <p className="mt-1 text-rose-700 dark:text-rose-300">Simülasyon durdu: {sim.runtimeError}</p> : null}
             </div>
             <p className="border-t border-slate-200 px-3 py-1.5 text-[0.7rem] text-slate-500 dark:border-white/10 dark:text-slate-400">
-              Tarayıcıda çalışır. Derleyici: GCC 7.3.0 ve GNU binutils 2.42 (WebAssembly, GPL-3.0).{' '}
+              Tarayıcıda çalışır. Derleyici: GCC 7.3.0 ve GNU binutils 2.42 (WebAssembly, GPL-3.0); kütüphaneler Arduino Library Manager’dan indirilir.{' '}
               <button
                 type="button"
                 onClick={() => {
