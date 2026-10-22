@@ -2,7 +2,7 @@
 // primitives at real-world scale (1 unit = 1 cm). Every model exposes its
 // pins as clickable markers and an update(state) that animates it.
 import * as THREE from 'three'
-import { BREADBOARD_HEIGHT, BREADBOARD_SIZE, MODULE_SIZE, PWM_PINS, UNO_ALIASES, breadboardHoles } from '../../../utils/avrSim/catalog'
+import { BREADBOARD_HEIGHT, BREADBOARD_SIZE, MODULE_SIZE, PWM_PINS, breadboardHoles } from '../../../utils/avrSim/catalog'
 
 const materials = new Map()
 export function mat(color, options = {}) {
@@ -139,13 +139,18 @@ function headerSpan({ from, count }, descending) {
   return [Math.min(from, to), Math.max(from, to)]
 }
 
-// What the board prints beside a hole.
-function unoPinLabel(pin) {
-  if (pin.id === 'NC') return '' // left blank on the real board
-  if (UNO_ALIASES[pin.anchor]) return pin.anchor
-  if (pin.id === 'D0') return 'D0/RX'
-  if (pin.id === 'D1') return 'D1/TX'
-  return PWM_PINS.has(pin.id) ? `~${pin.id}` : pin.id
+// What the board prints beside a hole, as on Arduino's photo of the R3
+// (A000066 front), all turned to read along the header: digital pins as
+// bare numbers with ~ for PWM; NC, SDA and SCL are left blank on top.
+function unoSilk(pin) {
+  if (pin.id === 'NC' || pin.anchor === 'SDA' || pin.anchor === 'SCL') return null
+  if (pin.id === 'D0') return { text: 'RX←0', vertical: true }
+  if (pin.id === 'D1') return { text: 'TX→1', vertical: true }
+  if (/^D\d+$/.test(pin.id)) return { text: `${PWM_PINS.has(pin.id) ? '~' : ''}${pin.id.slice(1)}`, vertical: true, large: true }
+  if (/^A\d$/.test(pin.id)) return { text: pin.id, vertical: true, large: true }
+  if (pin.anchor === 'GND@top') return { text: 'GND', vertical: true, boxed: true }
+  if (pin.anchor === 'GND@1' || pin.anchor === 'GND@2') return null // one boxed GND over both
+  return { text: { '5V': pin.anchor === 'IOREF' ? 'IOREF' : '5V', '3V3': '3.3V', VIN: 'Vin' }[pin.id] ?? pin.id, vertical: true }
 }
 
 // A flat outline in the XZ plane extruded upwards from y = 0. The shape is
@@ -199,8 +204,8 @@ const GOLD = () => metal('#d6b25e', 0.3)
 
 // Text printed on a chip's top, as a texture for a box of that size.
 const chipCache = new Map()
-function chipTop(lines, width, depth, color = '#1c1c1f') {
-  const key = `${lines.join('|')}|${width}|${depth}`
+function chipTop(lines, width, depth, color = '#1c1c1f', turned = false) {
+  const key = `${lines.join('|')}|${width}|${depth}|${turned}`
   if (!chipCache.has(key)) {
     const scale = 220
     const canvas = document.createElement('canvas')
@@ -212,8 +217,14 @@ function chipTop(lines, width, depth, color = '#1c1c1f') {
     ctx.fillStyle = 'rgba(226, 232, 240, 0.78)'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    const size = Math.min(canvas.height / (lines.length + 1.2), 42)
+    const longest = Math.max(...lines.map((line) => line.length))
+    const size = Math.min(canvas.height / (lines.length + 1.2), canvas.width / (longest * 0.7), 42)
     ctx.font = `600 ${size}px "JetBrains Mono", ui-monospace, monospace`
+    if (turned) {
+      // Printed the other way up (pin 1 on the right).
+      ctx.translate(canvas.width, canvas.height)
+      ctx.rotate(Math.PI)
+    }
     lines.forEach((line, index) => ctx.fillText(line, canvas.width / 2, canvas.height / 2 + (index - (lines.length - 1) / 2) * size * 1.25))
     const texture = new THREE.CanvasTexture(canvas)
     texture.colorSpace = THREE.SRGBColorSpace
@@ -226,7 +237,7 @@ function chipTop(lines, width, depth, color = '#1c1c1f') {
 
 // The ATmega328P in its DIP-28 socket, lying along x.
 function dip28(group, x, y, z) {
-  const body = box(3.56, 0.32, 0.72, chipTop(['ATMEGA328P-PU', '1932   ●'], 3.56, 0.72), x, y + 0.36, z)
+  const body = box(3.56, 0.32, 0.72, chipTop(['ATMEL', 'ATMEGA328P U', '2039YE8'], 3.56, 0.72, '#1c1c1f', true), x, y + 0.36, z)
   const socket = box(3.75, 0.2, 0.98, mat('#1a1a1a', { roughness: 0.7 }), x, y + 0.1, z)
   // Pin 1's notch is at the end away from the USB socket.
   const notch = cylinder(0.09, 0.02, '#0e0e10', x + 1.62, y + 0.52, z, 16)
@@ -241,12 +252,32 @@ function dip28(group, x, y, z) {
   }
 }
 
-// An electrolytic capacitor standing on the board.
-function electrolytic(group, x, y, z, radius = 0.3, height = 0.62) {
+// An electrolytic capacitor standing on the board; `print` is the marking
+// on its aluminium top (the Uno's read 71134 / 47 / 25V).
+function electrolytic(group, x, y, z, radius = 0.3, height = 0.62, print = null) {
   const can = cylinder(radius, height, mat('#1e2433', { roughness: 0.35 }), x, y + height / 2, z, 28)
   const stripe = cylinder(radius + 0.003, height * 0.94, mat('#9aa4b5', { roughness: 0.4 }), x, y + height / 2, z, 28)
   stripe.geometry = new THREE.CylinderGeometry(radius + 0.003, radius + 0.003, height * 0.94, 28, 1, true, -0.5, 1)
-  const top = cylinder(radius * 0.92, 0.012, metal('#cfd4da', 0.35), x, y + height + 0.006, z, 28)
+  const aluminium = metal('#cfd4da', 0.35)
+  const face = print
+    ? new THREE.MeshStandardMaterial({
+        map: painted(`cap-${print.join('|')}`, 128, 128, (ctx) => {
+          ctx.fillStyle = '#cfd4da'
+          ctx.fillRect(0, 0, 128, 128)
+          ctx.translate(64, 64)
+          ctx.rotate(-Math.PI / 2)
+          ctx.fillStyle = '#16181c'
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.font = '700 22px "JetBrains Mono", ui-monospace, monospace'
+          print.forEach((line, index) => ctx.fillText(line, 0, (index - (print.length - 1) / 2) * 26))
+        }),
+        metalness: 0.6,
+        roughness: 0.4,
+      })
+    : aluminium
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.92, radius * 0.92, 0.012, 28), [aluminium, face, aluminium])
+  top.position.set(x, y + height + 0.006, z)
   group.add(can, stripe, top)
 }
 
@@ -371,56 +402,106 @@ export function buildUno() {
       ctx.arc(px(vx), pz(vz), 2.5, 0, Math.PI * 2)
       ctx.fill()
     }
-    // Header outlines and section names, as on the real board.
-    ctx.strokeStyle = ink
-    ctx.lineWidth = 4
-    for (const [header, descending] of [[HEADERS.digitalLow, true], [HEADERS.digitalHigh, true], [HEADERS.power, false], [HEADERS.analog, false]]) {
-      const [x0, x1] = headerSpan(header, descending)
-      ctx.strokeRect(px(x0 - HEADER_PITCH / 2) - 4, pz(header.z) - 28, px(x1) - px(x0) + HEADER_PITCH * scale + 8, 56)
-    }
+    // Pin names, after Arduino's photo of the board.
+    const paper = bump ? '#808080' : '#00808a' // text cut out of a white box
     ctx.fillStyle = ink
-    ctx.textBaseline = 'middle'
-    ctx.textAlign = 'center'
-    ctx.font = '700 28px "JetBrains Mono", ui-monospace, monospace'
-    ctx.fillText('DIGITAL (PWM~)', px(1.6), pz(-1.76))
-    ctx.fillText('POWER', px(0.25), pz(1.76))
-    ctx.fillText('ANALOG IN', px(2.29), pz(1.76))
-    ctx.font = '600 24px "JetBrains Mono", ui-monospace, monospace'
-    for (const pin of layout) {
-      ctx.save()
-      ctx.translate(px(pin.x), pz(pin.z) + (pin.z < 0 ? 38 : -38))
-      ctx.rotate(-Math.PI / 2)
-      ctx.textAlign = pin.z < 0 ? 'right' : 'left'
-      ctx.fillText(unoPinLabel(pin), 0, 0)
-      ctx.restore()
-    }
-    // The ∞ logo (two loops with − and +), ARDUINO and UNO, in the free
-    // space between the chip and the digital header.
-    const lx = px(1.35)
-    const lz = pz(-1.42)
     ctx.strokeStyle = ink
-    ctx.lineWidth = 12
-    for (const side of [-1, 1]) {
+    ctx.textBaseline = 'middle'
+    for (const pin of layout) {
+      const silk = unoSilk(pin)
+      if (!silk) continue
+      const top = pin.z < 0
+      if (silk.vertical) {
+        ctx.font = `700 ${silk.large ? 30 : 22}px "JetBrains Mono", ui-monospace, monospace`
+        ctx.save()
+        ctx.translate(px(pin.x), pz(pin.z + (top ? 0.11 : -0.11)))
+        ctx.rotate(-Math.PI / 2)
+        ctx.textAlign = top ? 'right' : 'left'
+        if (silk.boxed) {
+          ctx.fillRect(-ctx.measureText(silk.text).width - 10, -20, ctx.measureText(silk.text).width + 16, 40)
+          ctx.fillStyle = paper
+        }
+        ctx.fillText(silk.text, top ? -4 : 4, 1)
+        ctx.restore()
+        ctx.fillStyle = ink
+      } else {
+        ctx.font = '700 30px "JetBrains Mono", ui-monospace, monospace'
+        ctx.textAlign = 'center'
+        ctx.fillText(silk.text, px(pin.x), pz(pin.z + (top ? 0.29 : -0.29)))
+      }
+    }
+    // The two GNDs of the power header share one white box.
+    const [g1, g2] = layout.filter((pin) => pin.anchor === 'GND@1' || pin.anchor === 'GND@2').map((pin) => pin.x)
+    ctx.fillRect(px(g1 - 0.13), pz(2.0), (g2 - g1 + 0.26) * scale, 0.27 * scale)
+    ctx.fillStyle = paper
+    ctx.font = '700 24px "JetBrains Mono", ui-monospace, monospace'
+    ctx.textAlign = 'center'
+    ctx.fillText('GND', px((g1 + g2) / 2), pz(2.14))
+    ctx.fillStyle = ink
+
+    // Section names on their rules.
+    ctx.lineWidth = 3
+    const rule = (z, from, to) => {
       ctx.beginPath()
-      ctx.ellipse(lx + side * 40, lz, 38, 26, 0, 0, Math.PI * 2)
+      ctx.moveTo(px(from), pz(z))
+      ctx.lineTo(px(to), pz(z))
       ctx.stroke()
     }
-    ctx.fillRect(lx - 53, lz - 4, 26, 8)
-    ctx.fillRect(lx + 27, lz - 4, 26, 8)
-    ctx.fillRect(lx + 36, lz - 13, 8, 26)
+    ctx.font = '700 26px "JetBrains Mono", ui-monospace, monospace'
     ctx.textAlign = 'center'
-    ctx.font = '700 56px "Space Grotesk", "Plus Jakarta Sans", sans-serif'
-    ctx.fillText('ARDUINO', px(1.35), pz(-0.92))
-    ctx.font = '700 60px "Space Grotesk", "Plus Jakarta Sans", sans-serif'
-    ctx.fillText('UNO', px(1.35), pz(-0.42))
-    ctx.font = '600 16px "JetBrains Mono", ui-monospace, monospace'
-    ctx.fillText('RESET', px(-3.22), pz(-1.95))
-    ctx.fillText('ICSP', px(2.6), pz(0.35))
-    // Names of the on-board LEDs.
-    ctx.font = '600 20px "JetBrains Mono", ui-monospace, monospace'
+    ctx.fillText('DIGITAL - PWM~', px(0.05), pz(-1.74))
+    rule(-1.68, 0.67, 3.04)
+    ctx.fillText('POWER', px(0.97), pz(1.79))
+    ctx.fillText('ANALOG IN', px(2.05), pz(1.79))
+    rule(1.7, 0.0, 0.6)
+    rule(1.7, 1.33, 1.5)
+    rule(1.7, 2.6, 3.04)
+
+    // The ∞ logo with ®, ARDUINO, the UNO R3 plate and the web address.
+    const lx = px(0.47)
+    const lz = pz(-1.2)
+    ctx.lineWidth = 15
+    for (const side of [-1, 1]) {
+      ctx.beginPath()
+      ctx.ellipse(lx + side * 50, lz, 48, 36, 0, 0, Math.PI * 2)
+      ctx.stroke()
+    }
+    ctx.fillRect(lx - 66, lz - 5, 32, 10)
+    ctx.fillRect(lx + 34, lz - 5, 32, 10)
+    ctx.fillRect(lx + 45, lz - 16, 10, 32)
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.arc(lx + 112, lz - 38, 9, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.font = '700 12px "JetBrains Mono", ui-monospace, monospace'
+    ctx.fillText('R', lx + 112, lz - 37)
+    ctx.font = '800 46px "Space Grotesk", "Plus Jakarta Sans", sans-serif'
+    ctx.fillText('ARDUINO', px(0.46), pz(-0.7))
+    // UNO in a white box, R3 in an outlined one.
+    ctx.fillRect(px(-0.23), pz(-0.38), 0.76 * scale, 0.32 * scale)
+    ctx.lineWidth = 3
+    ctx.strokeRect(px(0.53), pz(-0.38), 0.59 * scale, 0.32 * scale)
+    ctx.font = '700 40px "JetBrains Mono", ui-monospace, monospace'
+    ctx.fillStyle = paper
+    ctx.fillText('UNO', px(0.15), pz(-0.21))
+    ctx.fillStyle = ink
+    ctx.fillText('R3', px(0.82), pz(-0.21))
+    ctx.font = '700 18px "JetBrains Mono", ui-monospace, monospace'
+    ctx.fillText('ARDUINO.CC', px(1.97), pz(0.22))
+
+    // Small names by the parts.
+    ctx.font = '700 20px "JetBrains Mono", ui-monospace, monospace'
+    ctx.textAlign = 'right'
+    for (const [text, z] of [['L', LEDS.L], ['TX', LEDS.TX], ['RX', LEDS.RX]]) ctx.fillText(text, px(LEDS.x - 0.13), pz(z))
     ctx.textAlign = 'left'
-    for (const [text, z] of [['L', LEDS.L], ['TX', LEDS.TX], ['RX', LEDS.RX]]) ctx.fillText(text, px(LEDS.x + 0.13), pz(z))
-    ctx.fillText('ON', px(LEDS.on[0] + 0.14), pz(LEDS.on[1]))
+    ctx.fillText('ON', px(LEDS.on[0] + 0.15), pz(LEDS.on[1]))
+    ctx.textAlign = 'center'
+    ctx.fillText('ICSP', px(3.07), pz(-0.62))
+    ctx.save()
+    ctx.translate(px(-3.3), pz(-2.33))
+    ctx.rotate(-Math.PI / 2)
+    ctx.fillText('RESET', 0, 0)
+    ctx.restore()
   }
   draw(canvas.getContext('2d'), false)
   const heights = document.createElement('canvas')
@@ -466,7 +547,7 @@ export function buildUno() {
   group.add(box(0.32, 0.12, 0.36, mat('#111214'), -3.02, 0.22, 0.02))
   for (const dz of [-0.27, 0.27]) group.add(box(0.32, 0.13, 0.18, mat('#7a5c3e', { roughness: 0.5 }), -3.02, 0.225, 0.02 + dz))
   // ATmega16U2 (the USB chip), its 16 MHz crystal and its own ICSP header.
-  group.add(box(0.5, 0.09, 0.5, chipTop(['16U2'], 0.5, 0.5), -1.45, 0.205, -0.8))
+  group.add(box(0.5, 0.09, 0.5, chipTop(['ATMEL', 'MEGA16U2'], 0.5, 0.5), -1.45, 0.205, -0.8))
   const crystal = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.7, 6, 16), metal('#d9dde1', 0.18))
   crystal.rotation.z = Math.PI / 2
   crystal.scale.set(1, 1, 0.6)
@@ -481,8 +562,8 @@ export function buildUno() {
   // Reverse-polarity diode (SMA) in line with the power header.
   group.add(box(0.44, 0.12, 0.26, mat('#1a1a1c', { roughness: 0.5 }), -1.27, 0.22, 2.42))
   for (const dx of [-0.27, 0.27]) group.add(box(0.12, 0.03, 0.18, metal('#c9ced3'), -1.27 + dx, 0.175, 2.42))
-  electrolytic(group, -1.58, 0.16, 1.75, 0.31)
-  electrolytic(group, -0.88, 0.16, 1.75, 0.31)
+  electrolytic(group, -1.58, 0.16, 1.75, 0.31, 0.62, ['71134', '47', '25V'])
+  electrolytic(group, -0.88, 0.16, 1.75, 0.31, 0.62, ['71134', '47', '25V'])
   // Reset push button in the corner by the USB socket: it restarts the
   // running program.
   const resetBase = box(0.6, 0.2, 0.64, metal('#c3c8cd', 0.3), -2.82, 0.26, -2.33)
