@@ -5,8 +5,6 @@
 import { Simulation } from './simulation.js'
 
 let simulation = null
-let booted = null // the last start message, for the reset button
-let inputs = {} // input values as last set, kept across a reset
 let timer = null
 let last = 0
 let serial = ''
@@ -38,47 +36,39 @@ function stop() {
   simulation = null
 }
 
-function boot() {
-  const data = booted
-  stop()
-  decoder = new TextDecoder()
-  try {
-    simulation = new Simulation({
-      hex: data.hex,
-      circuit: data.circuit,
-      carCircuit: data.carCircuit,
-      track: data.track,
-      onSerial: (byte) => {
-        serial += decoder.decode(new Uint8Array([byte]), { stream: true })
-      },
-    })
-  } catch (error) {
-    self.postMessage({ type: 'error', message: String(error?.message ?? error) })
-    return
-  }
-  for (const [part, values] of Object.entries(inputs)) {
-    for (const [key, value] of Object.entries(values)) simulation.setInput(part, key, value)
-  }
-  self.postMessage({ type: 'issues', issues: simulation.issues })
-  last = performance.now()
-  timer = setTimeout(loop, 0)
-}
-
 self.onmessage = ({ data }) => {
   switch (data.type) {
     case 'start':
-      booted = data
-      inputs = structuredClone(data.inputs ?? {})
+      stop()
+      decoder = new TextDecoder()
       serial = ''
-      boot()
+      try {
+        simulation = new Simulation({
+          hex: data.hex,
+          circuit: data.circuit,
+          carCircuit: data.carCircuit,
+          track: data.track,
+          onSerial: (byte) => {
+            serial += decoder.decode(new Uint8Array([byte]), { stream: true })
+          },
+        })
+      } catch (error) {
+        self.postMessage({ type: 'error', message: String(error?.message ?? error) })
+        return
+      }
+      for (const [part, inputs] of Object.entries(data.inputs ?? {})) {
+        for (const [key, value] of Object.entries(inputs)) simulation.setInput(part, key, value)
+      }
+      self.postMessage({ type: 'issues', issues: simulation.issues })
+      last = performance.now()
+      timer = setTimeout(loop, 0)
       break
     // The Uno's reset button: the program starts again from setup() with
     // the same circuit; the Serial Monitor keeps what it showed.
     case 'reset':
-      if (booted && simulation) boot()
+      simulation?.boot()
       break
     case 'input':
-      inputs[data.part] = { ...inputs[data.part], [data.key]: data.value }
       simulation?.setInput(data.part, data.key, data.value)
       break
     case 'serial':
@@ -88,7 +78,6 @@ self.onmessage = ({ data }) => {
       simulation?.car?.reset()
       break
     case 'setTrack':
-      if (booted) booted = { ...booted, track: data.track }
       simulation?.car?.setTrack(data.track)
       break
     // While the page is hidden the Uno is frozen (simulated time stops too)

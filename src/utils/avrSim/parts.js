@@ -277,10 +277,12 @@ class NetSolver extends Part {
 
     const groups = {}
     for (const [net, info] of Object.entries(netInfo)) {
-      const group = (groups[find(net)] ??= { io: [], vcc: false, gnd: false })
+      const group = (groups[find(net)] ??= { io: [], vcc: false, gnd: false, v33: false, reset: false })
       group.io.push(...info.io)
       group.vcc ||= info.vcc
+      group.v33 ||= info.v33
       group.gnd ||= info.gnd
+      group.reset ||= info.reset
     }
 
     const driven = {}
@@ -290,6 +292,7 @@ class NetSolver extends Part {
       if (group.vcc && group.gnd) shorts.push(key)
       if (group.vcc) driven[key] = 1
       else if (group.gnd) driven[key] = 0
+      else if (group.v33) driven[key] = 3.3 / 5
       else if (outputs.length) driven[key] = sample.duty[outputs[0]]
       // An OUTPUT pin set HIGH straight into GND (or LOW into 5 V) is a short too.
       if ((group.vcc || group.gnd) && outputs.some((pin) => uno.mode(pin) === (group.gnd ? PinState.High : PinState.Low))) shorts.push(key)
@@ -313,6 +316,11 @@ class NetSolver extends Part {
           conductance += 1 / 35_000
           current += 1 / 35_000
         }
+      }
+      // The Uno pulls RESET up to 5 V through 10 kΩ.
+      if (groups[key]?.reset) {
+        conductance += 1 / 10_000
+        current += 1 / 10_000
       }
       return conductance ? current / conductance : null
     }
@@ -338,7 +346,8 @@ class NetSolver extends Part {
       ledStates[led.part] = anode === null || cathode === null ? 0 : Math.max(0, Math.min(1, anode - cathode))
     }
     const buttonStates = Object.fromEntries(switches.map((sw) => [sw.part, Boolean(this.buttons[sw.part]?.pressed)]))
-    this.state = { leds: ledStates, buttons: buttonStates, shorted: shorts.length > 0 }
+    const resetHeld = Object.entries(groups).some(([key, group]) => group.reset && level(key) < 0.5)
+    this.state = { leds: ledStates, buttons: buttonStates, shorted: shorts.length > 0, resetHeld }
   }
 }
 

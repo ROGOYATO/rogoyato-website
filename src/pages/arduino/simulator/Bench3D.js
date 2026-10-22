@@ -55,11 +55,20 @@ export function wireColor(wire, index) {
   return wire.color ?? WIRE_PALETTE[index % WIRE_PALETTE.length]
 }
 
-function describeUnoPin(pin) {
-  if (pin === '5V' || pin === '3V3' || pin === 'VIN') return `${pin} · besleme`
+function describeUnoPin(pin, anchor) {
+  if (anchor === 'SDA') return 'SDA · I2C veri hattı (kartta A4 ile aynı pin)'
+  if (anchor === 'SCL') return 'SCL · I2C saat hattı (kartta A5 ile aynı pin)'
+  if (anchor === 'IOREF') return 'IOREF · kartın çalışma voltajı (5V’a bağlı)'
+  if (pin === 'RESET') return 'RESET · GND’ye çekilince kart resetlenir'
+  if (pin === 'AREF') return 'AREF · analogRead için dış referans voltajı (analogReference(EXTERNAL))'
+  if (pin === 'NC') return 'NC · hiçbir yere bağlı değil'
+  if (pin === 'VIN') return 'VIN · 6–20 V giriş (adaptör voltajı)'
+  if (pin === '5V' || pin === '3V3') return `${pin} · besleme`
   if (pin === 'GND') return 'GND · toprak'
+  if (pin === 'A4') return 'A4 · analog giriş · I2C SDA'
+  if (pin === 'A5') return 'A5 · analog giriş · I2C SCL'
   if (pin.startsWith('A')) return `${pin} · analog giriş`
-  return `${pin}${PWM_PINS.has(pin) ? ' · PWM (~)' : ''}${pin === 'D0' || pin === 'D1' ? ' · Serial' : ''}`
+  return `${pin}${PWM_PINS.has(pin) ? ' · PWM (~)' : ''}${pin === 'D0' ? ' · Serial RX' : pin === 'D1' ? ' · Serial TX' : ''}`
 }
 
 // A self-healing cutting mat: a 1 cm grid with every fifth line stronger,
@@ -500,7 +509,7 @@ export class Bench3D {
   }
 
   describe(end) {
-    if (end.uno) return describeUnoPin(end.uno)
+    if (end.uno) return describeUnoPin(end.uno, end.anchor)
     const hole = this.nets.plugged.get(end.part)?.holes[end.pin]
     const uno = describeNet(this.nets.nets, endpointKey(end))
     return `${describeEndpoint(this.circuit, end)}${hole ? ` · ${hole} deliğinde` : ''}${uno.length ? ` → ${uno.join(', ')}` : ' · Arduino’ya bağlı değil'}`

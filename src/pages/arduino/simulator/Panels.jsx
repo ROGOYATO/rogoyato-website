@@ -7,6 +7,7 @@ import {
   UNO_DIGITAL,
   UNO_PINS,
   UNO_ID,
+  UNO_OTHER,
   UNO_POWER,
   breadboardHoles,
   buildNets,
@@ -44,9 +45,10 @@ const selectClass =
   'font-code w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-800 focus:border-teal-600 focus:outline-hidden dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100'
 
 const PIN_OPTIONS = [
-  ...UNO_DIGITAL.map((pin) => ({ value: pin, label: pin, note: PWM_PINS.has(pin) ? '~PWM' : pin === 'D0' || pin === 'D1' ? 'Serial' : 'dijital' })),
-  ...UNO_ANALOG.map((pin) => ({ value: pin, label: pin, note: 'analog' })),
+  ...UNO_DIGITAL.map((pin) => ({ value: pin, label: pin, note: PWM_PINS.has(pin) ? '~PWM' : pin === 'D0' ? 'Serial RX' : pin === 'D1' ? 'Serial TX' : 'dijital' })),
+  ...UNO_ANALOG.map((pin) => ({ value: pin, label: pin, note: pin === 'A4' ? 'analog · SDA' : pin === 'A5' ? 'analog · SCL' : 'analog' })),
   ...UNO_POWER.map((pin) => ({ value: pin, label: pin, note: 'güç' })),
+  ...UNO_OTHER.map((pin) => ({ value: pin, label: pin, note: { RESET: 'LOW’da reset', AREF: 'analog referans', NC: 'bağlı değil' }[pin] })),
 ]
 // Turkish lower case, with ı read as i: "IN2" and "in2" match.
 const lower = (text) => text.trim().toLocaleLowerCase('tr').replace(/ı/g, 'i').replace(/−/g, '-')
@@ -57,7 +59,7 @@ function parsePin(text) {
   const typed = cleanPin(text)
   if (UNO_PINS.includes(typed)) return typed
   if (/^\d+$/.test(typed) && UNO_DIGITAL.includes(`D${Number(typed)}`)) return `D${Number(typed)}`
-  return { '3.3': '3V3', '3.3V': '3V3', TOPRAK: 'GND', GROUND: 'GND' }[typed] ?? null
+  return { '3.3': '3V3', '3.3V': '3V3', TOPRAK: 'GND', GROUND: 'GND', SDA: 'A4', SCL: 'A5', IOREF: '5V' }[typed] ?? null
 }
 // Pins whose name starts with the text come first, then ones whose note
 // matches ("pwm", "analog", "güç").

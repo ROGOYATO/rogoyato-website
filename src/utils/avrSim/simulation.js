@@ -11,25 +11,54 @@ const MAX_STEP_S = 0.05
 
 export class Simulation {
   constructor({ hex, circuit, carCircuit = null, track = 'oval', onSerial = () => {} }) {
-    this.uno = new ArduinoUno(hex)
-    this.uno.usart.onByteTransmit = (byte) => onSerial(byte)
-    this.parts = new Map()
+    this.config = { hex, onSerial, track }
     this.issues = []
-
+    this.inputs = {} // every input set so far, replayed after a reset
+    this.resetHeld = false
     if (circuit) {
-      const { engineParts, issues } = resolveCircuit(circuit)
+      const { engineParts, issues, aref } = resolveCircuit(circuit)
       this.issues.push(...issues)
-      for (const spec of engineParts) this.parts.set(spec.id, createPart(this.uno, spec))
+      Object.assign(this.config, { engineParts, aref })
     }
     if (carCircuit) {
       const { pins, issues } = resolveCar(carCircuit)
       this.issues.push(...issues)
-      this.car = new RobotCar(this.uno, pins, track)
+      this.config.carPins = pins
     }
+    this.boot()
+    // A board powered up with RESET already LOW never starts.
+    this.resetHeld = this.heldInReset(this.uno.sampleWindow())
     this.simSeconds = 0
   }
 
+  heldInReset(sample) {
+    const solver = this.parts.get('__nets')
+    if (!solver) return false
+    solver.update(sample)
+    return Boolean(solver.state.resetHeld)
+  }
+
+  // A fresh chip (all pins inputs, program from the start) with the same
+  // parts around it, as after power-up or a reset.
+  boot() {
+    const { hex, onSerial, engineParts = [], aref = 5, carPins, track } = this.config
+    this.uno = new ArduinoUno(hex)
+    this.uno.usart.onByteTransmit = (byte) => onSerial(byte)
+    this.uno.adc.aref = aref
+    this.parts = new Map()
+    for (const spec of engineParts) this.parts.set(spec.id, createPart(this.uno, spec))
+    if (carPins) this.car = new RobotCar(this.uno, carPins, track)
+    for (const [partId, values] of Object.entries(this.inputs)) {
+      for (const [key, value] of Object.entries(values)) this.applyInput(partId, key, value)
+    }
+  }
+
   setInput(partId, key, value) {
+    this.inputs[partId] = { ...this.inputs[partId], [key]: value }
+    this.applyInput(partId, key, value)
+  }
+
+  applyInput(partId, key, value) {
     const part = this.parts.get(partId)
     if (part) {
       part.input[key] = value
@@ -49,15 +78,21 @@ export class Simulation {
   feedSerial() {
     if (!this.serialQueue?.length || this.uno.usart.rxBusy) return
     this.uno.usart.writeByte(this.serialQueue.shift())
+    this.received = true // lights the RX LED
   }
 
   // Advance by up to `seconds` of simulated time, then sample every part.
+  // While RESET is held LOW the chip does nothing; when it goes HIGH again
+  // the program starts over.
   step(seconds) {
     const span = Math.min(MAX_STEP_S, Math.max(0, seconds))
     const slices = Math.max(1, Math.round(span / 0.002))
-    for (let i = 0; i < slices; i += 1) {
-      this.feedSerial()
-      this.uno.run(Math.round((span / slices) * CLOCK_HZ))
+    this.received = false
+    if (!this.resetHeld) {
+      for (let i = 0; i < slices; i += 1) {
+        this.feedSerial()
+        this.uno.run(Math.round((span / slices) * CLOCK_HZ))
+      }
     }
     this.simSeconds += span
     const sample = this.uno.sampleWindow()
@@ -72,8 +107,13 @@ export class Simulation {
         parts[id] = { ...part.state }
       }
     }
+    const held = Boolean(this.parts.get('__nets')?.state?.resetHeld)
+    if (held && !this.resetHeld) this.boot()
+    this.resetHeld = held
     return {
       parts,
+      serialRx: this.received,
+      resetHeld: held,
       car: this.car ? this.car.state : null,
       simSeconds: this.simSeconds,
       pins: sample.duty,

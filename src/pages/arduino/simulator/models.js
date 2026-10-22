@@ -2,7 +2,7 @@
 // primitives at real-world scale (1 unit = 1 cm). Every model exposes its
 // pins as clickable markers and an update(state) that animates it.
 import * as THREE from 'three'
-import { BREADBOARD_HEIGHT, BREADBOARD_SIZE, MODULE_SIZE, PWM_PINS, breadboardHoles } from '../../../utils/avrSim/catalog'
+import { BREADBOARD_HEIGHT, BREADBOARD_SIZE, MODULE_SIZE, PWM_PINS, UNO_ALIASES, breadboardHoles } from '../../../utils/avrSim/catalog'
 
 const materials = new Map()
 export function mat(color, options = {}) {
@@ -110,16 +110,42 @@ function pinMarker(group, info, position, kind = 'signal', seat = 0) {
 const HEADER_PITCH = 0.254
 export const UNO_SIZE = { width: 6.86, depth: 5.34 }
 
+// Board coordinates (cm): x runs from the USB end (-3.43) to the far end
+// (+3.43), z from the digital header (-2.67) to the power header (+2.67).
+// Positions follow Arduino's drawing of the Uno R3 (A000066 full pinout).
+const mm = (fromUsbEnd) => fromUsbEnd / 10 - 3.429
+
+// Every header hole, in the pinout's order. A hole that is another pin
+// under a second name (SDA is A4) keeps that name as its anchor.
+const HEADERS = {
+  digitalLow: { from: mm(63.5), count: 8, z: -2.42 }, // D0 … D7, towards the USB end
+  digitalHigh: { from: mm(41.656), count: 10, z: -2.42 }, // D8 … D13, GND, AREF, SDA, SCL
+  power: { from: mm(27.94), count: 8, z: 2.42 }, // NC … VIN, away from the USB end
+  analog: { from: mm(50.8), count: 6, z: 2.42 }, // A0 … A5
+}
 function unoPinLayout() {
   const pins = []
-  const top = -2.42
-  const bottom = 2.42
-  for (let i = 0; i < 8; i += 1) pins.push({ id: `D${i}`, x: 3.0 - i * HEADER_PITCH, z: top })
-  for (let i = 0; i < 6; i += 1) pins.push({ id: `D${8 + i}`, x: 0.81 - i * HEADER_PITCH, z: top })
-  pins.push({ id: 'GND', anchor: 'GND@top', x: 0.81 - 6 * HEADER_PITCH, z: top })
-  ;[['3V3', -1.02], ['5V', -0.76], ['GND', -0.51, 'GND@1'], ['GND', -0.25, 'GND@2'], ['VIN', 0]].forEach(([id, x, anchor]) => pins.push({ id, anchor, x, z: bottom }))
-  for (let i = 0; i < 6; i += 1) pins.push({ id: `A${i}`, x: 0.6 + i * HEADER_PITCH, z: bottom })
+  const { digitalLow, digitalHigh, power, analog } = HEADERS
+  for (let i = 0; i < 8; i += 1) pins.push({ id: `D${i}`, x: digitalLow.from - i * HEADER_PITCH, z: digitalLow.z })
+  ;[['D8'], ['D9'], ['D10'], ['D11'], ['D12'], ['D13'], ['GND', 'GND@top'], ['AREF'], ['A4', 'SDA'], ['A5', 'SCL']].forEach(([id, anchor], i) => pins.push({ id, anchor, x: digitalHigh.from - i * HEADER_PITCH, z: digitalHigh.z }))
+  ;[['NC'], ['5V', 'IOREF'], ['RESET'], ['3V3'], ['5V'], ['GND', 'GND@1'], ['GND', 'GND@2'], ['VIN']].forEach(([id, anchor], i) => pins.push({ id, anchor, x: power.from + i * HEADER_PITCH, z: power.z }))
+  for (let i = 0; i < 6; i += 1) pins.push({ id: `A${i}`, x: analog.from + i * HEADER_PITCH, z: analog.z })
   return pins
+}
+
+// Where a header's holes run, as [first x, last x].
+function headerSpan({ from, count }, descending) {
+  const to = from + (descending ? -1 : 1) * (count - 1) * HEADER_PITCH
+  return [Math.min(from, to), Math.max(from, to)]
+}
+
+// What the board prints beside a hole.
+function unoPinLabel(pin) {
+  if (pin.id === 'NC') return '' // left blank on the real board
+  if (UNO_ALIASES[pin.anchor]) return pin.anchor
+  if (pin.id === 'D0') return 'D0/RX'
+  if (pin.id === 'D1') return 'D1/TX'
+  return PWM_PINS.has(pin.id) ? `~${pin.id}` : pin.id
 }
 
 // A flat outline in the XZ plane extruded upwards from y = 0. The shape is
@@ -202,7 +228,8 @@ function chipTop(lines, width, depth, color = '#1c1c1f') {
 function dip28(group, x, y, z) {
   const body = box(3.56, 0.32, 0.72, chipTop(['ATMEGA328P-PU', '1932   ●'], 3.56, 0.72), x, y + 0.36, z)
   const socket = box(3.75, 0.2, 0.98, mat('#1a1a1a', { roughness: 0.7 }), x, y + 0.1, z)
-  const notch = cylinder(0.09, 0.02, '#0e0e10', x - 1.62, y + 0.52, z, 16)
+  // Pin 1's notch is at the end away from the USB socket.
+  const notch = cylinder(0.09, 0.02, '#0e0e10', x + 1.62, y + 0.52, z, 16)
   group.add(body, socket, notch)
   const leg = metal('#d4d8dc', 0.35)
   for (let i = 0; i < 14; i += 1) {
@@ -223,6 +250,27 @@ function electrolytic(group, x, y, z, radius = 0.3, height = 0.62) {
   group.add(can, stripe, top)
 }
 
+// Small surface-mount parts on the Uno: [x, z, alongX, kind] where kind is
+// r (resistor), c (capacitor), a (4-resistor array), d (diode), s (SOT-23).
+function unoSmd(group, list, top = 0.16) {
+  const pad = metal('#e2e5e8', 0.3)
+  for (const [x, z, alongX, kind] of list) {
+    const size = { r: [0.16, 0.08], c: [0.16, 0.08], a: [0.32, 0.16], d: [0.34, 0.16], s: [0.28, 0.15] }[kind]
+    const [w, d] = alongX ? size : [size[1], size[0]]
+    group.add(box(w, kind === 's' ? 0.09 : 0.05, d, kind === 'c' ? '#a8865a' : '#121214', x, top + 0.03, z))
+    if (kind === 'a' || kind === 's') {
+      // Gull-wing legs along both long sides.
+      const legs = kind === 'a' ? [-1.5, -0.5, 0.5, 1.5] : [-1, 1]
+      for (const side of kind === 'a' ? [-1, 1] : [-1]) {
+        for (const leg of legs) group.add(box(alongX ? 0.04 : 0.05, 0.03, alongX ? 0.05 : 0.04, pad, x + (alongX ? leg * 0.075 : side * (w / 2 + 0.02)), top + 0.015, z + (alongX ? side * (d / 2 + 0.02) : leg * 0.075)))
+      }
+      if (kind === 's') group.add(box(alongX ? 0.04 : 0.05, 0.03, alongX ? 0.05 : 0.04, pad, x, top + 0.015, z + (alongX ? d / 2 + 0.02 : 0)))
+    } else {
+      for (const s2 of [-1, 1]) group.add(box(alongX ? 0.035 : d + 0.005, 0.055, alongX ? d + 0.005 : 0.035, pad, x + (alongX ? (s2 * w) / 2 : 0), top + 0.028, z + (alongX ? 0 : (s2 * d) / 2)))
+    }
+  }
+}
+
 // A few tiny SMD resistors and capacitors.
 function smd(group, list, top = 0.16) {
   for (const [x, z, rotated, kind] of list) {
@@ -233,31 +281,46 @@ function smd(group, list, top = 0.16) {
   }
 }
 
+// The Uno R3's outline: rounded corners at the USB end; at the far end the
+// digital-header side stops 2.4 mm short with a slanted step, and the
+// power-header corner is cut at an angle.
 function unoOutline(width, depth) {
-  // The Uno's far end (away from USB) has its corners cut at 45°.
   const shape = new THREE.Shape()
   const x0 = -width / 2
   const x1 = width / 2
-  const y0 = -depth / 2
-  const y1 = depth / 2
   const r = 0.12
-  const cut = 0.32
-  shape.moveTo(x0 + r, y0)
-  shape.lineTo(x1 - cut, y0)
-  shape.lineTo(x1, y0 + cut)
-  shape.lineTo(x1, y1 - cut)
-  shape.lineTo(x1 - cut, y1)
-  shape.lineTo(x0 + r, y1)
-  shape.quadraticCurveTo(x0, y1, x0, y1 - r)
-  shape.lineTo(x0, y0 + r)
-  shape.quadraticCurveTo(x0, y0, x0 + r, y0)
+  // Shape y is -z: the digital side (z = -2.67) is y = +2.67.
+  const points = [
+    [x1 - 0.24, depth / 2], // digital side ends short of the far edge
+    [x1 - 0.24, 1.43],
+    [x1, 1.19],
+    [x1, -2.16],
+    [x1 - 0.24, -depth / 2],
+  ]
+  shape.moveTo(x0 + r, depth / 2)
+  for (const [x, y] of points) shape.lineTo(x, y)
+  shape.lineTo(x0 + r, -depth / 2)
+  shape.quadraticCurveTo(x0, -depth / 2, x0, -depth / 2 + r)
+  shape.lineTo(x0, depth / 2 - r)
+  shape.quadraticCurveTo(x0, depth / 2, x0 + r, depth / 2)
   // Mounting holes (shape y is -z).
-  for (const [hx, hz] of [[-1.9, 2.15], [-1.9, -2.15], [3.12, -1.2], [3.12, 1.62]]) {
+  for (const [hx, hz] of [[-2.03, 2.41], [-1.94, -2.41], [3.18, 1.9], [3.18, -0.89]]) {
     const hole = new THREE.Path()
     hole.absarc(hx, -hz, 0.16, 0, Math.PI * 2, true)
     shape.holes.push(hole)
   }
   return shape
+}
+
+// Where the larger parts sit (from the same drawing).
+const CHIP = { x: 1.2, z: 1.02 } // ATmega328P, DIP-28
+const LEDS = { x: -0.64, L: -1.64, TX: -1.02, RX: -0.74, on: [2.41, -0.99] }
+
+// A 2 × 3 ICSP header with its three pins along x or along z.
+function icsp(group, x, z, alongX) {
+  const [w, d] = alongX ? [0.77, 0.52] : [0.52, 0.77]
+  group.add(box(w, 0.25, d, mat('#141416', { roughness: 0.6 }), x, 0.285, z))
+  for (const a of [-0.254, 0, 0.254]) for (const b of [-0.127, 0.127]) group.add(box(0.064, 0.6, 0.064, GOLD(), x + (alongX ? a : b), 0.6, z + (alongX ? b : a)))
 }
 
 export function buildUno() {
@@ -285,8 +348,8 @@ export function buildUno() {
       const sx = px(pin.x)
       const sz = pz(pin.z)
       const toward = pin.z < 0 ? 1 : -1
-      const chip = px(1.55 - 1.651 + ((Math.abs(pin.x * 7) | 0) % 14) * HEADER_PITCH)
-      const chipZ = pz(0.75 - toward * 0.42)
+      const chip = px(CHIP.x - 1.651 + ((Math.abs(pin.x * 7) | 0) % 14) * HEADER_PITCH)
+      const chipZ = pz(CHIP.z - toward * 0.42)
       const bend = sz + toward * (34 + ((pin.x * 40) % 30))
       const run = Math.min(Math.abs(chip - sx), Math.abs(chipZ - bend))
       ctx.beginPath()
@@ -311,46 +374,53 @@ export function buildUno() {
     // Header outlines and section names, as on the real board.
     ctx.strokeStyle = ink
     ctx.lineWidth = 4
-    for (const [x0, x1, z] of [[0.81 - 9.5 * HEADER_PITCH, 3.0 + 0.5 * HEADER_PITCH, -2.42], [-1.27 - 0.5 * HEADER_PITCH, 0.6 + 5.5 * HEADER_PITCH, 2.42]]) {
-      ctx.strokeRect(px(x0) - 6, pz(z) - 30, px(x1) - px(x0) + 12, 60)
+    for (const [header, descending] of [[HEADERS.digitalLow, true], [HEADERS.digitalHigh, true], [HEADERS.power, false], [HEADERS.analog, false]]) {
+      const [x0, x1] = headerSpan(header, descending)
+      ctx.strokeRect(px(x0 - HEADER_PITCH / 2) - 4, pz(header.z) - 28, px(x1) - px(x0) + HEADER_PITCH * scale + 8, 56)
     }
     ctx.fillStyle = ink
     ctx.textBaseline = 'middle'
     ctx.textAlign = 'center'
-    ctx.font = '700 34px "JetBrains Mono", ui-monospace, monospace'
-    ctx.fillText('DIGITAL (PWM~)', px(1.4), pz(-1.42))
-    ctx.fillText('POWER', px(-0.5), pz(1.45))
-    ctx.fillText('ANALOG IN', px(1.25), pz(1.45))
-    ctx.font = '600 30px "JetBrains Mono", ui-monospace, monospace'
+    ctx.font = '700 28px "JetBrains Mono", ui-monospace, monospace'
+    ctx.fillText('DIGITAL (PWM~)', px(1.6), pz(-1.76))
+    ctx.fillText('POWER', px(0.25), pz(1.76))
+    ctx.fillText('ANALOG IN', px(2.29), pz(1.76))
+    ctx.font = '600 24px "JetBrains Mono", ui-monospace, monospace'
     for (const pin of layout) {
       ctx.save()
-      ctx.translate(px(pin.x), pz(pin.z) + (pin.z < 0 ? 40 : -40))
+      ctx.translate(px(pin.x), pz(pin.z) + (pin.z < 0 ? 38 : -38))
       ctx.rotate(-Math.PI / 2)
       ctx.textAlign = pin.z < 0 ? 'right' : 'left'
-      // PWM pins carry a ~, as printed on the real board.
-      ctx.fillText(PWM_PINS.has(pin.id) ? `~${pin.id}` : pin.id, 0, 0)
+      ctx.fillText(unoPinLabel(pin), 0, 0)
       ctx.restore()
     }
-    // The ∞ logo: two loops with − and + in them.
-    const lx = px(-0.65)
-    const lz = pz(-0.74)
+    // The ∞ logo (two loops with − and +), ARDUINO and UNO, in the free
+    // space between the chip and the digital header.
+    const lx = px(1.35)
+    const lz = pz(-1.42)
     ctx.strokeStyle = ink
-    ctx.lineWidth = 13
+    ctx.lineWidth = 12
     for (const side of [-1, 1]) {
       ctx.beginPath()
-      ctx.ellipse(lx + side * 44, lz, 42, 29, 0, 0, Math.PI * 2)
+      ctx.ellipse(lx + side * 40, lz, 38, 26, 0, 0, Math.PI * 2)
       ctx.stroke()
     }
-    ctx.fillRect(lx - 58, lz - 4, 28, 8)
-    ctx.fillRect(lx + 30, lz - 4, 28, 8)
-    ctx.fillRect(lx + 40, lz - 14, 8, 28)
-    ctx.font = '700 64px "Space Grotesk", "Plus Jakarta Sans", sans-serif'
-    ctx.fillText('ARDUINO', px(-0.65), pz(-0.1))
-    ctx.font = '700 46px "Space Grotesk", "Plus Jakarta Sans", sans-serif'
-    ctx.fillText('UNO', px(-0.65), pz(0.53))
-    ctx.font = '600 22px "JetBrains Mono", ui-monospace, monospace'
-    ctx.fillText('RESET', px(-2.6), pz(-1.68))
-    ctx.fillText('ICSP', px(2.95), pz(-0.13))
+    ctx.fillRect(lx - 53, lz - 4, 26, 8)
+    ctx.fillRect(lx + 27, lz - 4, 26, 8)
+    ctx.fillRect(lx + 36, lz - 13, 8, 26)
+    ctx.textAlign = 'center'
+    ctx.font = '700 56px "Space Grotesk", "Plus Jakarta Sans", sans-serif'
+    ctx.fillText('ARDUINO', px(1.35), pz(-0.92))
+    ctx.font = '700 60px "Space Grotesk", "Plus Jakarta Sans", sans-serif'
+    ctx.fillText('UNO', px(1.35), pz(-0.42))
+    ctx.font = '600 16px "JetBrains Mono", ui-monospace, monospace'
+    ctx.fillText('RESET', px(-3.22), pz(-1.95))
+    ctx.fillText('ICSP', px(2.6), pz(0.35))
+    // Names of the on-board LEDs.
+    ctx.font = '600 20px "JetBrains Mono", ui-monospace, monospace'
+    ctx.textAlign = 'left'
+    for (const [text, z] of [['L', LEDS.L], ['TX', LEDS.TX], ['RX', LEDS.RX]]) ctx.fillText(text, px(LEDS.x + 0.13), pz(z))
+    ctx.fillText('ON', px(LEDS.on[0] + 0.14), pz(LEDS.on[1]))
   }
   draw(canvas.getContext('2d'), false)
   const heights = document.createElement('canvas')
@@ -370,52 +440,75 @@ export function buildUno() {
   pcb.userData = { kind: 'uno' }
   group.add(pcb)
 
-  // USB-B socket: a drawn-steel shell with the plastic tongue inside.
-  const usbX = -width / 2 + 0.55
-  group.add(box(1.6, 1.1, 1.2, metal('#cdd2d7', 0.22), usbX, 0.71, -1.15))
-  group.add(box(0.02, 0.78, 0.84, mat('#0b0b0c', { roughness: 0.9 }), usbX - 0.805, 0.71, -1.15))
-  group.add(box(0.03, 0.3, 0.42, mat('#f2f2ee', { roughness: 0.6 }), usbX - 0.815, 0.71, -1.15))
-  for (const z of [-1.62, -0.68]) group.add(box(1.1, 0.04, 0.05, metal('#b9bfc5', 0.3), usbX + 0.15, 1.27, z))
-  // DC barrel jack.
-  const jackX = -width / 2 + 0.5
-  group.add(box(1.4, 1.1, 0.9, mat('#151517', { roughness: 0.5 }), jackX, 0.71, 1.75))
-  const mouth = cylinder(0.3, 0.04, mat('#050506', { roughness: 0.9 }), jackX - 0.71, 0.76, 1.75, 24)
+  // USB-B socket: a drawn-steel shell, overhanging the board's end, with the
+  // plastic tongue inside.
+  const usb = { x: -3.3, z: -1.16 }
+  group.add(box(1.53, 1.09, 1.15, metal('#cdd2d7', 0.22), usb.x, 0.705, usb.z))
+  group.add(box(0.02, 0.78, 0.82, mat('#0b0b0c', { roughness: 0.9 }), usb.x - 0.77, 0.7, usb.z))
+  group.add(box(0.03, 0.3, 0.42, mat('#f2f2ee', { roughness: 0.6 }), usb.x - 0.78, 0.7, usb.z))
+  for (const dz of [-0.45, 0.45]) group.add(box(1.0, 0.04, 0.05, metal('#b9bfc5', 0.3), usb.x + 0.2, 1.255, usb.z + dz))
+  // DC barrel jack, also overhanging.
+  const jack = { x: -2.96, z: 1.92 }
+  group.add(box(1.38, 1.1, 0.9, mat('#151517', { roughness: 0.5 }), jack.x, 0.71, jack.z))
+  group.add(box(0.12, 1.1, 1.0, mat('#151517', { roughness: 0.5 }), jack.x - 0.63, 0.71, jack.z))
+  const mouth = cylinder(0.3, 0.04, mat('#050506', { roughness: 0.9 }), jack.x - 0.7, 0.76, jack.z, 24)
   mouth.rotation.z = Math.PI / 2
-  const pinCentre = cylinder(0.07, 0.06, metal(), jackX - 0.72, 0.76, 1.75, 12)
+  const pinCentre = cylinder(0.07, 0.06, metal(), jack.x - 0.71, 0.76, jack.z, 12)
   pinCentre.rotation.z = Math.PI / 2
   group.add(mouth, pinCentre)
 
-  dip28(group, 1.55, 0.16, 0.75)
-  // ATmega16U2 (the USB chip), the 16 MHz crystal and the 5 V regulator.
-  group.add(box(0.5, 0.09, 0.5, chipTop(['16U2'], 0.5, 0.5), -1.55, 0.205, -1.05))
-  const crystal = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.6, 6, 16), metal('#d9dde1', 0.18))
+  dip28(group, CHIP.x, 0.16, CHIP.z)
+  // 5 V regulator (SOT-223) with its tab towards the jack.
+  group.add(box(0.45, 0.16, 0.65, mat('#18181b', { roughness: 0.5 }), -2.64, 0.24, 0.93))
+  group.add(box(0.16, 0.02, 0.38, metal('#c9ced3'), -2.93, 0.17, 0.93))
+  for (const dz of [-0.2, 0, 0.2]) group.add(box(0.14, 0.02, 0.07, metal('#c9ced3'), -2.36, 0.17, 0.93 + dz))
+  // Polyfuse by the USB socket: tinned ends, dark body.
+  group.add(box(0.32, 0.12, 0.36, mat('#111214'), -3.02, 0.22, 0.02))
+  for (const dz of [-0.27, 0.27]) group.add(box(0.32, 0.13, 0.18, mat('#7a5c3e', { roughness: 0.5 }), -3.02, 0.225, 0.02 + dz))
+  // ATmega16U2 (the USB chip), its 16 MHz crystal and its own ICSP header.
+  group.add(box(0.5, 0.09, 0.5, chipTop(['16U2'], 0.5, 0.5), -1.45, 0.205, -0.8))
+  const crystal = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.7, 6, 16), metal('#d9dde1', 0.18))
   crystal.rotation.z = Math.PI / 2
-  crystal.scale.set(1, 1, 0.62)
-  crystal.position.set(-1.75, 0.33, 0.35)
+  crystal.scale.set(1, 1, 0.6)
+  crystal.position.set(-1.44, 0.36, 0.04)
   crystal.castShadow = true
-  group.add(crystal, box(0.95, 0.03, 0.32, mat('#111214'), -1.75, 0.175, 0.35))
-  group.add(box(0.65, 0.16, 0.35, mat('#18181b', { roughness: 0.5 }), -1.0, 0.24, 0.95), box(0.3, 0.02, 0.38, metal('#c9ced3'), -1.0, 0.17, 1.2))
-  electrolytic(group, -1.9, 0.16, 1.55)
-  electrolytic(group, -1.2, 0.16, 1.55)
+  group.add(crystal, box(1.1, 0.03, 0.42, mat('#111214'), -1.44, 0.175, 0.04))
+  for (const x of [-1.59, -1.33]) for (const z of [-1.26, -1.51]) group.add(cylinder(0.07, 0.02, metal('#c9ced3', 0.35), x, 0.17, z, 16))
+  icsp(group, -1.59, -1.92, true)
+  // Op-amp (SOIC-8) and the input capacitors by the jack.
+  group.add(box(0.41, 0.1, 0.3, mat('#18181b', { roughness: 0.5 }), -1.43, 0.21, 0.63))
+  for (let i = 0; i < 4; i += 1) for (const s2 of [-1, 1]) group.add(box(0.04, 0.03, 0.07, metal('#c9ced3'), -1.58 + i * 0.1, 0.18, 0.63 + s2 * 0.19))
+  // Reverse-polarity diode (SMA) in line with the power header.
+  group.add(box(0.44, 0.12, 0.26, mat('#1a1a1c', { roughness: 0.5 }), -1.27, 0.22, 2.42))
+  for (const dx of [-0.27, 0.27]) group.add(box(0.12, 0.03, 0.18, metal('#c9ced3'), -1.27 + dx, 0.175, 2.42))
+  electrolytic(group, -1.58, 0.16, 1.75, 0.31)
+  electrolytic(group, -0.88, 0.16, 1.75, 0.31)
   // Reset push button in the corner by the USB socket: it restarts the
   // running program.
-  const resetBase = box(0.6, 0.2, 0.6, metal('#c3c8cd', 0.3), -2.6, 0.26, -2.15)
-  const resetCap = cylinder(0.17, 0.12, mat('#7f1d1d', { roughness: 0.45 }), -2.6, 0.42, -2.15)
+  const resetBase = box(0.6, 0.2, 0.64, metal('#c3c8cd', 0.3), -2.82, 0.26, -2.33)
+  const resetCap = cylinder(0.165, 0.12, mat('#d4d4d0', { roughness: 0.45 }), -2.82, 0.42, -2.33)
   resetBase.userData = { kind: 'reset' }
   resetCap.userData = { kind: 'reset' }
   group.add(resetBase, resetCap)
-  // ICSP header (2 × 3 pins).
-  group.add(box(0.52, 0.25, 0.77, mat('#141416', { roughness: 0.6 }), 2.95, 0.285, -0.65))
-  for (const dx of [-0.127, 0.127]) for (const dz of [-0.254, 0, 0.254]) group.add(box(0.064, 0.6, 0.064, GOLD(), 2.95 + dx, 0.6, -0.65 + dz))
-  smd(group, [[0.9, -1.0, false, 'r'], [1.2, -1.0, false, 'r'], [1.5, -1.0, false, 'c'], [2.3, -0.55, false, 'c'], [2.3, -0.8, false, 'r'], [2.3, -0.3, false, 'c'], [2.4, 1.7, true, 'c'], [2.7, 1.7, true, 'r'], [-2.0, -0.2, false, 'c']])
+  // The ATmega328P's ICSP header at the far end.
+  icsp(group, 3.07, -0.13, false)
+  unoSmd(group, [
+    [-2.16, -0.31, true, 'r'], [-1.78, -0.31, true, 'r'], [-1.44, -0.31, true, 'c'], [-1.09, -0.31, true, 'r'],
+    [-2.16, -0.65, true, 'c'], [-2.16, -0.95, false, 'a'], [-2.16, -1.27, true, 'r'], [-2.16, -1.53, true, 'c'], [-2.15, -1.92, false, 'd'],
+    [-2.69, -1.86, true, 'd'], [-2.58, 0.01, true, 's'],
+    [-1.58, 1.1, false, 'r'], [-1.26, 1.1, true, 's'], [-0.88, 1.1, false, 'r'],
+    [-0.64, 0.27, false, 'a'], [-0.64, -0.31, true, 'r'], [-0.64, -0.53, true, 'r'], [-0.64, -1.34, false, 'a'], [-0.64, -1.87, true, 'c'],
+    [0.69, 0.36, true, 'c'], [0.69, 0.11, true, 'c'],
+    [2.41, -0.64, false, 'a'], [2.52, -0.1, false, 'd'],
+  ])
 
   // Black female headers along both long edges, with a contact visible in
   // every hole.
   const housing = mat('#141416', { roughness: 0.62 })
-  group.add(box(8 * HEADER_PITCH + 0.06, 0.85, 0.26, housing, 3.0 - 3.5 * HEADER_PITCH, 0.585, -2.42))
-  group.add(box(10 * HEADER_PITCH + 0.06, 0.85, 0.26, housing, 0.81 - 4.5 * HEADER_PITCH, 0.585, -2.42))
-  group.add(box(8 * HEADER_PITCH + 0.06, 0.85, 0.26, housing, -1.27 + 2.5 * HEADER_PITCH, 0.585, 2.42))
-  group.add(box(6 * HEADER_PITCH + 0.06, 0.85, 0.26, housing, 0.6 + 2.5 * HEADER_PITCH, 0.585, 2.42))
+  for (const [header, descending] of [[HEADERS.digitalLow, true], [HEADERS.digitalHigh, true], [HEADERS.power, false], [HEADERS.analog, false]]) {
+    const [x0, x1] = headerSpan(header, descending)
+    group.add(box(x1 - x0 + HEADER_PITCH + 0.04, 0.85, 0.26, housing, (x0 + x1) / 2, 0.585, header.z))
+  }
 
   const markers = []
   const pit = mat('#030303', { roughness: 1 })
@@ -428,19 +521,18 @@ export function buildUno() {
     markers.push(hit)
   }
 
-  // On-board LEDs: L follows D13, ON is always lit, TX blinks with Serial.
-  const ledL = box(0.18, 0.08, 0.1, mat('#f59e0b', { emissive: '#f59e0b', emissiveIntensity: 0 }), 0.3, 0.2, -1.6)
-  ledL.material = ledL.material.clone()
-  const ledOn = box(0.18, 0.08, 0.1, mat('#22c55e', { emissive: '#22c55e', emissiveIntensity: 1.6 }), 2.6, 0.2, 0.2)
-  const ledTx = box(0.18, 0.08, 0.1, mat('#f59e0b', { emissive: '#f59e0b', emissiveIntensity: 0 }), 0.3, 0.2, -1.25)
-  ledTx.material = ledTx.material.clone()
-  group.add(ledL, ledOn, ledTx)
-  for (const [x, z] of [[0.3, -1.6], [2.6, 0.2], [0.3, -1.25]]) for (const s of [-1, 1]) group.add(box(0.03, 0.085, 0.1, metal('#e2e5e8', 0.3), x + s * 0.09, 0.2, z))
-  ;[['L', 0.3, -1.85], ['TX', 0.3, -1.0], ['ON', 2.6, 0.2]].forEach(([text, x, z]) => {
-    const sprite = label(text, { size: 0.16, color: '#e5f6f7' })
-    sprite.position.set(x - 0.35, 0.2, z)
-    group.add(sprite)
-  })
+  // On-board LEDs: L follows D13, TX and RX blink with Serial traffic, ON
+  // is always lit.
+  const smdLed = (color, x, z, lit = 0) => {
+    const led = box(0.18, 0.08, 0.1, new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: lit }), x, 0.2, z)
+    for (const s2 of [-1, 1]) group.add(box(0.03, 0.085, 0.1, metal('#e2e5e8', 0.3), x + s2 * 0.09, 0.2, z))
+    group.add(led)
+    return led
+  }
+  const ledL = smdLed('#f59e0b', LEDS.x, LEDS.L)
+  const ledTx = smdLed('#f59e0b', LEDS.x, LEDS.TX)
+  const ledRx = smdLed('#f59e0b', LEDS.x, LEDS.RX)
+  smdLed('#22c55e', LEDS.on[0], LEDS.on[1], 1.6)
 
   // Every other solid piece picks up (and drags) the whole board.
   group.traverse((child) => {
@@ -456,6 +548,7 @@ export function buildUno() {
     update(state) {
       ledL.material.emissiveIntensity = (state?.pins?.[13] ?? 0) * 3
       ledTx.material.emissiveIntensity = state?.serialActive ? 2.5 : 0
+      ledRx.material.emissiveIntensity = state?.serialRx ? 2.5 : 0
     },
   }
 }
