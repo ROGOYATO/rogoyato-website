@@ -4,6 +4,11 @@
 // the breadboard is pressed into its holes.
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
+import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js'
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import {
   BREADBOARD_HEIGHT,
   BREADBOARD_SIZE,
@@ -55,6 +60,54 @@ function describeUnoPin(pin) {
   return `${pin}${PWM_PINS.has(pin) ? ' · PWM (~)' : ''}${pin === 'D0' || pin === 'D1' ? ' · Serial' : ''}`
 }
 
+// A self-healing cutting mat: a 1 cm grid with every fifth line stronger,
+// on slightly mottled rubber. One tile is 10 cm.
+function matTextures() {
+  const size = 1024
+  const color = document.createElement('canvas')
+  color.width = color.height = size
+  const ctx = color.getContext('2d')
+  ctx.fillStyle = '#24353a'
+  ctx.fillRect(0, 0, size, size)
+  const rough = document.createElement('canvas')
+  rough.width = rough.height = size
+  const rctx = rough.getContext('2d')
+  rctx.fillStyle = '#d8d8d8'
+  rctx.fillRect(0, 0, size, size)
+  let seed = 7
+  const random = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
+  for (let i = 0; i < 9000; i += 1) {
+    const x = random() * size
+    const y = random() * size
+    const r = 1 + random() * 3
+    const light = random() > 0.5
+    ctx.fillStyle = light ? 'rgba(255,255,255,0.025)' : 'rgba(0,0,0,0.05)'
+    ctx.fillRect(x, y, r, r)
+    rctx.fillStyle = light ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)'
+    rctx.fillRect(x, y, r, r)
+  }
+  for (let i = 0; i <= 10; i += 1) {
+    const at = (i * size) / 10
+    const major = i % 5 === 0
+    ctx.strokeStyle = major ? 'rgba(170, 214, 205, 0.2)' : 'rgba(170, 214, 205, 0.08)'
+    ctx.lineWidth = major ? 2 : 1.5
+    ctx.beginPath()
+    ctx.moveTo(at, 0)
+    ctx.lineTo(at, size)
+    ctx.moveTo(0, at)
+    ctx.lineTo(size, at)
+    ctx.stroke()
+  }
+  return [color, rough].map((canvas, index) => {
+    const texture = new THREE.CanvasTexture(canvas)
+    if (index === 0) texture.colorSpace = THREE.SRGBColorSpace
+    texture.wrapS = texture.wrapT = THREE.RepeatWrapping
+    texture.repeat.set(14, 10)
+    texture.anisotropy = 8
+    return texture
+  })
+}
+
 function ring(color) {
   const mesh = new THREE.Mesh(new THREE.RingGeometry(0.075, 0.13, 20), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide }))
   mesh.rotation.x = -Math.PI / 2
@@ -77,7 +130,8 @@ export class Bench3D {
     this.renderer.shadowMap.enabled = true
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping
+    this.renderer.toneMapping = THREE.NeutralToneMapping
+    this.renderer.toneMappingExposure = 1.05
     container.appendChild(this.renderer.domElement)
     this.renderer.domElement.style.touchAction = 'none'
 
@@ -91,22 +145,29 @@ export class Bench3D {
     this.controls.minDistance = 6
     this.controls.maxDistance = 80
 
-    this.scene.add(new THREE.HemisphereLight('#ffffff', '#64748b', 1.4))
-    const sun = new THREE.DirectionalLight('#ffffff', 2.2)
-    sun.position.set(14, 30, 12)
+    // A soft room reflected in metal and glossy parts, plus a warm key light
+    // for shadows.
+    const pmrem = new THREE.PMREMGenerator(this.renderer)
+    this.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
+    pmrem.dispose()
+    this.scene.environment = this.environment
+    this.scene.environmentIntensity = 0.5
+    this.scene.add(new THREE.HemisphereLight('#f8fafc', '#475569', 0.55))
+    const sun = new THREE.DirectionalLight('#fff4e0', 2.3)
+    sun.position.set(12, 30, 14)
     sun.castShadow = true
-    sun.shadow.mapSize.set(2048, 2048)
-    Object.assign(sun.shadow.camera, { left: -32, right: 32, top: 32, bottom: -32, near: 1, far: 90 })
+    sun.shadow.mapSize.set(4096, 4096)
+    sun.shadow.bias = -0.0002
+    sun.shadow.normalBias = 0.015
+    Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 90 })
     this.scene.add(sun)
 
-    const mat = new THREE.Mesh(new THREE.PlaneGeometry(140, 100), new THREE.MeshStandardMaterial({ color: '#2b3a44', roughness: 0.95 }))
+    const [matColor, matRough] = matTextures()
+    const mat = new THREE.Mesh(new THREE.PlaneGeometry(140, 100), new THREE.MeshStandardMaterial({ map: matColor, roughnessMap: matRough, roughness: 0.92 }))
     mat.rotation.x = -Math.PI / 2
     mat.position.set(0, -0.01, 4)
     mat.receiveShadow = true
     this.scene.add(mat)
-    const grid = new THREE.GridHelper(140, 140, '#3b4f5c', '#344652')
-    grid.position.set(0, 0, 4)
-    this.scene.add(grid)
     this.floor = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
 
     this.uno = buildUno()
@@ -131,6 +192,29 @@ export class Bench3D {
     window.addEventListener('pointerup', this.onPointerUp)
     window.addEventListener('keydown', this.onKeyDown)
 
+    // Ambient occlusion darkens the creases where parts meet the board and
+    // the mat. It is switched off on machines too slow for it.
+    this.composer = new EffectComposer(this.renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 }))
+    this.composer.addPass(new RenderPass(this.scene, this.camera))
+    this.ao = new GTAOPass(this.scene, this.camera, 1, 1, undefined, { radius: 0.6, distanceExponent: 1.5, thickness: 1.5, scale: 1.1, samples: 12 })
+    this.ao.blendIntensity = 0.85
+    // Hit areas, glows and other see-through helpers cast no occlusion.
+    const hide = this.ao._overrideVisibility.bind(this.ao)
+    this.ao._overrideVisibility = () => {
+      hide()
+      this.scene.traverse((object) => {
+        const material = object.material
+        if (object.visible && (object.isSprite || (object.isMesh && !Array.isArray(material) && (material.depthWrite === false || (material.transparent && material.opacity < 0.5))))) {
+          object.visible = false
+          this.ao._visibilityCache.push(object)
+        }
+      })
+    }
+    this.composer.addPass(this.ao)
+    this.composer.addPass(new OutputPass())
+    this.frameTimes = []
+    this.useComposer = true
+
     this.resizeObserver = new ResizeObserver(() => this.resize())
     this.resizeObserver.observe(container)
     this.resize()
@@ -141,13 +225,18 @@ export class Bench3D {
   }
 
   setTheme(dark) {
-    this.scene.background = new THREE.Color(dark ? '#0d1517' : '#dfe8ec')
+    const background = new THREE.Color(dark ? '#0d1517' : '#dfe8ec')
+    this.scene.background = background
+    // The far end of the mat fades into the page instead of ending.
+    this.scene.fog = new THREE.Fog(background, 70, 150)
   }
 
   resize() {
     const { clientWidth, clientHeight } = this.container
     if (!clientWidth || !clientHeight) return
     this.renderer.setSize(clientWidth, clientHeight)
+    this.composer.setPixelRatio(this.renderer.getPixelRatio())
+    this.composer.setSize(clientWidth, clientHeight)
     this.camera.aspect = clientWidth / clientHeight
     this.camera.updateProjectionMatrix()
   }
@@ -202,6 +291,7 @@ export class Bench3D {
       // Smaller click targets on plugged leads so the holes next to them stay reachable.
       for (const marker of entry.model.markers) marker.scale.setScalar(plugged && PART_CATALOG[part.type].bare ? 0.7 : 1)
     }
+    this.refreshHighlight()
     this.rebuildWires()
   }
 
@@ -236,34 +326,80 @@ export class Bench3D {
       const a = this.endPosition(wire.from)
       const b = this.endPosition(wire.to)
       if (!a || !b) return
+      // Dupont jumper ends: a square black housing over the pin; the wire
+      // leaves from its top.
+      const housing = 0.5
+      const top = (at) => at.clone().add(new THREE.Vector3(0, housing, 0))
       const distance = a.distanceTo(b)
-      // Short jumpers on the breadboard lie low; long ones arc over the bench.
-      const lift = Math.min(0.35 + distance * 0.22, 1 + distance * 0.22)
-      const rise = Math.min(0.5, 0.15 + distance * 0.1)
-      const mid = a.clone().lerp(b, 0.5).add(new THREE.Vector3(0, lift, 0))
-      const curve = new THREE.CatmullRomCurve3([a, a.clone().add(new THREE.Vector3(0, rise, 0)), mid, b.clone().add(new THREE.Vector3(0, rise, 0)), b])
+      // Short jumpers on the breadboard stay low; long ones arc over the bench.
+      const lift = Math.min(0.25 + distance * 0.22, 1 + distance * 0.22)
+      const rise = Math.min(0.5, 0.12 + distance * 0.1)
+      const mid = top(a).lerp(top(b), 0.5).add(new THREE.Vector3(0, lift, 0))
+      const curve = new THREE.CatmullRomCurve3([top(a), top(a).add(new THREE.Vector3(0, rise, 0)), mid, top(b).add(new THREE.Vector3(0, rise, 0)), top(b)])
       const selected = this.selection?.wireId === wire.id
-      const material = new THREE.MeshStandardMaterial({ color: wireColor(wire, index), roughness: 0.4, emissive: selected ? '#22d3ee' : '#000000', emissiveIntensity: selected ? 0.6 : 0 })
-      const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 48, selected ? 0.075 : 0.055, 8), material)
-      mesh.castShadow = true
-      mesh.userData = { kind: 'wire', wireId: wire.id }
-      this.scene.add(mesh)
-      this.wireMeshes.push(mesh)
+      const material = new THREE.MeshPhysicalMaterial({ color: wireColor(wire, index), roughness: 0.45, clearcoat: 0.3, clearcoatRoughness: 0.4, emissive: selected ? '#22d3ee' : '#000000', emissiveIntensity: selected ? 0.6 : 0 })
+      const radius = selected ? 0.075 : 0.055
+      const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 48, radius, 10), material)
+      const ends = [a, b].flatMap((at) => {
+        const shell = new THREE.Mesh(new THREE.BoxGeometry(0.23, housing, 0.23), new THREE.MeshStandardMaterial({ color: '#18181b', roughness: 0.5 }))
+        shell.position.copy(at).add(new THREE.Vector3(0, housing / 2 + 0.01, 0))
+        const pin = new THREE.Mesh(new THREE.BoxGeometry(0.064, 0.14, 0.064), new THREE.MeshStandardMaterial({ color: '#d6b25e', metalness: 1, roughness: 0.3 }))
+        pin.position.copy(at).add(new THREE.Vector3(0, -0.06, 0))
+        return [shell, pin]
+      })
+      for (const part of [mesh, ...ends]) {
+        part.castShadow = true
+        part.userData = { kind: 'wire', wireId: wire.id }
+        this.scene.add(part)
+        this.wireMeshes.push(part)
+      }
     })
   }
 
   setSelection(selection) {
     this.selection = selection
-    for (const [id, entry] of this.parts) {
-      entry.model.group.traverse((child) => {
-        if (child.isMesh && child.material?.emissive && child.userData.kind === 'part') {
-          child.material = child.material.clone()
-          child.material.emissive.set(selection?.partId === id ? '#0e7490' : '#000000')
-          child.material.emissiveIntensity = selection?.partId === id ? 0.35 : 0
-        }
-      })
-    }
+    this.refreshHighlight()
     if (this.circuit) this.rebuildWires()
+  }
+
+  // The selected part gets a glowing outline on the surface under it. (Its
+  // own materials are left alone: models animate them, LEDs light them.)
+  refreshHighlight() {
+    if (this.highlight) {
+      this.scene.remove(this.highlight)
+      this.highlight.traverse((child) => {
+        child.geometry?.dispose()
+        child.material?.dispose()
+      })
+      this.highlight = null
+    }
+    const entry = this.selection?.partId && this.parts.get(this.selection.partId)
+    if (!entry) return
+    const bounds = bodyBox(entry.model.group, new Set(entry.model.markers))
+    if (bounds.isEmpty()) return
+    const size = bounds.getSize(new THREE.Vector3())
+    const center = bounds.getCenter(new THREE.Vector3())
+    const width = size.x + 0.3
+    const depth = size.z + 0.3
+    const shape = new THREE.Shape()
+    const r = Math.min(0.25, width / 2, depth / 2)
+    shape.moveTo(-width / 2 + r, -depth / 2)
+    shape.lineTo(width / 2 - r, -depth / 2)
+    shape.quadraticCurveTo(width / 2, -depth / 2, width / 2, -depth / 2 + r)
+    shape.lineTo(width / 2, depth / 2 - r)
+    shape.quadraticCurveTo(width / 2, depth / 2, width / 2 - r, depth / 2)
+    shape.lineTo(-width / 2 + r, depth / 2)
+    shape.quadraticCurveTo(-width / 2, depth / 2, -width / 2, depth / 2 - r)
+    shape.lineTo(-width / 2, -depth / 2 + r)
+    shape.quadraticCurveTo(-width / 2, -depth / 2, -width / 2 + r, -depth / 2)
+    const fill = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshBasicMaterial({ color: '#22d3ee', transparent: true, opacity: 0.22, depthWrite: false }))
+    const edge = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(shape.getPoints(8)), new THREE.LineBasicMaterial({ color: '#22d3ee' }))
+    this.highlight = new THREE.Group()
+    this.highlight.add(fill, edge)
+    this.highlight.rotation.x = -Math.PI / 2
+    this.highlight.position.set(center.x, entry.model.group.position.y + 0.02, center.z)
+    this.highlight.renderOrder = 1
+    this.scene.add(this.highlight)
   }
 
   setSnapshot(snapshot, inputs) {
@@ -340,6 +476,8 @@ export class Bench3D {
   }
 
   onPointerDown(event) {
+    // Only the main button picks, drags and wires; the right button pans.
+    if (event.button !== 0) return
     const hit = this.pick(event)
     this.down = { x: event.clientX, y: event.clientY, hit }
     if (!hit) return
@@ -554,7 +692,19 @@ export class Bench3D {
       if (this.pending.marker) this.pending.marker.material.opacity = pulse
       else this.pendingRing.material.opacity = pulse + 0.2
     }
-    this.renderer.render(this.scene, this.camera)
+    if (this.useComposer) {
+      this.composer.render(dt)
+      // After a warm-up, drop the effect if frames take too long.
+      if (this.frameTimes.length < 120) {
+        this.frameTimes.push(dt)
+        if (this.frameTimes.length === 120) {
+          const sorted = this.frameTimes.slice(30).sort((a, b) => a - b)
+          if (sorted[Math.floor(sorted.length / 2)] > 0.034) this.useComposer = false
+        }
+      }
+    } else {
+      this.renderer.render(this.scene, this.camera)
+    }
   }
 
   // Point the camera so the Uno and every part fit in view.
@@ -584,6 +734,8 @@ export class Bench3D {
     window.removeEventListener('pointerup', this.onPointerUp)
     window.removeEventListener('keydown', this.onKeyDown)
     this.controls.dispose()
+    this.environment.dispose()
+    this.composer.dispose()
     this.renderer.dispose()
     el.remove()
   }
