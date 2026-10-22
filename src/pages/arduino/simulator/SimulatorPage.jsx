@@ -559,7 +559,7 @@ export default function SimulatorPage() {
                         ].map(([group, test]) => (
                           <optgroup key={group} label={group}>
                             {Object.entries(PART_CATALOG)
-                              .filter(test)
+                              .filter((entry) => !entry[1].legacy && test(entry))
                               .map(([type, definition]) => (
                                 <option key={type} value={type}>
                                   {definition.name}

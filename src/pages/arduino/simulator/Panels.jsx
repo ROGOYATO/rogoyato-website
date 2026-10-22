@@ -19,6 +19,7 @@ import {
   directStripUno,
   freeHole,
   normalizeWire,
+  lightLux,
   partLabel,
   pluggedParts,
 } from '../../../utils/avrSim/catalog'
@@ -363,13 +364,19 @@ function EndSelect({ circuit, label, value, onChange }) {
   )
 }
 
-function Slider({ label, min, max, step = 1, value, unit = '', onChange }) {
+// Lux on the LDR's log-scale slider: 0.1 (moonlight) to 10 000.
+const formatLux = (light) => {
+  const lux = lightLux(light)
+  return lux >= 100 ? Math.round(lux / 10) * 10 : lux >= 10 ? Math.round(lux) : lux.toFixed(1)
+}
+
+function Slider({ label, min, max, step = 1, value, unit = '', format = (v) => v, onChange }) {
   return (
     <label className="block">
       <span className="flex justify-between text-sm text-slate-700 dark:text-slate-200">
         <span>{label}</span>
         <span className="font-code text-teal-700 dark:text-teal-300">
-          {value}
+          {format(value)}
           {unit}
         </span>
       </span>
@@ -418,9 +425,10 @@ export function PartControls({ part, inputs, onInput }) {
         </button>
       )
     case 'potentiometer':
-      return <Slider label="Konum (analogRead)" min={0} max={1023} value={value.value ?? 512} onChange={(v) => onInput('value', v)} />
+      // The shaft turns through 300°.
+      return <Slider label="Mil açısı" min={0} max={1023} value={value.value ?? 512} format={(v) => Math.round((v / 1023) * 300)} unit="°" onChange={(v) => onInput('value', v)} />
     case 'ldr':
-      return <Slider label="Ortam ışığı" min={0} max={100} unit="%" value={value.light ?? 50} onChange={(v) => onInput('light', v)} />
+      return <Slider label="Ortam ışığı" min={0} max={100} value={value.light ?? 50} format={formatLux} unit=" lux" onChange={(v) => onInput('light', v)} />
     case 'ultrasonic':
       return <Slider label="Engel mesafesi" min={2} max={450} unit=" cm" value={value.distance ?? 50} onChange={(v) => onInput('distance', v)} />
     case 'dht11':

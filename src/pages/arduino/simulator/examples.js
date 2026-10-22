@@ -8,7 +8,9 @@
 const P = 0.254
 const BOARD = { id: 'bb', type: 'breadboard', position: [0, -9], rotation: 0 }
 const col = (n) => (n - 32) * P
-const row = { h: 0.381 + 2 * P, f: 0.381 }
+const row = Object.fromEntries(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'].map((name, i) => [name, i < 5 ? -0.381 - (4 - i) * P : 0.381 + (i - 5) * P]))
+// A resistor standing from row j into the bottom − rail.
+const toRail = (row.j + 2.413) / 2
 const onBoard = (x, z) => [BOARD.position[0] + x, BOARD.position[1] + z]
 
 const carCircuit = {
@@ -107,7 +109,7 @@ void loop() {
         // The button straddles the channel: columns 11 and 13 join when pressed.
         { id: 'btn', type: 'tactButton', position: onBoard(col(12), 0), rotation: 0 },
         // 10 kΩ pull-down standing from j13 into the − rail.
-        { id: 'r2', type: 'resistor', position: onBoard(col(13), (1.397 + 2.413) / 2), rotation: 90, props: { ohms: 10000 } },
+        { id: 'r2', type: 'resistor', position: onBoard(col(13), toRail), rotation: 90, props: { ohms: 10000 } },
         { id: 'r1', type: 'resistor', position: onBoard(col(19), row.h), rotation: 0, props: { ohms: 330 } },
         { id: 'led1', type: 'bareLed', position: onBoard(col(21.5), row.f), rotation: 0, props: { color: 'green' } },
       ],
@@ -133,8 +135,11 @@ void loop() {
 `,
     circuit: {
       parts: [
-        { id: 'pot', type: 'potentiometer', position: [2.2, 7.5] },
-        { id: 'led1', type: 'led', position: [-1.5, -6.5], rotation: 180, props: { color: 'yellow' } },
+        BOARD,
+        // The pot's legs in j8, j10 and j12, its shaft towards you.
+        { id: 'pot', type: 'potentiometer', position: onBoard(col(10), row.j), rotation: 0 },
+        { id: 'r1', type: 'resistor', position: onBoard(col(19), row.h), rotation: 0, props: { ohms: 330 } },
+        { id: 'led1', type: 'bareLed', position: onBoard(col(21.5), row.f), rotation: 0, props: { color: 'yellow' } },
       ],
       wires: [],
     },
@@ -143,11 +148,12 @@ void loop() {
     id: 'ldr-gece-lambasi',
     week: 2,
     title: 'LDR ile gece lambası',
-    summary: 'Ortam karardığında LED yansın (analogRead 400’ün altı karanlık), ışık değerini Serial’e yaz. LDR A1’e, LED D6’ya. Işığı LDR’yi seçip kaydırıcıyla değiştir.',
+    summary: 'Ortam karardığında LED yansın (analogRead 400’ün altı karanlık), ışık değerini Serial’e yaz. LDR ile 10 kΩ direnç bir gerilim bölücü kurar; orta noktaları A1’e, LED D6’ya. Işığı LDR’yi seçip kaydırıcıyla değiştir.',
     mode: 'bench',
     code: `// Görev: Ortam karardığında LED yansın (analogRead 400’ün altı karanlık),
-// ışık değerini Serial’e yaz. LDR A1’e, LED D6’ya. Işığı LDR’yi seçip
-// kaydırıcıyla değiştir.
+// ışık değerini Serial’e yaz. LDR ile 10 kΩ direnç bir gerilim bölücü
+// kurar; orta noktaları A1’e, LED D6’ya. Işığı LDR’yi seçip kaydırıcıyla
+// değiştir.
 
 void setup() {
 
@@ -159,8 +165,11 @@ void loop() {
 `,
     circuit: {
       parts: [
-        { id: 'ldr', type: 'ldr', position: [2.6, 7.5] },
-        { id: 'led1', type: 'led', position: [2.2, -6.5], rotation: 180, props: { color: 'white' } },
+        BOARD,
+        { id: 'ldr', type: 'ldr', position: onBoard(col(9.5), row.f), rotation: 0 },
+        { id: 'r2', type: 'resistor', position: onBoard(col(12), row.h), rotation: 0, props: { ohms: 10000 } },
+        { id: 'r1', type: 'resistor', position: onBoard(col(19), row.h), rotation: 0, props: { ohms: 330 } },
+        { id: 'led1', type: 'bareLed', position: onBoard(col(21.5), row.f), rotation: 0, props: { color: 'white' } },
       ],
       wires: [],
     },
@@ -185,8 +194,9 @@ void loop() {
 `,
     circuit: {
       parts: [
-        { id: 'sonar', type: 'ultrasonic', position: [1.5, -8], rotation: 180 },
-        { id: 'buzzer', type: 'buzzer', position: [-6, -3] , rotation: 90 },
+        { id: 'sonar', type: 'ultrasonic', position: [-7, -2], rotation: -90 },
+        BOARD,
+        { id: 'buzzer', type: 'buzzer', position: onBoard(col(22.5), row.g), rotation: 0 },
       ],
       wires: [],
     },
@@ -233,8 +243,9 @@ void loop() {
 `,
     circuit: {
       parts: [
-        { id: 'servo', type: 'servo', position: [0.5, -8], rotation: 180 },
-        { id: 'pot', type: 'potentiometer', position: [2.2, 7.5] },
+        BOARD,
+        { id: 'servo', type: 'servo', position: [-7.5, -1], rotation: 90 },
+        { id: 'pot', type: 'potentiometer', position: onBoard(col(10), row.j), rotation: 0 },
       ],
       wires: [],
     },
@@ -258,8 +269,12 @@ void loop() {
 `,
     circuit: {
       parts: [
-        { id: 'ir', type: 'irSensor', position: [3.3, -7.5], rotation: 180 },
-        { id: 'rgb', type: 'rgbLed', position: [-0.6, -6.5], rotation: 180 },
+        { id: 'ir', type: 'irSensor', position: [6.5, -1.5], rotation: 0 },
+        BOARD,
+        // The LED in the top half; each colour leg reaches the bottom half
+        // through its own 330 Ω resistor across the channel.
+        { id: 'rgb', type: 'rgbLed', position: onBoard(col(21.5), row.b), rotation: 0 },
+        ...[['rR', 20], ['rG', 22], ['rB', 23]].map(([id, n]) => ({ id, type: 'resistor', position: onBoard(col(n), (row.d + row.f) / 2), rotation: 90, props: { ohms: 330 } })),
       ],
       wires: [],
     },
@@ -268,10 +283,10 @@ void loop() {
     id: 'yedi-segment',
     week: 3,
     title: '7 segment sayaç',
-    summary: 'Gösterge her saniye 0’dan 9’a kadar saysın. a–g segmentleri D2–D8’e, COM GND’ye.',
+    summary: 'Gösterge her saniye 0’dan 9’a kadar saysın. a–g segmentleri D2–D8’e; COM, 330 Ω dirençle GND’ye.',
     mode: 'bench',
     code: `// Görev: Gösterge her saniye 0’dan 9’a kadar saysın. a–g segmentleri
-// D2–D8’e, COM GND’ye.
+// D2–D8’e; COM, 330 Ω dirençle GND’ye.
 
 void setup() {
 
@@ -282,7 +297,12 @@ void loop() {
 }
 `,
     circuit: {
-      parts: [{ id: 'seg', type: 'sevenSegment', position: [1.6, -7.5], rotation: 180 }],
+      parts: [
+        BOARD,
+        // Across the channel: its top legs in row d, the bottom ones in row h.
+        { id: 'seg', type: 'sevenSegment', position: onBoard(col(12), (row.d + row.h) / 2), rotation: 0 },
+        { id: 'r1', type: 'resistor', position: onBoard(col(12), toRail), rotation: 90, props: { ohms: 330 } },
+      ],
       wires: [],
     },
   },

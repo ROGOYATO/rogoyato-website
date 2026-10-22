@@ -509,6 +509,27 @@ function ldrFace() {
   })
 }
 
+// The paper seal on an active buzzer: a + over the long leg and the
+// maker's wash note.
+function buzzerSeal() {
+  return painted('buzzer-seal', 256, 256, (ctx) => {
+    ctx.fillStyle = '#f4f5f2'
+    ctx.fillRect(0, 0, 256, 256)
+    ctx.strokeStyle = '#1d4ed8'
+    ctx.fillStyle = '#1d4ed8'
+    ctx.lineWidth = 3
+    ctx.beginPath()
+    ctx.arc(128, 44, 18, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.fillRect(118, 42, 20, 4)
+    ctx.fillRect(126, 34, 4, 20)
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.font = '600 26px "Plus Jakarta Sans", sans-serif'
+    ;['H X D', 'REMOVE', 'SEAL', 'AFTER', 'WASHING'].forEach((line, index) => ctx.fillText(line, 128, 86 + index * 30))
+  })
+}
+
 // A metal ultrasonic transducer's front: fine mesh.
 function meshFace(bump) {
   return painted(`mesh-${bump}`, 256, 256, (ctx) => {
@@ -672,16 +693,25 @@ const BUILDERS = {
     }
   },
 
+  // A 5 mm common-cathode RGB LED: a water-clear lens over three dies,
+  // four legs in a row with the long common one second.
   rgbLed(part, definition) {
     const group = new THREE.Group()
-    const { markers } = breakout(group, part.id, definition.pins, { type: 'rgbLed', color: '#18181b' })
-    const material = lensMaterial('#eef2f7', true)
+    const material = lensMaterial('#eef2f7')
     material.emissive.set('#000000')
     material.emissiveIntensity = 1
-    ledOnLegs(group, material, { y: 0.34, z: 0.25, spread: 0.19, frame: false })
-    smd(group, [[-0.5, -0.05, true, 'r'], [0.5, -0.05, true, 'r'], [0.5, 0.45, true, 'r']], 0.14)
-    const glow = halo('#ffffff', 1.8, 0, 0.95, 0.25)
+    const y = 0.55
+    const lens = new THREE.Mesh(lensGeometry(), material)
+    lens.position.y = y
+    lens.castShadow = true
+    group.add(lens)
+    definition.pins.forEach((pin, index) => {
+      const x = (index - 1.5) * 0.09
+      bentLead(group, [[x, y + 0.02, 0], [x, y - 0.12, 0], [pin.x, y - 0.34, 0], [pin.x, -0.05, 0]], 0.02)
+    })
+    const glow = halo('#ffffff', 1.8, 0, y + 0.5, 0)
     group.add(glow)
+    const markers = definition.pins.map((pin) => leadMarker(group, { owner: 'part', partId: part.id, pin: pin.id }, pin.x, pin.z))
     return {
       group,
       markers,
@@ -716,74 +746,99 @@ const BUILDERS = {
     }
   },
 
+  // The kit's 16 mm B10K pot standing in the breadboard on its three legs:
+  // phenolic base with the solder tab, steel back cover, threaded bushing
+  // and nut, and a knurled split shaft pointing out of the board's front.
   potentiometer(part, definition) {
     const group = new THREE.Group()
-    const { markers } = breakout(group, part.id, definition.pins, { type: 'potentiometer', color: '#0f766e' })
-    // A rotary potentiometer: steel can, threaded bushing and nut, and a
-    // knurled knob with a pointer line.
-    group.add(cylinder(0.5, 0.32, metal('#9aa1a8', 0.42), 0, 0.3, 0.25, 40))
-    group.add(cylinder(0.47, 0.02, metal('#b8bec4', 0.35), 0, 0.47, 0.25, 40))
-    group.add(cylinder(0.3, 0.07, metal('#c9ccd0', 0.3), 0, 0.51, 0.25, 6))
-    group.add(cylinder(0.19, 0.24, metal('#d3d6d9', 0.25), 0, 0.62, 0.25, 28))
-    const knob = new THREE.Group()
-    const plastic = new THREE.MeshPhysicalMaterial({ color: '#17171a', roughness: 0.45, clearcoat: 0.4, clearcoatRoughness: 0.4 })
-    knob.add(cylinder(0.36, 0.42, plastic, 0, 0, 0, 40))
-    for (let i = 0; i < 24; i += 1) {
-      const angle = (i / 24) * Math.PI * 2
-      const ridge = box(0.05, 0.36, 0.05, plastic, Math.cos(angle) * 0.36, -0.02, Math.sin(angle) * 0.36)
-      ridge.rotation.y = -angle
-      knob.add(ridge)
+    const steel = metal('#c3c8cd', 0.32)
+    const phenolic = mat('#b5652a', { roughness: 0.6 })
+    const cy = 1.25 // shaft axis height
+    const along = (mesh, z) => {
+      mesh.rotation.x = Math.PI / 2
+      mesh.position.set(0, cy, z)
+      group.add(mesh)
+      return mesh
     }
-    knob.add(cylinder(0.33, 0.03, plastic, 0, 0.22, 0, 40))
-    knob.add(box(0.05, 0.012, 0.26, mat('#f8fafc', { roughness: 0.5 }), 0, 0.24, -0.15))
-    knob.position.set(0, 0.95, 0.25)
-    group.add(knob)
+    along(cylinder(0.8, 0.42, steel, 0, 0, 0, 48), -0.3)
+    along(cylinder(0.82, 0.12, phenolic, 0, 0, 0, 48), 0)
+    along(cylinder(0.72, 0.06, steel, 0, 0, 0, 48), 0.09)
+    // The base runs on into the tab that carries the legs.
+    group.add(box(1.24, cy - 0.72, 0.12, phenolic, 0, (cy + 0.12) / 2, 0))
+    along(cylinder(0.36, 0.7, metal('#d0d4d8', 0.25), 0, 0, 0, 32), 0.47)
+    along(cylinder(0.5, 0.2, metal('#d9dcdf', 0.3), 0, 0, 0, 6), 0.32)
+    // The shaft turns 300°; its slot shows where it points.
+    const shaft = new THREE.Group()
+    shaft.position.set(0, cy, 0.82)
+    const knurl = metal('#dfe2e5', 0.38)
+    const core = cylinder(0.27, 0.4, knurl, 0, 0, 0, 28)
+    core.rotation.x = Math.PI / 2
+    core.position.z = 0.2
+    shaft.add(core)
+    for (const side of [-1, 1]) {
+      const half = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.0, 20, 1, false, side > 0 ? 0 : Math.PI, Math.PI), knurl)
+      half.rotation.x = Math.PI / 2
+      half.position.set(side * 0.03, 0, 0.9)
+      half.castShadow = true
+      shaft.add(half)
+    }
+    for (let i = 0; i < 18; i += 1) {
+      const angle = (i / 18) * Math.PI * 2
+      const ridge = box(0.04, 0.04, 0.95, knurl, Math.cos(angle) * 0.3, Math.sin(angle) * 0.3, 0.9)
+      ridge.rotation.z = angle
+      shaft.add(ridge)
+    }
+    group.add(shaft)
+    for (const pin of definition.pins) bentLead(group, [[pin.x, 0.5, 0], [pin.x, -0.05, 0]], 0.04)
+    const markers = definition.pins.map((pin) => leadMarker(group, { owner: 'part', partId: part.id, pin: pin.id }, pin.x, pin.z))
     return {
       group,
       markers,
       update(state, inputs) {
         const value = inputs?.value ?? 512
-        knob.rotation.y = -((value / 1023) * 270 - 135) * (Math.PI / 180)
+        shaft.rotation.z = -((value / 1023) * 300 - 150) * (Math.PI / 180)
       },
     }
   },
 
+  // A 5 mm GL5528 photoresistor: the CdS track under clear lacquer on a
+  // ceramic disc, face up on its two legs.
   ldr(part, definition) {
     const group = new THREE.Group()
-    const { markers } = breakout(group, part.id, definition.pins, { type: 'ldr' })
-    // A 5 mm photoresistor: the CdS track under clear epoxy, on two legs.
     const side = mat('#e4dccb', { roughness: 0.5 })
     const face = new THREE.MeshPhysicalMaterial({ map: ldrFace(), roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.08 })
-    const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.1, 40), [side, face, side])
-    disc.position.set(0, 0.6, 0.35)
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.255, 0.255, 0.2, 40), [side, face, side])
+    disc.scale.z = 0.85
+    disc.position.set(0, 0.7, 0)
     disc.castShadow = true
     group.add(disc)
-    for (const x of [-0.12, 0.12]) bentLead(group, [[x, 0.55, 0.35], [x, 0.3, 0.35], [x * 1.06, 0.12, 0.35]])
-    smd(group, [[0.45, -0.15, true, 'r']], 0.14)
+    for (const pin of definition.pins) bentLead(group, [[Math.sign(pin.x) * 0.17, 0.62, 0], [Math.sign(pin.x) * 0.17, 0.3, 0], [pin.x, 0.18, 0], [pin.x, -0.05, 0]], 0.02)
+    // How much light falls on it, set in the inspector.
     const sun = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowMap(), color: '#fde68a', transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false }))
-    sun.position.set(0, 1.4, 0.35)
+    sun.position.set(0, 1.5, 0)
     group.add(sun)
+    const markers = definition.pins.map((pin) => leadMarker(group, { owner: 'part', partId: part.id, pin: pin.id }, pin.x, pin.z))
     return {
       group,
       markers,
       update(state, inputs) {
         const light = (inputs?.light ?? 50) / 100
-        sun.material.opacity = 0.1 + light * 0.8
-        sun.scale.setScalar(0.6 + light * 1.4)
+        sun.material.opacity = light * 0.9
+        sun.scale.setScalar(0.4 + light * 1.6)
       },
     }
   },
 
+  // A 12 mm active buzzer sitting on the breadboard: rounded black case,
+  // the sound hole and the + mark on top, its legs straight under it.
   buzzer(part, definition) {
     const group = new THREE.Group()
-    const { markers } = breakout(group, part.id, definition.pins, { type: 'buzzer', color: '#18181b' })
-    // A 12 mm active buzzer with a rounded top edge and the sound hole.
-    const outline = [[0.0001, 0.14], [0.6, 0.14], [0.6, 0.86]]
+    const outline = [[0.0001, 0.04], [0.6, 0.04], [0.6, 0.9]]
     for (let i = 1; i <= 8; i += 1) {
       const angle = (i / 8) * (Math.PI / 2)
-      outline.push([0.52 + 0.08 * Math.cos(angle), 0.86 + 0.08 * Math.sin(angle)])
+      outline.push([0.52 + 0.08 * Math.cos(angle), 0.9 + 0.08 * Math.sin(angle)])
     }
-    outline.push([0.0001, 0.94])
+    outline.push([0.0001, 0.98])
     const body = new THREE.Mesh(
       new THREE.LatheGeometry(
         outline.map(([r, y]) => new THREE.Vector2(r, y)),
@@ -791,16 +846,19 @@ const BUILDERS = {
       ),
       new THREE.MeshPhysicalMaterial({ color: '#141416', roughness: 0.35, clearcoat: 0.5, clearcoatRoughness: 0.35 }),
     )
-    body.position.set(0, 0, 0.25)
     body.castShadow = true
-    group.add(body, cylinder(0.1, 0.012, mat('#030303', { roughness: 1 }), 0, 0.942, 0.25, 24))
-    const plus = silk('+', 0.22)
-    plus.position.set(0.32, 0.945, 0.25)
-    group.add(plus)
+    group.add(body)
+    // The wash seal it ships with, covering the sound hole.
+    const seal = new THREE.Mesh(new THREE.CircleGeometry(0.55, 48), new THREE.MeshStandardMaterial({ map: buzzerSeal(), roughness: 0.6 }))
+    seal.rotation.x = -Math.PI / 2
+    seal.position.y = 0.982
+    group.add(seal)
+    for (const pin of definition.pins) bentLead(group, [[pin.x, 0.05, 0], [pin.x, -0.05, 0]], 0.03)
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.04, 8, 48), new THREE.MeshBasicMaterial({ color: '#f59e0b', transparent: true, opacity: 0 }))
     ring.rotation.x = Math.PI / 2
-    ring.position.set(0, 1.0, 0.25)
+    ring.position.set(0, 1.05, 0)
     group.add(ring)
+    const markers = definition.pins.map((pin) => leadMarker(group, { owner: 'part', partId: part.id, pin: pin.id }, pin.x, pin.z))
     let phase = 0
     return {
       group,
@@ -933,7 +991,8 @@ const BUILDERS = {
 
   dht11(part, definition) {
     const group = new THREE.Group()
-    const { markers } = breakout(group, part.id, definition.pins, { type: 'dht11' })
+    // The kit's KY-015 board is black.
+    const { markers } = breakout(group, part.id, definition.pins, { type: 'dht11', color: '#141416' })
     const plastic = mat('#3d9be0', { roughness: 0.5 })
     const grille = new THREE.MeshStandardMaterial({ map: dhtFace(false), bumpMap: dhtFace(true), bumpScale: 3, roughness: 0.5 })
     group.add(box(1.25, 1.55, 0.55, [plastic, plastic, plastic, plastic, grille, plastic], 0, 0.92, 0.3))
@@ -942,42 +1001,51 @@ const BUILDERS = {
     return { group, markers, update() {} }
   },
 
+  // A 14.2 mm (0.56") single digit: black face, pale segments that glow
+  // red, a white case under it and five legs along each end.
   sevenSegment(part, definition) {
     const group = new THREE.Group()
-    const { markers } = breakout(group, part.id, definition.pins, { type: 'sevenSegment', color: '#18181b' })
-    group.add(box(1.4, 0.5, 1.9, mat('#1a1a1d', { roughness: 0.5 }), 0, 0.39, 0.3))
-    group.add(box(1.32, 0.005, 1.82, mat('#26262a', { roughness: 0.2 }), 0, 0.643, 0.3))
+    const white = mat('#eeeeea', { roughness: 0.55 })
+    const face = mat('#141416', { roughness: 0.35 })
+    group.add(box(1.24, 0.6, 1.88, face, 0, 0.6, 0), box(1.2, 0.2, 1.84, white, 0, 0.2, 0))
+    for (const pin of definition.pins) bentLead(group, [[pin.x, 0.12, pin.z], [pin.x, -0.05, pin.z]], 0.025)
     // Unlit segments show as pale diffusers; lit ones glow red. They lean
     // slightly, like the real italic digits.
-    const off = '#55555b'
+    const off = '#d8d8d4'
     const segments = {}
     const makeSegment = (name, w, d, x, z) => {
-      const material = new THREE.MeshStandardMaterial({ color: off, emissive: '#ef4444', emissiveIntensity: 0, roughness: 0.4 })
-      const segment = box(w, 0.03, d, material, x - z * 0.12, 0.66, z + 0.3)
-      if (d > w) segment.rotation.y = 0.12
+      const material = new THREE.MeshStandardMaterial({ color: off, emissive: '#ff2a1a', emissiveIntensity: 0, roughness: 0.45 })
+      const segment = box(w, 0.012, d, material, x - z * 0.1, 0.91, z)
+      if (d > w) segment.rotation.y = -0.1
       segments[name] = segment
       group.add(segment)
     }
-    makeSegment('a', 0.6, 0.1, 0, -0.68)
-    makeSegment('b', 0.1, 0.6, 0.36, -0.35)
-    makeSegment('c', 0.1, 0.6, 0.36, 0.35)
-    makeSegment('d', 0.6, 0.1, 0, 0.68)
-    makeSegment('e', 0.1, 0.6, -0.36, 0.35)
-    makeSegment('f', 0.1, 0.6, -0.36, -0.35)
-    makeSegment('g', 0.6, 0.1, 0, 0)
-    const dp = new THREE.MeshStandardMaterial({ color: off, emissive: '#ef4444', emissiveIntensity: 0, roughness: 0.4 })
-    segments.dp = cylinder(0.065, 0.03, dp, 0.5, 0.66, 1.02, 16)
+    makeSegment('a', 0.52, 0.1, 0, -0.66)
+    makeSegment('b', 0.1, 0.56, 0.34, -0.33)
+    makeSegment('c', 0.1, 0.56, 0.34, 0.33)
+    makeSegment('d', 0.52, 0.1, 0, 0.66)
+    makeSegment('e', 0.1, 0.56, -0.34, 0.33)
+    makeSegment('f', 0.1, 0.56, -0.34, -0.33)
+    makeSegment('g', 0.52, 0.1, 0, 0)
+    const dp = new THREE.MeshStandardMaterial({ color: off, emissive: '#ff2a1a', emissiveIntensity: 0, roughness: 0.45 })
+    segments.dp = cylinder(0.06, 0.012, dp, 0.47, 0.91, 0.68, 16)
     group.add(segments.dp)
+    const glow = halo('#ff3b2a', 2.4, 0, 1.0, 0)
+    group.add(glow)
+    const markers = definition.pins.map((pin) => leadMarker(group, { owner: 'part', partId: part.id, pin: pin.id }, pin.x, pin.z))
     const names = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp']
     return {
       group,
       markers,
       update(state) {
+        let total = 0
         names.forEach((name, index) => {
           const on = state?.segments?.[index] ?? 0
+          total += on
           segments[name].material.emissiveIntensity = on * 3
-          segments[name].material.color.set(on > 0.05 ? '#ef4444' : off)
+          segments[name].material.color.set(on > 0.05 ? '#ff3b2a' : off)
         })
+        glow.material.opacity = Math.min(1, total / 7) * 0.35
       },
     }
   },
@@ -986,8 +1054,14 @@ const BUILDERS = {
     const group = new THREE.Group()
     const { markers } = breakout(group, part.id, definition.pins, { type: 'irSensor' })
     // The IR emitter (clear) and receiver (dark) at the front.
-    ledOnLegs(group, lensMaterial('#e0f2fe'), { x: -0.3, y: 0.25, z: 1.2, spread: 0.1 })
-    ledOnLegs(group, new THREE.MeshPhysicalMaterial({ color: '#141418', roughness: 0.1, clearcoat: 1, clearcoatRoughness: 0.05 }), { x: 0.3, y: 0.25, z: 1.2, spread: 0.1, frame: false })
+    // They lie flat on the front edge, pointing ahead, as on the MH-B board.
+    for (const [x, material, frame] of [[-0.3, lensMaterial('#e0f2fe'), true], [0.3, new THREE.MeshPhysicalMaterial({ color: '#141418', roughness: 0.1, clearcoat: 1, clearcoatRoughness: 0.05 }), false]]) {
+      const lying = new THREE.Group()
+      ledOnLegs(lying, material, { y: 0.3, spread: 0.1, frame })
+      lying.rotation.x = Math.PI / 2
+      lying.position.set(x, 0.42, 1.2)
+      group.add(lying)
+    }
     // The sensitivity trimmer: a blue box with a brass screw.
     group.add(box(0.45, 0.35, 0.45, mat('#2563eb', { roughness: 0.45 }), 0, 0.32, 0.2))
     const screw = cylinder(0.08, 0.06, metal('#d9b45a', 0.3), 0.12, 0.52, 0.32, 16)
