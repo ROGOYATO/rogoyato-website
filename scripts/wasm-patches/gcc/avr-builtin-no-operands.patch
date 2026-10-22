@@ -1,0 +1,17 @@
+--- a/gcc/config/avr/avr.c
++++ b/gcc/config/avr/avr.c
+@@ -14198,7 +14198,13 @@
+ 
+   if (d->n_args == 0)
+     {
+-      emit_insn ((GEN_FCN (d->icode)) (target));
++      /* Pass only the operands the generator takes: gen_enable_interrupt
++         and friends take none, and WebAssembly traps on a call with more
++         arguments than the callee declares.  */
++      if (insn_data[d->icode].n_generator_args == 0)
++        emit_insn ((GEN_FCN (d->icode)) ());
++      else
++        emit_insn ((GEN_FCN (d->icode)) (target));
+       return NULL_RTX;
+     }
+ 

@@ -7,12 +7,13 @@ const TOOLS_COMMIT = '8c563b189cacc9953ee20fa51fad1a80da75673d'
 const COMPONENTS = [
   {
     name: 'GCC 7.3.0 + Arduino AVR yamaları',
-    role: 'C++ derleyicisi (cc1plus), WebAssembly',
+    role: 'C++ ve C derleyicileri (cc1plus, cc1), WebAssembly',
     license: 'GPL-3.0-or-later',
     text: 'GPL-3.0.txt',
     sources: [
       ['gcc-7.3.0', 'https://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz'],
       ['Arduino yaması', 'https://raw.githubusercontent.com/arduino/toolchain-avr/368b87a73e3677071fa44f2182c1ea4cc6a90557/avr-gcc-patches/atmel-patches-gcc.7.3.0-arduino2.patch'],
+      ['sitenin yaması', 'https://github.com/ROGOYATO/rogoyato-website/blob/main/scripts/wasm-patches/gcc/avr-builtin-no-operands.patch'],
     ],
   },
   {
@@ -34,10 +35,13 @@ const COMPONENTS = [
     ],
   },
   {
-    name: 'WebAssembly derleme betiği',
+    name: 'WebAssembly derleme betikleri',
     role: 'yukarıdaki araçları kaynaktan WebAssembly’e derler',
     license: 'jeffrey-braam/arduino-ide',
-    sources: [['toolchain/build.sh', `https://github.com/jeffrey-braam/arduino-ide/tree/${TOOLS_COMMIT}/toolchain`]],
+    sources: [
+      ['toolchain/build.sh', `https://github.com/jeffrey-braam/arduino-ide/tree/${TOOLS_COMMIT}/toolchain`],
+      ['build-wasm-gcc.sh', 'https://github.com/ROGOYATO/rogoyato-website/blob/main/scripts/build-wasm-gcc.sh'],
+    ],
   },
   {
     name: 'libgcc',
@@ -58,6 +62,19 @@ const COMPONENTS = [
     license: 'LGPL-2.1-or-later',
     text: 'LGPL-2.1.txt',
     sources: [['ArduinoCore-avr 1.8.8', 'https://github.com/arduino/ArduinoCore-avr/tree/1.8.8']],
+  },
+  {
+    name: 'Wire, SPI, SoftwareSerial, EEPROM, HID',
+    role: 'AVR kartlarıyla gelen kütüphaneler (gerekince indirilir)',
+    license: 'LGPL-2.1-or-later',
+    text: 'LGPL-2.1.txt',
+    sources: [['ArduinoCore-avr 1.8.8 libraries', 'https://github.com/arduino/ArduinoCore-avr/tree/1.8.8/libraries']],
+  },
+  {
+    name: 'Arduino Library Manager kütüphaneleri',
+    role: 'kodda #include edilen diğer kütüphaneler; tarayıcınız downloads.arduino.cc’den indirir',
+    license: 'her biri kendi lisansıyla',
+    sources: [['Library Manager listesi', 'https://downloads.arduino.cc/libraries/library_index.json.gz']],
   },
   {
     name: 'Servo 1.3.0',
