@@ -547,7 +547,9 @@ export class Bench3D {
 
   onPointerDown(event) {
     this.invalidate()
-    // Only the main button picks, drags and wires; the right button pans.
+    // Only the main button picks, drags and wires; the right button pans,
+    // and a right click that does not pan cancels a wire being drawn.
+    if (event.button === 2) this.rightDown = { x: event.clientX, y: event.clientY }
     if (event.button !== 0) return
     const hit = this.pick(event)
     this.down = { x: event.clientX, y: event.clientY, hit }
@@ -696,6 +698,12 @@ export class Bench3D {
 
   onPointerUp(event) {
     this.invalidate()
+    if (event.button === 2) {
+      const click = this.rightDown && Math.hypot(event.clientX - this.rightDown.x, event.clientY - this.rightDown.y) < 5
+      this.rightDown = null
+      if (click && this.pending) this.cancelWiring()
+      return
+    }
     this.controls.enabled = true
     if (this.resetting) {
       // Like the real button: the program starts again on release.
