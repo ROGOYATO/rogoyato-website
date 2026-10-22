@@ -14,6 +14,7 @@ import {
   describeNet,
   directUnoPin,
   endpointKey,
+  holeWorldPosition,
   normalizeWire,
   partLabel,
 } from '../../../utils/avrSim/catalog'
@@ -45,7 +46,7 @@ const PIN_OPTIONS = [
   ...UNO_POWER.map((pin) => ({ value: pin, label: pin, note: 'güç' })),
 ]
 // Turkish lower case, with ı read as i: "IN2" and "in2" match.
-const lower = (text) => text.trim().toLocaleLowerCase('tr').replace(/ı/g, 'i')
+const lower = (text) => text.trim().toLocaleLowerCase('tr').replace(/ı/g, 'i').replace(/−/g, '-')
 
 // What students type: "d9", "9", "a0", "gnd", "5v", "3.3v".
 const cleanPin = (text) => text.toUpperCase().replace(/\s+/g, '').replace(/^PIN/, '').replace(',', '.')
@@ -204,7 +205,15 @@ const wordsMatch = (label, text) => {
     .every((typed) => words.some((word) => word.startsWith(typed)))
 }
 
-// One end of a new wire: a part pin, an Uno pin or (typed) a breadboard hole.
+const RAILS = [
+  ['T+', 'üst + hattı'],
+  ['T-', 'üst − hattı'],
+  ['B+', 'alt + hattı'],
+  ['B-', 'alt − hattı'],
+]
+
+// One end of a new wire: a part pin, an Uno pin or (typed) a breadboard hole;
+// "hat" (or "üst +", "t-" …) offers the power rails.
 function EndSelect({ circuit, label, value, onChange }) {
   const board = circuit.parts.find((part) => part.type === 'breadboard')
   const holes = board ? breadboardHoles().byId : null
@@ -219,12 +228,26 @@ function EndSelect({ circuit, label, value, onChange }) {
     const id = HOLE.test(typed) ? (/^[a-j]/i.test(typed) ? typed.toLowerCase() : typed) : null
     return holes && id && holes.has(id) ? { value: `P:${board.id}:${id}`, label: `Breadboard · ${describeHole(id)}`, title: id, note: `Breadboard · ${describeHole(id).replace(id, '').trim()}` } : null
   }
+  // Each rail by the hole nearest the Uno, so the wire stays short.
+  const rails = board
+    ? RAILS.map(([prefix, name]) => {
+        const ids = breadboardHoles().list.filter((item) => item.rail && item.id.startsWith(prefix)).map((item) => item.id)
+        const distance = (id) => Math.hypot(...holeWorldPosition(board, id))
+        const id = ids.reduce((best, next) => (distance(next) < distance(best) ? next : best))
+        return { value: `P:${board.id}:${id}`, label: `hat hattı ${name} ${prefix}`, title: id, note: `Breadboard · ${name}` }
+      })
+    : []
   const suggest = (text) => {
     if (!text.trim()) return [...partPins, ...unoPins]
     const found = hole(text)
     const pins = suggestPins(text).map(asUno)
     // "d13" is both an Uno pin and a hole: the pin comes first.
-    return [...partPins.filter((option) => wordsMatch(option.label, text)), ...(cleanPin(text) ? pins : []), ...(found ? [found] : [])]
+    return [
+      ...partPins.filter((option) => wordsMatch(option.label, text)),
+      ...(cleanPin(text) ? pins : []),
+      ...(found ? [found] : []),
+      ...rails.filter((option) => option.value !== found?.value && wordsMatch(option.label, text)),
+    ]
   }
   const parse = (text) => {
     const exact = [...partPins, ...unoPins].find((option) => lower(option.label) === lower(text))
@@ -464,6 +487,9 @@ export function ConnectionsPanel({ circuit, selection, onSelect, onWire, onConne
                 <span className="font-code text-center text-slate-500 sm:pt-1.5">↔</span>
                 <EndSelect circuit={circuit} label="Kablonun öbür ucu" value={adding.to} onChange={(to) => setAdding((current) => ({ ...current, to }))} />
               </div>
+              {circuit.parts.some((part) => part.type === 'breadboard') ? (
+                <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">Breadboard deliği için harf ve sütun numarasını (a12, j17), güç hatları için “hat” yazın.</p>
+              ) : null}
               <div className="flex items-center gap-3">
                 <button type="button" onClick={add} disabled={!adding.from || !adding.to || adding.from === adding.to} className="rounded-md bg-teal-700 px-3 py-1 text-sm font-semibold text-white disabled:opacity-50 dark:bg-teal-400 dark:text-teal-950">
                   Ekle
