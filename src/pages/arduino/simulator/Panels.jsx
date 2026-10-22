@@ -549,7 +549,7 @@ export function IssuesList({ issues }) {
   )
 }
 
-export function SerialMonitor({ text, running, onSend, onClear }) {
+export function SerialMonitor({ text, running, baud, onSend, onClear }) {
   const outputRef = useRef(null)
   const [line, setLine] = useState('')
   const [follow, setFollow] = useState(true)
@@ -564,7 +564,7 @@ export function SerialMonitor({ text, running, onSend, onClear }) {
   }
   return (
     <PanelCard
-      title="Serial Monitor · 9600 baud"
+      title={baud ? `Serial Monitor · ${baud} baud` : 'Serial Monitor'}
       actions={
         <div className="flex items-center gap-3">
           <label className="font-code flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">

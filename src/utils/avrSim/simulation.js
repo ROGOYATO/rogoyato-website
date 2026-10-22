@@ -5,6 +5,8 @@ import { RobotCar } from './car.js'
 import { createPart } from './parts.js'
 import { ArduinoUno, CLOCK_HZ } from './uno.js'
 
+const STANDARD_BAUDS = [300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 28800, 31250, 38400, 57600, 74880, 115200, 230400, 250000, 500000, 1000000, 2000000]
+
 const MAX_STEP_S = 0.05
 
 export class Simulation {
@@ -75,6 +77,18 @@ export class Simulation {
       car: this.car ? this.car.state : null,
       simSeconds: this.simSeconds,
       pins: sample.duty,
+      baud: this.baud(),
     }
+  }
+
+  // The rate the sketch set with Serial.begin(), or null before it. The UART
+  // only gets close to it (9600 comes out as 9615), so the nearest standard
+  // rate within 3% is reported.
+  baud() {
+    const { usart } = this.uno
+    if (!usart.txEnable && !usart.rxEnable) return null
+    const actual = usart.baudRate
+    const standard = STANDARD_BAUDS.find((rate) => Math.abs(actual - rate) / rate < 0.03)
+    return standard ?? actual
   }
 }

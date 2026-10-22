@@ -371,7 +371,7 @@ export default function SimulatorPage() {
               </button>
             </p>
           </section>
-          <SerialMonitor text={sim.serial} running={running} onSend={sim.sendSerial} onClear={sim.clearSerial} />
+          <SerialMonitor text={sim.serial} running={running} baud={sim.hud?.baud} onSend={sim.sendSerial} onClear={sim.clearSerial} />
         </div>
 
         {/* On phones the 3D view comes first; on large screens it sits on the right. */}
