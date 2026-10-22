@@ -371,7 +371,7 @@ export default function SimulatorPage() {
               </button>
             </p>
           </section>
-          <SerialMonitor text={sim.serial} running={running} onSend={sim.sendSerial} onClear={sim.clearSerial} />
+          <SerialMonitor text={sim.serial} running={running} baud={sim.hud?.baud} onSend={sim.sendSerial} onClear={sim.clearSerial} />
         </div>
 
         {/* On phones the 3D view comes first; on large screens it sits on the right. */}
@@ -488,7 +488,13 @@ export default function SimulatorPage() {
                   </div>
                 </PanelCard>
               ) : null}
-              <ConnectionsPanel circuit={project.circuit} selection={selection} onSelect={setSelection} />
+              <ConnectionsPanel
+                circuit={project.circuit}
+                selection={selection}
+                onSelect={setSelection}
+                onWire={(part, pin, uno) => wireToUno('circuit', part, pin, uno)}
+                onConnect={(from, to) => setCircuit('circuit', (circuit) => connectEndpoints(circuit, from, to))}
+              />
               {issues.length ? (
                 <PanelCard title="Devre kontrolü">
                   <IssuesList issues={issues} />
