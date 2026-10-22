@@ -1,6 +1,22 @@
 import { AlertTriangle, CircleX, Eraser, RotateCw, Send, Trash2 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
-import { PART_CATALOG, PWM_PINS, UNO_ANALOG, UNO_DIGITAL, breadboardHoles, buildNets, describeHole, describeNet, directUnoPin, partLabel } from '../../../utils/avrSim/catalog'
+import { useEffect, useId, useRef, useState } from 'react'
+import {
+  PART_CATALOG,
+  PWM_PINS,
+  UNO_ANALOG,
+  UNO_DIGITAL,
+  UNO_PINS,
+  UNO_POWER,
+  breadboardHoles,
+  buildNets,
+  describeEndpoint,
+  describeHole,
+  describeNet,
+  directUnoPin,
+  endpointKey,
+  normalizeWire,
+  partLabel,
+} from '../../../utils/avrSim/catalog'
 
 export function PanelCard({ title, actions, children, className = '' }) {
   return (
@@ -19,34 +35,129 @@ export function PanelCard({ title, actions, children, className = '' }) {
 const selectClass =
   'font-code w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-800 focus:border-teal-600 focus:outline-hidden dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100'
 
+const PIN_OPTIONS = [
+  ...UNO_DIGITAL.map((pin) => ({ pin, note: PWM_PINS.has(pin) ? '~PWM' : pin === 'D0' || pin === 'D1' ? 'Serial' : 'dijital' })),
+  ...UNO_ANALOG.map((pin) => ({ pin, note: 'analog' })),
+  ...UNO_POWER.map((pin) => ({ pin, note: 'güç' })),
+]
+
+// What students type: "d9", "9", "a0", "gnd", "5v", "3.3v".
+const cleanPin = (text) => text.toUpperCase().replace(/\s+/g, '').replace(/^PIN/, '').replace(',', '.')
+function parsePin(text) {
+  const typed = cleanPin(text)
+  if (UNO_PINS.includes(typed)) return typed
+  if (/^\d+$/.test(typed) && UNO_DIGITAL.includes(`D${Number(typed)}`)) return `D${Number(typed)}`
+  return { '3.3': '3V3', '3.3V': '3V3', TOPRAK: 'GND', GROUND: 'GND' }[typed] ?? null
+}
+// Pins whose name starts with the text come first, then ones whose note
+// matches ("pwm", "analog", "güç").
+function suggestPins(text) {
+  const typed = cleanPin(text)
+  if (!typed) return PIN_OPTIONS
+  const words = text.trim().toLocaleLowerCase('tr')
+  const byName = PIN_OPTIONS.filter(({ pin }) => pin.startsWith(typed) || (/^\d/.test(typed) && pin.startsWith(`D${typed}`)) || pin === parsePin(text))
+  const byNote = words.length > 1 ? PIN_OPTIONS.filter(({ pin, note }) => !byName.some((option) => option.pin === pin) && note.toLocaleLowerCase('tr').includes(words)) : []
+  return [...byName, ...byNote]
+}
+
+// A pin box that suggests while typing; focusing it lists every pin.
+// Empty means "boşta".
 export function PinSelect({ value, onChange, label }) {
+  const [draft, setDraft] = useState(null) // the text being typed, null when not editing
+  const [open, setOpen] = useState(false)
+  const [active, setActive] = useState(-1) // the option picked with the arrow keys
+  const [error, setError] = useState('')
+  const id = useId()
+  const options = draft ? suggestPins(draft) : [...(value ? [{ pin: null, note: 'kabloyu sök' }] : []), ...PIN_OPTIONS]
+  // Enter takes the first suggestion when the text is not a pin yet.
+  const highlighted = active >= 0 ? active : draft && !parsePin(draft) ? 0 : -1
+
+  const close = () => {
+    setDraft(null)
+    setOpen(false)
+    setActive(-1)
+  }
+  const choose = (pin) => {
+    setError('')
+    if (pin !== value) onChange(pin)
+    close()
+  }
+  const commit = () => {
+    if (draft === null) return close()
+    if (!draft.trim()) return choose(null)
+    const pin = parsePin(draft)
+    if (pin) return choose(pin)
+    setError(`“${draft.trim()}” diye bir pin yok.`)
+    close()
+  }
+  const onKeyDown = (event) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault()
+      setOpen(true)
+      setActive((current) => (Math.max(current, -1) + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length)
+    } else if (event.key === 'Enter') {
+      event.preventDefault()
+      if (open && options[highlighted]) choose(options[highlighted].pin)
+      else commit()
+    } else if (event.key === 'Escape') {
+      close()
+    }
+  }
+
   return (
-    <select aria-label={label} value={value ?? ''} onChange={(event) => onChange(event.target.value || null)} className={selectClass}>
-      <option value="">— boşta —</option>
-      <optgroup label="Dijital">
-        {UNO_DIGITAL.map((pin) => (
-          <option key={pin} value={pin}>
-            {pin}
-            {PWM_PINS.has(pin) ? ' ~PWM' : ''}
-            {pin === 'D0' || pin === 'D1' ? ' (Serial)' : ''}
-          </option>
-        ))}
-      </optgroup>
-      <optgroup label="Analog">
-        {UNO_ANALOG.map((pin) => (
-          <option key={pin} value={pin}>
-            {pin}
-          </option>
-        ))}
-      </optgroup>
-      <optgroup label="Güç">
-        {['5V', '3V3', 'GND', 'VIN'].map((pin) => (
-          <option key={pin} value={pin}>
-            {pin}
-          </option>
-        ))}
-      </optgroup>
-    </select>
+    <div className="relative">
+      <input
+        role="combobox"
+        aria-label={label}
+        aria-expanded={open}
+        aria-controls={`${id}-list`}
+        aria-autocomplete="list"
+        aria-activedescendant={open && options[highlighted] ? `${id}-${highlighted}` : undefined}
+        value={draft ?? value ?? ''}
+        placeholder="— boşta —"
+        autoComplete="off"
+        autoCapitalize="characters"
+        spellCheck={false}
+        onFocus={(event) => {
+          setOpen(true)
+          event.target.select()
+        }}
+        onChange={(event) => {
+          setDraft(event.target.value)
+          setError('')
+          setOpen(true)
+          setActive(-1)
+        }}
+        onClick={() => setOpen(true)}
+        onKeyDown={onKeyDown}
+        onBlur={commit}
+        className={selectClass}
+      />
+      {open && options.length ? (
+        <ul
+          id={`${id}-list`}
+          role="listbox"
+          className="font-code absolute left-0 right-0 z-20 mt-1 max-h-56 overflow-auto rounded-md border border-slate-300 bg-white py-1 text-sm shadow-lg dark:border-white/15 dark:bg-[#0b1517]"
+        >
+          {options.map((option, index) => (
+            <li
+              key={option.pin ?? 'none'}
+              id={`${id}-${index}`}
+              role="option"
+              aria-selected={option.pin === value}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => choose(option.pin)}
+              onMouseEnter={() => setActive(index)}
+              className={`flex cursor-pointer justify-between gap-3 px-2 py-1 ${index === highlighted ? 'bg-teal-50 text-teal-900 dark:bg-teal-400/10 dark:text-teal-100' : 'text-slate-800 dark:text-slate-100'}`}
+            >
+              <span className={option.pin === value ? 'font-semibold' : ''}>{option.pin ?? '— boşta —'}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">{option.note}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {error ? <p className="mt-1 text-xs text-rose-700 dark:text-rose-300">{error}</p> : null}
+    </div>
   )
 }
 
@@ -150,7 +261,7 @@ export function PartInspector({ part, circuit, inputs, state, onInput, onWire, o
   const reach = (pin) => {
     const uno = describeNet(nets, `P:${part.id}:${pin}`)
     const via = holes?.[pin] ? `${holes[pin]} deliği` : null
-    return [via, uno.length ? `→ ${uno.join(', ')}` : null].filter(Boolean).join(' ')
+    return [via, `→ ${uno.length ? uno.join(', ') : 'boşta'}`].filter(Boolean).join(' ')
   }
   return (
     <div className="space-y-4">
@@ -193,14 +304,14 @@ export function PartInspector({ part, circuit, inputs, state, onInput, onWire, o
         <BreadboardSummary part={part} circuit={circuit} nets={nets} plugged={plugged} />
       ) : (
         <div>
-          <p className="font-code mb-2 text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Bağlantılar</p>
+          <p className="font-code mb-2 text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Pinler</p>
           {holes ? <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">Breadboard’a takılı. Uno’ya doğrudan kablo da çekebilirsiniz.</p> : null}
           <div className="space-y-1.5">
             {definition.pins.map((pin) => (
               <div key={pin.id} className="grid grid-cols-[5.5rem_1fr] items-center gap-2">
                 <span className="font-code text-sm text-slate-700 dark:text-slate-200">
                   {pin.label}
-                  {reach(pin.id) ? <span className="block text-[0.7rem] leading-tight text-slate-500 dark:text-slate-400">{reach(pin.id)}</span> : null}
+                  <span className="block text-[0.7rem] leading-tight text-slate-500 dark:text-slate-400">{reach(pin.id)}</span>
                 </span>
                 <PinSelect label={`${partLabel(part)} ${pin.label}`} value={directUnoPin(circuit, part.id, pin.id)} onChange={(uno) => onWire(part.id, pin.id, uno)} />
               </div>
@@ -209,6 +320,81 @@ export function PartInspector({ part, circuit, inputs, state, onInput, onWire, o
         </div>
       )}
     </div>
+  )
+}
+
+// The circuit's connections, under the parts: the wires as built, or every
+// part pin and the Uno pins it reaches (directly or through the breadboard).
+// Whatever touches the selection comes first.
+export function ConnectionsPanel({ circuit, selection, onSelect }) {
+  const [view, setView] = useState('wires')
+  const { nets } = buildNets(circuit)
+  const selectedPart = circuit.parts.find((part) => part.id === selection?.partId)
+  const selectedNets = new Set((selectedPart ? PART_CATALOG[selectedPart.type].pins : []).map((pin) => nets.find(`P:${selectedPart.id}:${pin.id}`)))
+  const touches = (wire) =>
+    wire.id === selection?.wireId || (selectedPart && [wire.from, wire.to].some((end) => end.part === selectedPart.id || selectedNets.has(nets.find(endpointKey(end)))))
+  const wires = circuit.wires.map(normalizeWire)
+  const parts = circuit.parts.filter((part) => part.type !== 'breadboard')
+  const first = (list, test) => [...list.filter(test), ...list.filter((item) => !test(item))]
+  const row = (active) => `rounded-md px-2 py-1 ${active ? 'bg-teal-50 dark:bg-teal-400/10' : ''}`
+  const tab = (active) =>
+    `rounded px-2 py-0.5 text-xs transition ${active ? 'bg-teal-700 text-white dark:bg-teal-400 dark:text-teal-950' : 'text-slate-600 hover:text-teal-700 dark:text-slate-300 dark:hover:text-teal-300'}`
+  return (
+    <PanelCard
+      title="Bağlantılar"
+      actions={
+        <div className="font-code flex gap-1 rounded-md border border-slate-300 p-0.5 dark:border-white/15" role="group" aria-label="Bağlantı görünümü">
+          <button type="button" aria-pressed={view === 'wires'} onClick={() => setView('wires')} className={tab(view === 'wires')}>
+            Kablolar
+          </button>
+          <button type="button" aria-pressed={view === 'pins'} onClick={() => setView('pins')} className={tab(view === 'pins')}>
+            Pin haritası
+          </button>
+        </div>
+      }
+    >
+      {view === 'wires' ? (
+        wires.length ? (
+          <ul className="font-code space-y-0.5 text-sm">
+            {first(wires, touches).map((wire) => (
+              <li key={wire.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelect({ wireId: wire.id })}
+                  className={`${row(touches(wire))} block w-full text-left text-slate-700 hover:text-teal-700 dark:text-slate-200 dark:hover:text-teal-300 ${wire.id === selection?.wireId ? 'font-semibold' : ''}`}
+                >
+                  {describeEndpoint(circuit, wire.from)} ↔ {describeEndpoint(circuit, wire.to)}
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-slate-500 dark:text-slate-400">Henüz bağlantı yok.</p>
+        )
+      ) : parts.length ? (
+        <ul className="space-y-0.5 text-sm">
+          {first(parts, (part) => part.id === selectedPart?.id).map((part) => (
+            <li key={part.id} className={`${row(part.id === selectedPart?.id)} grid grid-cols-[minmax(0,9rem)_1fr] gap-2`}>
+              <button type="button" onClick={() => onSelect({ partId: part.id })} className="truncate text-left text-slate-800 hover:text-teal-700 dark:text-slate-100 dark:hover:text-teal-300">
+                {partLabel(part)}
+              </button>
+              <span className="font-code flex flex-wrap gap-x-3 text-xs leading-5 text-slate-600 dark:text-slate-300">
+                {PART_CATALOG[part.type].pins.map((pin) => {
+                  const uno = describeNet(nets, `P:${part.id}:${pin.id}`)
+                  return (
+                    <span key={pin.id} className={uno.length ? '' : 'text-slate-400 dark:text-slate-500'}>
+                      {pin.label} → {uno.length ? uno.join(', ') : 'boşta'}
+                    </span>
+                  )
+                })}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-slate-500 dark:text-slate-400">Masada bağlanacak parça yok.</p>
+      )}
+    </PanelCard>
   )
 }
 
