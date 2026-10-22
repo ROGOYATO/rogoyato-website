@@ -1,6 +1,6 @@
 // Runs the simulated Uno off the main thread so the 3D view stays smooth.
 // Messages in:  start {hex, circuit, carCircuit, track}, input {part, key, value},
-//               serial {text}, resetCar, setTrack {track}, stop
+//               serial {text}, resetCar, setTrack {track}, pause, resume, stop
 // Messages out: frame {snapshot, serial, speed}, issues {issues}, error {message}
 import { Simulation } from './simulation.js'
 
@@ -74,6 +74,18 @@ self.onmessage = ({ data }) => {
       break
     case 'setTrack':
       simulation?.car?.setTrack(data.track)
+      break
+    // While the page is hidden the Uno is frozen (simulated time stops too)
+    // instead of keeping a CPU core busy.
+    case 'pause':
+      clearTimeout(timer)
+      timer = null
+      break
+    case 'resume':
+      if (simulation && !timer) {
+        last = performance.now()
+        timer = setTimeout(loop, 0)
+      }
       break
     case 'stop':
       stop()

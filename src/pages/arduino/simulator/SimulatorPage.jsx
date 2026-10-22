@@ -54,7 +54,7 @@ function loadSaved() {
     for (const key of OLD_STORAGE_KEYS) window.localStorage.removeItem(key)
     const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY))
     // Projects saved before the breadboard used { part, pin, uno } wires.
-    if (saved?.code && saved?.circuit) return { ...saved, circuit: normalizeCircuit(saved.circuit), carCircuit: saved.carCircuit && normalizeCircuit(saved.carCircuit) }
+    if (saved?.code && saved?.circuit) return { ...saved, circuit: normalizeCircuit(saved.circuit), carCircuit: saved.carCircuit ? normalizeCircuit(saved.carCircuit) : clone(CAR_EXAMPLE.carCircuit) }
   } catch {
     // Storage can be unavailable (private mode); start from an example.
   }

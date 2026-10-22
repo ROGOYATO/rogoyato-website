@@ -153,12 +153,20 @@ export class Car3D {
     this.setTheme(false)
     this.resizeObserver = new ResizeObserver(() => this.resize())
     this.resizeObserver.observe(container)
+    // Nothing is drawn while the view is scrolled out of sight.
+    this.visible = true
+    this.visibilityObserver = new IntersectionObserver(([entry]) => {
+      this.visible = entry.isIntersecting
+      this.dirty = true
+    })
+    this.visibilityObserver.observe(container)
     this.resize()
     this.renderer.setAnimationLoop(() => this.render())
   }
 
   setTheme(dark) {
     this.scene.background = new THREE.Color(dark ? '#0d1517' : '#dfe8ec')
+    this.dirty = true
   }
 
   setTrack(trackId) {
@@ -174,6 +182,7 @@ export class Car3D {
 
   setView(view) {
     this.view = view
+    this.dirty = true
     this.controls.enabled = view === 'free'
     if (view === 'top') {
       this.camera.position.set(ARENA.width * 50, 230, ARENA.height * 50 + 1)
@@ -190,14 +199,17 @@ export class Car3D {
     this.renderer.setSize(clientWidth, clientHeight)
     this.camera.aspect = clientWidth / clientHeight
     this.camera.updateProjectionMatrix()
+    this.dirty = true
   }
 
   clearTrail() {
     this.trailPoints = []
+    this.dirty = true
   }
 
   setState(state) {
     this.state = state
+    this.dirty = true
     if (!state?.pose) return
     const { x, y, heading } = state.pose
     this.car.position.set(x * CM, 0, y * CM)
@@ -216,21 +228,29 @@ export class Car3D {
     }
   }
 
+  // Draws a frame only when the car, the camera or the view changed.
   render() {
+    if (!this.visible) return
+    let moving = false
     if (this.view === 'follow' && this.state?.pose) {
       const { heading } = this.state.pose
       const target = this.car.position.clone()
       const desired = target.clone().add(new THREE.Vector3(-Math.cos(heading) * 55, 38, -Math.sin(heading) * 55))
+      // The chase camera eases in; it counts as moving until it arrives.
+      moving = this.camera.position.distanceTo(desired) > 0.05
       this.camera.position.lerp(desired, 0.08)
       this.controls.target.lerp(target.add(new THREE.Vector3(Math.cos(heading) * 20, 0, Math.sin(heading) * 20)), 0.15)
     }
-    this.controls.update()
+    if (this.controls.update()) moving = true
+    if (!moving && !this.dirty) return
+    this.dirty = false
     this.renderer.render(this.scene, this.camera)
   }
 
   dispose() {
     this.renderer.setAnimationLoop(null)
     this.resizeObserver.disconnect()
+    this.visibilityObserver.disconnect()
     this.controls.dispose()
     this.renderer.dispose()
     this.renderer.domElement.remove()
