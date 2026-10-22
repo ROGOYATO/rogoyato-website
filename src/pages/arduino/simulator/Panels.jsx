@@ -14,7 +14,8 @@ import {
   describeNet,
   directUnoPin,
   endpointKey,
-  holeWorldPosition,
+  directStripUno,
+  freeHole,
   normalizeWire,
   partLabel,
   pluggedParts,
@@ -213,6 +214,71 @@ const RAILS = [
   ['B-', 'alt − hattı'],
 ]
 
+// The breadboard's four rails, then the column halves holding a leg or a
+// wire end: { strip, name, rail, legs: ["Kırmızı LED +", …] }.
+function usedStrips(circuit, boardId) {
+  const byId = breadboardHoles().byId
+  const columns = new Map()
+  const column = (hole) => {
+    if (!columns.has(hole.strip)) columns.set(hole.strip, { strip: hole.strip, name: `${hole.col} ${hole.strip.endsWith('t') ? 'a–e' : 'f–j'}`, col: hole.col, legs: [] })
+    return columns.get(hole.strip)
+  }
+  const rails = RAILS.map(([strip, name]) => ({ strip, name, rail: true, legs: [] }))
+  for (const [partId, info] of pluggedParts(circuit)) {
+    if (info.board !== boardId) continue
+    const part = circuit.parts.find((p) => p.id === partId)
+    for (const [pinId, holeId] of Object.entries(info.holes)) {
+      const hole = byId.get(holeId)
+      const leg = `${partLabel(part)} ${PART_CATALOG[part.type].pins.find((p) => p.id === pinId)?.label ?? pinId}`
+      ;(hole.rail ? rails.find((rail) => rail.strip === hole.strip) : column(hole)).legs.push(leg)
+    }
+  }
+  for (const wire of circuit.wires.map(normalizeWire)) {
+    for (const end of [wire.from, wire.to]) {
+      const hole = end.part === boardId ? byId.get(end.pin) : null
+      if (hole && !hole.rail) column(hole)
+    }
+  }
+  return [...rails, ...[...columns.values()].sort((a, b) => a.col - b.col || Number(a.strip.endsWith('b')) - Number(b.strip.endsWith('b')))]
+}
+
+// The breadboard's rails and used columns, each with an Uno pin box: typing
+// a pin runs a jumper to it from a free hole of that strip.
+function BreadboardPins({ circuit, board, nets, onStrip }) {
+  const strips = usedStrips(circuit, board.id)
+  const row = (strip) => {
+    const direct = directStripUno(circuit, board.id, strip.strip)
+    const uno = describeNet(nets, `S:${board.id}:${strip.strip}`)
+    return (
+      <div key={strip.strip} className="grid grid-cols-[3rem_minmax(0,1fr)] items-center gap-x-2 gap-y-0.5">
+        <span className="font-code text-xs text-slate-700 dark:text-slate-200">{strip.rail ? strip.name.replace(' hattı', '') : strip.name}</span>
+        <div className="min-w-0">
+          {strip.legs.length ? <p className="mb-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{strip.legs.join(', ')}</p> : null}
+          <PinSelect
+            label={`Breadboard ${strip.rail ? strip.name : `${strip.name} sütunu`}`}
+            value={direct}
+            reached={uno.length ? `→ ${uno.join(', ')}` : null}
+            onChange={(next) => onStrip(board.id, strip.strip, next)}
+          />
+        </div>
+      </div>
+    )
+  }
+  const columns = strips.filter((strip) => !strip.rail)
+  return (
+    <div className="space-y-3">
+      <div className="space-y-1">
+        <p className="font-code text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Hatlar</p>
+        {strips.filter((strip) => strip.rail).map(row)}
+      </div>
+      <div className="space-y-1.5">
+        <p className="font-code text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Sütunlar</p>
+        {columns.length ? columns.map(row) : <p className="text-xs text-slate-500 dark:text-slate-400">Henüz parça takılı değil. Parçayı sürükleyip breadboard’un üstüne bırakın.</p>}
+      </div>
+    </div>
+  )
+}
+
 // One end of a new wire: a part pin, an Uno pin or (typed) a breadboard hole;
 // "hat" (or "üst +", "t-" …) offers the power rails.
 function EndSelect({ circuit, label, value, onChange }) {
@@ -229,45 +295,20 @@ function EndSelect({ circuit, label, value, onChange }) {
     const id = HOLE.test(typed) ? (/^[a-j]/i.test(typed) ? typed.toLowerCase() : typed) : null
     return holes && id && holes.has(id) ? { value: `P:${board.id}:${id}`, label: `Breadboard · ${describeHole(id)}`, title: id, note: `Breadboard · ${describeHole(id).replace(id, '').trim()}` } : null
   }
-  // Each rail by the hole nearest the Uno, so the wire stays short.
+  // Each rail at its free hole nearest the Uno, so the wire stays short.
   const rails = board
-    ? RAILS.map(([prefix, name]) => {
-        const ids = breadboardHoles().list.filter((item) => item.rail && item.id.startsWith(prefix)).map((item) => item.id)
-        const distance = (id) => Math.hypot(...holeWorldPosition(board, id))
-        const id = ids.reduce((best, next) => (distance(next) < distance(best) ? next : best))
-        return { value: `P:${board.id}:${id}`, label: `hat hattı ${name} ${prefix}`, title: id, note: `Breadboard · ${name}` }
-      })
+    ? RAILS.map(([strip, name]) => ({ strip, name, id: freeHole(circuit, board.id, strip) }))
+        .filter(({ id }) => id)
+        .map(({ strip, name, id }) => ({ value: `P:${board.id}:${id}`, label: `hat hattı ${name} ${strip}`, title: id, note: `Breadboard · ${name}` }))
     : []
   // For each leg plugged into the board, a free hole in its column (the
   // outermost one), the usual place for a jumper to it.
   const columns = []
-  if (board) {
-    const { byId, list } = breadboardHoles()
-    const plugged = [...pluggedParts(circuit)].filter(([, info]) => info.board === board.id)
-    const used = new Set([
-      ...plugged.flatMap(([, info]) => Object.values(info.holes)),
-      ...circuit.wires.map(normalizeWire).flatMap((wire) => [wire.from, wire.to].filter((end) => end.part === board.id).map((end) => end.pin)),
-    ])
-    for (const [partId, info] of plugged) {
-      const part = circuit.parts.find((p) => p.id === partId)
-      for (const [pinId, holeId] of Object.entries(info.holes)) {
-        const leg = byId.get(holeId)
-        if (!leg || leg.rail) continue
-        const outer = leg.strip.endsWith('t') ? 'abcde' : 'jihgf'
-        const free = list.filter((item) => item.strip === leg.strip && !used.has(item.id)).sort((a, b) => outer.indexOf(a.row) - outer.indexOf(b.row))[0]
-        const pin = PART_CATALOG[part.type].pins.find((p) => p.id === pinId)?.label ?? pinId
-        if (!free) continue
-        // Two legs in one column share the suggestion.
-        const name = `${partLabel(part)} ${pin}`
-        const same = columns.find((option) => option.value === `P:${board.id}:${free.id}`)
-        if (same) {
-          same.label += ` ${name}`
-          same.note = same.note.replace(' ile aynı sütun', `, ${name} ile aynı sütun`)
-        } else {
-          columns.push({ value: `P:${board.id}:${free.id}`, label: `${name} sütunu ${free.id}`, title: free.id, note: `${name} ile aynı sütun` })
-        }
-      }
-    }
+  for (const strip of board ? usedStrips(circuit, board.id) : []) {
+    const id = !strip.rail && strip.legs.length ? freeHole(circuit, board.id, strip.strip) : null
+    if (!id) continue
+    const legs = strip.legs.join(', ')
+    columns.push({ value: `P:${board.id}:${id}`, label: `${legs} sütunu ${id}`, title: id, note: `${legs} ile aynı sütun` })
   }
   const suggest = (text) => {
     if (!text.trim()) return [...partPins, ...columns, ...rails, ...unoPins]
@@ -389,7 +430,7 @@ export function PartControls({ part, inputs, onInput }) {
 
 const OPTION_LABELS = { color: 'Renk', ohms: 'Değer' }
 
-export function PartInspector({ part, circuit, inputs, state, onInput, onWire, onRotate, onDelete, onProp }) {
+export function PartInspector({ part, circuit, inputs, state, onInput, onWire, onStrip, onRotate, onDelete, onProp }) {
   const definition = PART_CATALOG[part.type]
   const { nets, plugged } = buildNets(circuit)
   const holes = plugged.get(part.id)?.holes
@@ -431,7 +472,7 @@ export function PartInspector({ part, circuit, inputs, state, onInput, onWire, o
       <Readout part={part} state={state} />
 
       {part.type === 'breadboard' ? (
-        <BreadboardSummary part={part} circuit={circuit} nets={nets} plugged={plugged} />
+        <BreadboardPins circuit={circuit} board={part} nets={nets} onStrip={onStrip} />
       ) : (
         <div>
           <p className="font-code mb-2 text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Pinler</p>
@@ -458,7 +499,7 @@ export function PartInspector({ part, circuit, inputs, state, onInput, onWire, o
 // The circuit's connections, under the parts: the wires as built (with a
 // form to add one), or every part pin with the Uno pin it is wired to. The
 // order stays put; whatever touches the selection is highlighted.
-export function ConnectionsPanel({ circuit, selection, onSelect, onWire, onConnect }) {
+export function ConnectionsPanel({ circuit, selection, onSelect, onWire, onStrip, onConnect }) {
   const [view, setView] = useState('wires')
   const [adding, setAdding] = useState(null) // { from, to } while adding a wire
   const { nets, plugged } = buildNets(circuit)
@@ -467,7 +508,7 @@ export function ConnectionsPanel({ circuit, selection, onSelect, onWire, onConne
   const touches = (wire) =>
     wire.id === selection?.wireId || (selectedPart && [wire.from, wire.to].some((end) => end.part === selectedPart.id || selectedNets.has(nets.find(endpointKey(end)))))
   const wires = circuit.wires.map(normalizeWire)
-  const parts = circuit.parts.filter((part) => part.type !== 'breadboard')
+  const { parts } = circuit
   const row = (active) => `rounded-md px-2 py-1 ${active ? 'bg-teal-50 dark:bg-teal-400/10' : ''}`
   const tab = (active) =>
     `rounded px-2 py-0.5 text-xs transition ${active ? 'bg-teal-700 text-white dark:bg-teal-400 dark:text-teal-950' : 'text-slate-600 hover:text-teal-700 dark:text-slate-300 dark:hover:text-teal-300'}`
@@ -544,57 +585,32 @@ export function ConnectionsPanel({ circuit, selection, onSelect, onWire, onConne
               <button type="button" onClick={() => onSelect({ partId: part.id })} className="text-left font-semibold text-slate-800 hover:text-teal-700 dark:text-slate-100 dark:hover:text-teal-300">
                 {partLabel(part)}
               </button>
-              <div className="mt-1 space-y-1">
-                {PART_CATALOG[part.type].pins.map((pin) => (
-                  <div key={pin.id} className="grid grid-cols-[3rem_minmax(0,1fr)] items-center gap-2">
-                    <span className="font-code text-xs text-slate-700 dark:text-slate-200">{pin.label}</span>
-                    <PinSelect
-                      label={`${partLabel(part)} ${pin.label}`}
-                      value={directUnoPin(circuit, part.id, pin.id)}
-                      reached={reachedWithout(nets, plugged, part, pin.id)}
-                      onChange={(next) => onWire(part.id, pin.id, next)}
-                    />
-                  </div>
-                ))}
-              </div>
+              {part.type === 'breadboard' ? (
+                <div className="mt-1">
+                  <BreadboardPins circuit={circuit} board={part} nets={nets} onStrip={onStrip} />
+                </div>
+              ) : (
+                <div className="mt-1 space-y-1">
+                  {PART_CATALOG[part.type].pins.map((pin) => (
+                    <div key={pin.id} className="grid grid-cols-[3rem_minmax(0,1fr)] items-center gap-2">
+                      <span className="font-code text-xs text-slate-700 dark:text-slate-200">{pin.label}</span>
+                      <PinSelect
+                        label={`${partLabel(part)} ${pin.label}`}
+                        value={directUnoPin(circuit, part.id, pin.id)}
+                        reached={reachedWithout(nets, plugged, part, pin.id)}
+                        onChange={(next) => onWire(part.id, pin.id, next)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-slate-500 dark:text-slate-400">Masada bağlanacak parça yok.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Masada parça yok.</p>
       )}
     </PanelCard>
-  )
-}
-
-// Which strips of the board carry which Uno pins, and what is plugged in.
-function BreadboardSummary({ part, circuit, nets, plugged }) {
-  const strips = new Map()
-  for (const wire of circuit.wires) {
-    for (const end of [wire.from, wire.to]) {
-      if (end?.part !== part.id) continue
-      const uno = describeNet(nets, `P:${part.id}:${end.pin}`)
-      const hole = breadboardHoles().byId.get(end.pin)
-      if (!uno.length || !hole) continue
-      const strip = hole.rail ? describeHole(end.pin).replace(/ \(\d+\)$/, '') : `${hole.col}. sütun (${hole.strip.endsWith('t') ? 'a–e' : 'f–j'})`
-      strips.set(strip, uno.join(', '))
-    }
-  }
-  const riders = circuit.parts.filter((p) => plugged.get(p.id)?.board === part.id)
-  return (
-    <div className="space-y-2 text-sm text-slate-700 dark:text-slate-200">
-      <p className="font-code text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Üstündekiler</p>
-      <p>{riders.length ? riders.map(partLabel).join(', ') : 'Henüz parça takılı değil. Parçayı sürükleyip breadboard’un üstüne bırakın.'}</p>
-      {strips.size ? (
-        <ul className="font-code space-y-0.5 text-xs">
-          {[...strips].map(([strip, uno]) => (
-            <li key={strip}>
-              {strip} → {uno}
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
   )
 }
 

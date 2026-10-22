@@ -14,6 +14,7 @@ import {
   resolveCircuit,
   rotatePart,
   setDirectUnoPin,
+  setStripUno,
 } from '../../../utils/avrSim/catalog'
 import { TRACKS } from '../../../utils/avrSim/car'
 import { Breadcrumb, Label } from '../ArduinoParts'
@@ -156,6 +157,7 @@ export default function SimulatorPage() {
   const setCircuit = (key, fn) => setProject((current) => ({ ...current, [key]: fn(current[key]) }))
 
   const wireToUno = (key, part, pin, uno) => setCircuit(key, (circuit) => setDirectUnoPin(circuit, part, pin, uno))
+  const stripToUno = (board, strip, uno) => setCircuit('circuit', (circuit) => setStripUno(circuit, board, strip, uno))
 
   const addPart = (type) => {
     const { parts } = project.circuit
@@ -461,6 +463,7 @@ export default function SimulatorPage() {
                     state={sim.hud?.parts?.[selectedPart.id]}
                     onInput={(key, value) => setInput(selectedPart.id, key, value)}
                     onWire={(part, pin, uno) => wireToUno('circuit', part, pin, uno)}
+                    onStrip={stripToUno}
                     onRotate={() => setCircuit('circuit', (circuit) => rotatePart(circuit, selectedPart.id))}
                     onDelete={() => {
                       setSelection(null)
@@ -493,6 +496,7 @@ export default function SimulatorPage() {
                 selection={selection}
                 onSelect={setSelection}
                 onWire={(part, pin, uno) => wireToUno('circuit', part, pin, uno)}
+                onStrip={stripToUno}
                 onConnect={(from, to) => setCircuit('circuit', (circuit) => connectEndpoints(circuit, from, to))}
               />
               {issues.length ? (
