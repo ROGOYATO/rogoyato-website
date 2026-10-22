@@ -404,6 +404,43 @@ export default function SimulatorPage() {
 
           {project.mode === 'bench' ? (
             <>
+              {selectedPart ? (
+                <PanelCard title="Seçili parça">
+                  <PartInspector
+                    part={selectedPart}
+                    circuit={project.circuit}
+                    inputs={project.inputs[selectedPart.id]}
+                    state={sim.hud?.parts?.[selectedPart.id]}
+                    onInput={(key, value) => setInput(selectedPart.id, key, value)}
+                    onWire={(part, pin, uno) => wireToUno('circuit', part, pin, uno)}
+                    onStrip={stripToUno}
+                    onRotate={() => setCircuit('circuit', (circuit) => rotatePart(circuit, selectedPart.id))}
+                    onDelete={() => {
+                      setSelection(null)
+                      setCircuit('circuit', (circuit) => removePart(circuit, selectedPart.id))
+                    }}
+                    onProp={(key, value) => setCircuit('circuit', (circuit) => ({ ...circuit, parts: circuit.parts.map((part) => (part.id === selectedPart.id ? { ...part, props: { ...part.props, [key]: value } } : part)) }))}
+                  />
+                </PanelCard>
+              ) : selectedWire ? (
+                <PanelCard title="Seçili kablo">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-code text-sm text-slate-700 dark:text-slate-200">
+                      {describeEndpoint(project.circuit, selectedWire.from)} ↔ {describeEndpoint(project.circuit, selectedWire.to)}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelection(null)
+                        setCircuit('circuit', (circuit) => ({ ...circuit, wires: circuit.wires.filter((wire) => wire.id !== selectedWire.id) }))
+                      }}
+                      className="rounded-md border border-rose-300 px-3 py-1.5 text-sm text-rose-700 hover:bg-rose-50 dark:border-rose-400/40 dark:text-rose-200 dark:hover:bg-rose-500/10"
+                    >
+                      Kabloyu sök
+                    </button>
+                  </div>
+                </PanelCard>
+              ) : null}
               <PanelCard
                 title="Parçalar"
                 actions={
@@ -454,43 +491,6 @@ export default function SimulatorPage() {
                   <p className="text-sm text-slate-600 dark:text-slate-300">Masada parça yok. “Parça ekle” ile başlayın.</p>
                 )}
               </PanelCard>
-              {selectedPart ? (
-                <PanelCard title="Seçili parça">
-                  <PartInspector
-                    part={selectedPart}
-                    circuit={project.circuit}
-                    inputs={project.inputs[selectedPart.id]}
-                    state={sim.hud?.parts?.[selectedPart.id]}
-                    onInput={(key, value) => setInput(selectedPart.id, key, value)}
-                    onWire={(part, pin, uno) => wireToUno('circuit', part, pin, uno)}
-                    onStrip={stripToUno}
-                    onRotate={() => setCircuit('circuit', (circuit) => rotatePart(circuit, selectedPart.id))}
-                    onDelete={() => {
-                      setSelection(null)
-                      setCircuit('circuit', (circuit) => removePart(circuit, selectedPart.id))
-                    }}
-                    onProp={(key, value) => setCircuit('circuit', (circuit) => ({ ...circuit, parts: circuit.parts.map((part) => (part.id === selectedPart.id ? { ...part, props: { ...part.props, [key]: value } } : part)) }))}
-                  />
-                </PanelCard>
-              ) : selectedWire ? (
-                <PanelCard title="Seçili kablo">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-code text-sm text-slate-700 dark:text-slate-200">
-                      {describeEndpoint(project.circuit, selectedWire.from)} ↔ {describeEndpoint(project.circuit, selectedWire.to)}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelection(null)
-                        setCircuit('circuit', (circuit) => ({ ...circuit, wires: circuit.wires.filter((wire) => wire.id !== selectedWire.id) }))
-                      }}
-                      className="rounded-md border border-rose-300 px-3 py-1.5 text-sm text-rose-700 hover:bg-rose-50 dark:border-rose-400/40 dark:text-rose-200 dark:hover:bg-rose-500/10"
-                    >
-                      Kabloyu sök
-                    </button>
-                  </div>
-                </PanelCard>
-              ) : null}
               <ConnectionsPanel
                 circuit={project.circuit}
                 selection={selection}
