@@ -1,7 +1,7 @@
 import { Check, Copy, Eye, EyeOff, KeyRound, Loader2, LockOpen, Maximize2, RefreshCw, Unlock, Lock, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { create, describe, publish, readLatest, save } from '../../utils/lockStore'
-import { readList, renewExercise, renewWeek, sealList, setOpen } from '../../utils/lockState'
+import { readList, renewAll, renewExercise, renewWeek, sealList, setOpen, setOpenAll } from '../../utils/lockState'
 import { suggestPassphrase } from '../../utils/passphrase'
 import { loadState } from './simulator/answers'
 import store from './simulator/answers/store.json'
@@ -9,6 +9,9 @@ import { Breadcrumb, Label, Panel } from './ArduinoParts'
 
 const weekName = (week) => (Number(week) === 5 ? 'Yarışma' : `${week}. hafta`)
 const MASK = '••••-••••-••••'
+const ALL = 'tumu' // the code that opens every answer
+// A week's code or the code for all: opening it opens many answers.
+const group = (id) => id === ALL || id.startsWith('hafta-')
 const TOKEN_KEY = 'rogoyato-kilit-anahtar'
 const configured = Boolean(store.gist || store.repo)
 const MISSING = 'Kilit verisi depoda henüz yok; önce aşağıdan “Depoya yükle” ile ilk kurulumu yapın.'
@@ -63,7 +66,7 @@ function CodeCell({ id, code, shown, isOpen, canEdit, busy, onToggle, onProject,
       </button>
       <button type="button" onClick={() => onOpen(id, !isOpen)} disabled={!canEdit || busy} className={small}>
         {busy === `open:${id}` ? <Loader2 size={13} className="animate-spin" /> : isOpen ? <Lock size={13} /> : <Unlock size={13} />}
-        {isOpen ? (id.startsWith('hafta-') ? 'Hepsini kilitle' : 'Kilitle') : id.startsWith('hafta-') ? 'Hepsini aç' : 'Herkese aç'}
+        {isOpen ? (group(id) ? 'Hepsini kilitle' : 'Kilitle') : group(id) ? 'Hepsini aç' : 'Herkese aç'}
       </button>
     </div>
   )
@@ -171,16 +174,23 @@ export default function ArduinoLockPage() {
   }
 
   const renew = (id) => {
-    const label = id.startsWith('hafta-') ? `${weekName(id.slice(6))} kodu` : `${list.exercises.find((item) => item.id === id).title} kodu`
-    if (!window.confirm(`${label} yenilensin mi? Eski kodu girmiş öğrencilerde cevap yeniden kilitlenir.`)) return
+    const label = id === ALL ? 'Tüm uygulamaların kodu' : id.startsWith('hafta-') ? `${weekName(id.slice(6))} kodu` : `${list.exercises.find((item) => item.id === id).title} kodu`
+    if (list.all || id !== ALL) {
+      if (!window.confirm(`${label} yenilensin mi? Eski kodu girmiş öğrencilerde cevap yeniden kilitlenir.`)) return
+    }
     act(
       `renew:${id}`,
-      (latest, latestList) => (id.startsWith('hafta-') ? renewWeek(latest, latestList, id.slice(6), pagePassword) : renewExercise(latest, latestList, id, pagePassword)),
-      `${label} yenilendi`,
+      (latest, latestList) =>
+        id === ALL ? renewAll(latest, latestList, pagePassword) : id.startsWith('hafta-') ? renewWeek(latest, latestList, id.slice(6), pagePassword) : renewExercise(latest, latestList, id, pagePassword),
+      list.all || id !== ALL ? `${label} yenilendi` : `${label} oluşturuldu`,
     )
   }
 
   const openFor = (id, isOpen) => {
+    if (id === ALL) {
+      act(`open:${id}`, async (latest, latestList) => ({ state: setOpenAll(latest, latestList, isOpen), list: latestList }), `Tüm uygulamalar ${isOpen ? 'herkese açıldı' : 'yeniden kilitlendi'}`)
+      return
+    }
     const [kind, key] = id.startsWith('hafta-') ? ['weeks', id.slice(6)] : ['exercises', id]
     const label = kind === 'weeks' ? weekName(key) : list.exercises.find((item) => item.id === key).title
     act(`open:${id}`, async (latest, latestList) => ({ state: setOpen(latest, latestList, kind, key, isOpen), list: latestList }), `${label} ${isOpen ? 'herkese açıldı' : 'yeniden kilitlendi'}`)
@@ -232,6 +242,7 @@ export default function ArduinoLockPage() {
     ? Object.entries(list.weeks).map(([week, code]) => ({ week, code, exercises: list.exercises.filter((item) => String(item.week) === week) }))
     : []
   const lookup = (id) => {
+    if (id === ALL) return { title: 'Tüm uygulamalar', code: list.all }
     if (id.startsWith('hafta-')) return { title: `${weekName(id.slice(6))}: tüm uygulamalar`, code: list.weeks[id.slice(6)] }
     const item = list.exercises.find((exercise) => exercise.id === id)
     return { title: item.title, code: item.code }
@@ -255,7 +266,7 @@ export default function ArduinoLockPage() {
         <h1 className="mt-1 font-hero text-3xl font-extrabold leading-tight text-slate-900 dark:text-white">Simülatör kilit kodları</h1>
         <p className="mt-2 max-w-3xl leading-relaxed text-slate-600 dark:text-slate-300">
           Sayfa şifresini girince kodlar gelir; her kod tıklanana kadar gizli kalır. Bir uygulamanın kodu yalnızca o uygulamanın, haftanın kodu o haftadaki tüm
-          uygulamaların “Kodu göster” ve “Bağlantıları göster” butonlarını açar. Buradan her kodu yenileyebilir, cevapları herkese açıp kilitleyebilirsiniz.
+          uygulamaların, “tüm uygulamalar” kodu bütün uygulamaların “Kodu göster” ve “Bağlantıları göster” butonlarını açar. Buradan her kodu yenileyebilir, cevapları herkese açıp kilitleyebilirsiniz.
         </p>
       </div>
 
@@ -289,6 +300,28 @@ export default function ArduinoLockPage() {
             </span>
           ) : null}
         </div>
+      ) : null}
+
+      {list ? (
+        <Panel>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <h2 className="font-hero text-xl font-bold text-slate-900 dark:text-white">Tüm uygulamalar</h2>
+              <Badge isOpen={list.exercises.some(openToAll)} label={list.exercises.every(openToAll) ? 'herkese açık' : list.exercises.some(openToAll) ? 'kısmen açık' : 'kilitli'} />
+            </div>
+            {list.all ? (
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <span className="text-sm text-slate-500 dark:text-slate-400">Bütün cevapları açan kod</span>
+                {cell(ALL, list.all, list.exercises.every(openToAll))}
+              </div>
+            ) : (
+              <button type="button" onClick={() => renew(ALL)} disabled={!canEdit || busy} className={small}>
+                {busy === `renew:${ALL}` ? <Loader2 size={13} className="animate-spin" /> : <KeyRound size={13} />}
+                Bütün cevapları açan kodu oluştur
+              </button>
+            )}
+          </div>
+        </Panel>
       ) : null}
 
       {entries.map(({ week, code, exercises }) => (

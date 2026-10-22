@@ -13,7 +13,7 @@
 //   node scripts/answers.mjs ac                     decrypt answers into answers.local.json (git-ignored)
 //   node scripts/answers.mjs kilitle                encrypt answers.local.json (new exercises get new codes;
 //                                                   needs KILIT_SIFRESI and SAYFA_SIFRESI)
-//   node scripts/answers.mjs herkese-ac <hafta|id>  open one exercise, or every exercise of a week, for everyone
+//   node scripts/answers.mjs herkese-ac <hafta|id|tumu>  open one exercise, a week's or all of them, for everyone
 //   node scripts/answers.mjs kapat <hafta|id>       lock it again
 //   node scripts/answers.mjs sayfa-sifresi          set SAYFA_SIFRESI as the page password (with KILIT_SIFRESI)
 //   YENI_SIFRE=... node scripts/answers.mjs sifre-degistir   new master password; codes stay the same
@@ -29,7 +29,7 @@ import { Toolchain, unpack } from '../src/pages/arduino/simulator/compiler/toolc
 import { EXAMPLES } from '../src/pages/arduino/simulator/examples.js'
 import { lockWith, randomCode, rekeyRecovery, unlockWith } from '../src/utils/answerLock.js'
 import { describe, publish, readLatest, readPublic, save } from '../src/utils/lockStore.js'
-import { readList, recoverList, sealList, setOpen } from '../src/utils/lockState.js'
+import { readList, recoverList, sealAll, sealList, setOpen, setOpenAll } from '../src/utils/lockState.js'
 import { suggestPassphrase } from '../src/utils/passphrase.js'
 
 const ROOT = new URL('../', import.meta.url)
@@ -97,11 +97,11 @@ async function compiler() {
 }
 
 // Re-encrypts every answer, keeping existing codes; new exercises and
-// weeks get new random codes.
+// weeks get new random codes, and the code for all answers covers them.
 async function encryptAll(state, list, answers) {
   const toolchain = await compiler()
   const next = { ...state, exercises: {}, weeks: {} }
-  const nextList = { weeks: { ...list.weeks }, exercises: [] }
+  const nextList = { ...(list.all ? { all: list.all } : {}), weeks: { ...list.weeks }, exercises: [] }
   const byWeek = {}
   for (const [id, answer] of Object.entries(answers)) {
     const built = await toolchain.build(answer.code)
@@ -114,12 +114,14 @@ async function encryptAll(state, list, answers) {
     console.log(`${id}: ${weekName(answer.week)}, ${built.flash} bayt`)
   }
   for (const [week, codes] of Object.entries(byWeek)) next.weeks[week] = await lockWith(nextList.weeks[week], `hafta-${week}`, { codes })
+  if (nextList.all) next.all = await sealAll(nextList.all, nextList.exercises)
   return { state: await sealList(next, nextList, secret('SAYFA_SIFRESI')), list: nextList }
 }
 
 const [command, argument] = process.argv.slice(2)
 if (command === 'kodlar') {
   const list = await codeList(await loadState())
+  if (list.all) console.log(`Tüm uygulamalar: ${list.all}`)
   for (const [week, code] of Object.entries(list.weeks)) {
     console.log(`${weekName(week)} (tümü): ${code}`)
     for (const item of list.exercises.filter((exercise) => String(exercise.week) === week)) console.log(`  ${item.title} [${item.id}]: ${item.code}`)
@@ -136,9 +138,11 @@ if (command === 'kodlar') {
 } else if (command === 'herkese-ac' || command === 'kapat') {
   const state = await loadState()
   const list = await codeList(state)
-  const kind = list.weeks[argument] ? 'weeks' : list.exercises.some((item) => item.id === argument) ? 'exercises' : null
-  if (!kind) throw new Error(`Hafta numarası (1–5) ya da uygulama adı verin: ${list.exercises.map((item) => item.id).join(', ')}`)
-  await storeState(setOpen(state, list, kind, argument, command === 'herkese-ac'), `${argument} ${command === 'kapat' ? 'kilitlendi' : 'açıldı'}`)
+  const kind = argument === 'tumu' ? 'all' : list.weeks[argument] ? 'weeks' : list.exercises.some((item) => item.id === argument) ? 'exercises' : null
+  if (!kind) throw new Error(`Hafta numarası (1–5), uygulama adı ya da "tumu" verin: ${list.exercises.map((item) => item.id).join(', ')}`)
+  const isOpen = command === 'herkese-ac'
+  const next = kind === 'all' ? setOpenAll(state, list, isOpen) : setOpen(state, list, kind, argument, isOpen)
+  await storeState(next, `${argument} ${isOpen ? 'açıldı' : 'kilitlendi'}`)
 } else if (command === 'sayfa-sifresi') {
   const state = await loadState()
   const list = await recoverList(state, secret('KILIT_SIFRESI'))
