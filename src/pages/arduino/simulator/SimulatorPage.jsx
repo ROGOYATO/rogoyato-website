@@ -169,6 +169,26 @@ export default function SimulatorPage() {
   const update = (changes) => setProject((current) => ({ ...current, ...changes }))
   const setCircuit = (key, fn) => setProject((current) => ({ ...current, [key]: fn(current[key]) }))
 
+  // Turns a part a quarter; if it would then run into another part or the
+  // Uno it moves to the nearest spot where it fits. False when there is none.
+  const benchApi = useRef(null)
+  const rotate = (id) => {
+    const before = project.circuit
+    const turned = rotatePart(before, id)
+    const fits = (circuit) => !benchApi.current || benchApi.current.fits(before, circuit, id)
+    let next = fits(turned) ? turned : null
+    const part = turned.parts.find((item) => item.id === id)
+    for (let radius = 0.4; !next && radius <= 6; radius += 0.4) {
+      for (let step = 0; step < 16 && !next; step += 1) {
+        const angle = (step / 16) * 2 * Math.PI
+        const moved = movePart(turned, id, [part.position[0] + radius * Math.cos(angle), part.position[1] + radius * Math.sin(angle)])
+        if (fits(moved)) next = moved
+      }
+    }
+    if (next) setCircuit('circuit', () => next)
+    return Boolean(next)
+  }
+
   const wireToUno = (key, part, pin, uno) => setCircuit(key, (circuit) => setDirectUnoPin(circuit, part, pin, uno))
   const stripToUno = (board, strip, uno) => setCircuit('circuit', (circuit) => setStripUno(circuit, board, strip, uno))
 
@@ -431,6 +451,7 @@ export default function SimulatorPage() {
                 onConnect={(from, to) => setCircuit('circuit', (circuit) => connectEndpoints(circuit, from, to))}
                 onMovePart={(id, position) => setCircuit('circuit', (circuit) => movePart(circuit, id, position))}
                 onPress={(id, pressed) => setInput(id, 'pressed', pressed)}
+                apiRef={benchApi}
               />
             ) : (
               <CarView track={track} view={carView} dark={dark} subscribe={sim.subscribe} resetToken={carResetToken} />
@@ -454,7 +475,7 @@ export default function SimulatorPage() {
                     onInput={(key, value) => setInput(selectedPart.id, key, value)}
                     onWire={(part, pin, uno) => wireToUno('circuit', part, pin, uno)}
                     onStrip={stripToUno}
-                    onRotate={() => setCircuit('circuit', (circuit) => rotatePart(circuit, selectedPart.id))}
+                    onRotate={() => rotate(selectedPart.id)}
                     onDelete={() => {
                       setSelection(null)
                       setCircuit('circuit', (circuit) => removePart(circuit, selectedPart.id))

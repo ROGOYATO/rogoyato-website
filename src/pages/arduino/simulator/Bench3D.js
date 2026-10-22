@@ -415,6 +415,14 @@ export class Bench3D {
     return pairs
   }
 
+  // Whether a change to the circuit (a part rotated or nudged) leaves that
+  // part clear of the others and the Uno; overlaps it already had are let be.
+  fits(before, after, partId) {
+    const had = this.overlaps(before, this.movingWith(before, partId))
+    const has = this.overlaps(after, this.movingWith(after, partId))
+    return [...has].every((pair) => had.has(pair))
+  }
+
   onPointerMove(event) {
     if (this.drag) {
       const moved = Math.hypot(event.clientX - this.down.x, event.clientY - this.down.y) > 4

@@ -4,6 +4,9 @@ import { useRef, useState } from 'react'
 const STORAGE_KEY = 'rogoyato-derle-calistir-ayri'
 const SPLIT_AT = 28 // px of drag that splits or joins the pieces
 const GAP = 14 // px between the pieces once split
+// The socket: a bite the size of the tab out of the Çalıştır piece's left edge.
+const SOCKET = 'radial-gradient(circle 7px at 0 50%, transparent 6.6px, #000 7px)'
+const joinedHover = 'group-hover/run:bg-teal-800 dark:group-hover/run:bg-teal-300'
 
 function remembered() {
   try {
@@ -73,7 +76,8 @@ export default function RunButtons({ compiling, running, canRun, stale, onBuildA
     'relative inline-flex h-10 select-none items-center gap-2 font-semibold transition-[transform,background-color,box-shadow] duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-60'
 
   return (
-    <div className="relative inline-flex items-center" style={{ paddingLeft: split ? GAP : 0, transition: 'padding 200ms ease-out' }}>
+    // Joined, the pieces share one shadow and one hover, like a single button.
+    <div className={`group/run relative inline-flex items-center rounded-lg ${split ? '' : 'shadow-sm'}`} style={{ paddingLeft: split ? GAP : 0, transition: 'padding 200ms ease-out' }}>
       {/* Derle: the piece with the tab. */}
       <button
         type="button"
@@ -96,16 +100,19 @@ export default function RunButtons({ compiling, running, canRun, stale, onBuildA
           else onBuildAndRun()
         }}
         style={{ transform: `translateX(${offset}px)`, touchAction: 'none' }}
-        className={`${base} z-10 cursor-grab rounded-l-lg bg-teal-700 pl-2 pr-4 text-white shadow-sm hover:bg-teal-800 active:cursor-grabbing dark:bg-teal-400 dark:text-teal-950 dark:hover:bg-teal-300 ${split ? 'rounded-r-lg' : ''}`}
+        className={`${base} z-10 cursor-grab rounded-l-lg bg-teal-700 pl-2 pr-4 text-white active:cursor-grabbing dark:bg-teal-400 dark:text-teal-950 ${split ? 'rounded-r-lg shadow-sm hover:bg-teal-800 dark:hover:bg-teal-300' : joinedHover}`}
       >
         <GripVertical size={15} className="opacity-60" aria-hidden />
         {busy ? <Loader2 size={16} className="animate-spin" /> : <Hammer size={16} />}
         {busy ? 'Derleniyor…' : split ? 'Derle' : running ? 'Yeniden derle ve' : 'Derle ve'}
         {/* The tab that sits in the Çalıştır piece's socket. */}
-        <span
-          aria-hidden
-          className="absolute -right-[9px] top-1/2 h-[14px] w-[14px] -translate-y-1/2 rounded-full bg-inherit"
-        />
+        <span aria-hidden className="absolute -right-[7px] top-1/2 h-[14px] w-[14px] -translate-y-1/2 rounded-full bg-inherit" />
+        {/* Joined, only a faint cut line shows where the pieces meet. */}
+        {split ? null : (
+          <svg aria-hidden width="12" height="40" viewBox="0 0 12 40" className="pointer-events-none absolute -right-[4px] top-0 h-full">
+            <path d="M4 0 V13 A7 7 0 0 1 4 27 V40" fill="none" stroke="rgb(0 0 0 / 0.22)" strokeWidth="1" />
+          </svg>
+        )}
       </button>
 
       {/* Çalıştır: the piece with the socket. */}
@@ -115,11 +122,8 @@ export default function RunButtons({ compiling, running, canRun, stale, onBuildA
         title={split ? (canRun ? (stale ? 'Son derlenen programı çalıştır (kod o zamandan beri değişti)' : 'Son derlenen programı çalıştır') : 'Önce derleyin') : 'Derle ve çalıştır'}
         disabled={busy || (split && !canRun)}
         onClick={() => (split ? onRun() : onBuildAndRun())}
-        style={{
-          WebkitMaskImage: 'radial-gradient(circle 9px at 0 50%, transparent 8.5px, #000 9px)',
-          maskImage: 'radial-gradient(circle 9px at 0 50%, transparent 8.5px, #000 9px)',
-        }}
-        className={`${base} ml-[2px] rounded-r-lg pl-5 pr-4 shadow-sm ${split ? 'rounded-l-lg bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-400 dark:text-emerald-950 dark:hover:bg-emerald-300' : 'bg-teal-700 text-white hover:bg-teal-800 dark:bg-teal-400 dark:text-teal-950 dark:hover:bg-teal-300'}`}
+        style={{ WebkitMaskImage: SOCKET, maskImage: SOCKET }}
+        className={`${base} -ml-px rounded-r-lg pl-5 pr-4 ${split ? 'rounded-l-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 dark:bg-emerald-400 dark:text-emerald-950 dark:hover:bg-emerald-300' : `bg-teal-700 text-white dark:bg-teal-400 dark:text-teal-950 ${joinedHover}`}`}
       >
         {split && running ? <RotateCw size={16} /> : <Play size={16} />}
         {split ? (running ? 'Yeniden başlat' : 'Çalıştır') : 'çalıştır'}

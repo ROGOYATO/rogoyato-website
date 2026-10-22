@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Bench3D } from './Bench3D'
 
-export default function BenchView({ circuit, inputs, selection, dark, frameKey, subscribe, onSelect, onConnect, onMovePart, onPress }) {
+// apiRef gets { fits(before, after, partId) } for checks made outside the scene.
+export default function BenchView({ circuit, inputs, selection, dark, frameKey, subscribe, onSelect, onConnect, onMovePart, onPress, apiRef }) {
   const containerRef = useRef(null)
   const benchRef = useRef(null)
   const handlers = useRef({})
@@ -24,13 +25,15 @@ export default function BenchView({ circuit, inputs, selection, dark, frameKey, 
       onWiring: setWiring,
     })
     benchRef.current = bench
+    if (apiRef) apiRef.current = { fits: (before, after, partId) => bench.fits(before, after, partId) }
     const unsubscribe = subscribe((snapshot) => bench.setSnapshot(snapshot, inputsRef.current))
     return () => {
       unsubscribe()
       bench.dispose()
       benchRef.current = null
+      if (apiRef) apiRef.current = null
     }
-  }, [subscribe])
+  }, [subscribe, apiRef])
 
   useEffect(() => {
     benchRef.current?.setCircuit(circuit)
