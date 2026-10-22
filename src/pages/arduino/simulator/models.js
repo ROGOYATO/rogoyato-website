@@ -2,7 +2,7 @@
 // primitives at real-world scale (1 unit = 1 cm). Every model exposes its
 // pins as clickable markers and an update(state) that animates it.
 import * as THREE from 'three'
-import { BREADBOARD_HEIGHT, BREADBOARD_SIZE, MODULE_SIZE, breadboardHoles } from '../../../utils/avrSim/catalog'
+import { BREADBOARD_HEIGHT, BREADBOARD_SIZE, MODULE_SIZE, PWM_PINS, breadboardHoles } from '../../../utils/avrSim/catalog'
 
 const materials = new Map()
 export function mat(color, options = {}) {
@@ -93,7 +93,7 @@ const PIN_COLORS = { gnd: '#1f2937', vcc: '#dc2626', signal: '#d4a72c', supply: 
 // A header pin with a larger invisible sphere around its tip so it is easy
 // to click, tagged with who owns it. seat: how far below the tip a jumper's
 // housing comes to rest (a female housing slides down over a male pin).
-function pinMarker(group, info, position, kind = 'signal', seat = 0) {
+export function pinMarker(group, info, position, kind = 'signal', seat = 0) {
   // Square 0.64 mm header pins, tinted by what they carry.
   const leg = box(0.064, 0.6, 0.064, mat(PIN_COLORS[kind] ?? '#d4a72c', { metalness: kind === 'gnd' ? 0.5 : 0.9, roughness: 0.3 }), position.x, position.y - 0.3, position.z)
   leg.castShadow = false
@@ -105,26 +105,11 @@ function pinMarker(group, info, position, kind = 'signal', seat = 0) {
   return hit
 }
 
-// ---------------------------------------------------------------- Uno ----
-
-const HEADER_PITCH = 0.254
-export const UNO_SIZE = { width: 6.86, depth: 5.34 }
-
-function unoPinLayout() {
-  const pins = []
-  const top = -2.42
-  const bottom = 2.42
-  for (let i = 0; i < 8; i += 1) pins.push({ id: `D${i}`, x: 3.0 - i * HEADER_PITCH, z: top })
-  for (let i = 0; i < 6; i += 1) pins.push({ id: `D${8 + i}`, x: 0.81 - i * HEADER_PITCH, z: top })
-  pins.push({ id: 'GND', anchor: 'GND@top', x: 0.81 - 6 * HEADER_PITCH, z: top })
-  ;[['3V3', -1.02], ['5V', -0.76], ['GND', -0.51, 'GND@1'], ['GND', -0.25, 'GND@2'], ['VIN', 0]].forEach(([id, x, anchor]) => pins.push({ id, anchor, x, z: bottom }))
-  for (let i = 0; i < 6; i += 1) pins.push({ id: `A${i}`, x: 0.6 + i * HEADER_PITCH, z: bottom })
-  return pins
-}
+// ------------------------------------------------------- shared kit ----
 
 // A flat outline in the XZ plane extruded upwards from y = 0. The shape is
 // drawn in (x, -z), so its caps get UVs in those coordinates.
-function slab(shape, height, materials, bevel = 0) {
+export function slab(shape, height, materials, bevel = 0) {
   const geometry = new THREE.ExtrudeGeometry(shape, {
     depth: height - 2 * bevel,
     bevelEnabled: bevel > 0,
@@ -141,7 +126,7 @@ function slab(shape, height, materials, bevel = 0) {
   return mesh
 }
 
-function roundedRect(width, depth, radius) {
+export function roundedRect(width, depth, radius) {
   const shape = new THREE.Shape()
   const x = -width / 2
   const y = -depth / 2
@@ -159,7 +144,7 @@ function roundedRect(width, depth, radius) {
 
 // A canvas texture laid on a slab's top so that the canvas covers
 // width × depth around the origin.
-function topTexture(canvas, width, depth, color = true) {
+export function topTexture(canvas, width, depth, color = true) {
   const texture = new THREE.CanvasTexture(canvas)
   if (color) texture.colorSpace = THREE.SRGBColorSpace
   texture.anisotropy = 8
@@ -168,13 +153,13 @@ function topTexture(canvas, width, depth, color = true) {
   return texture
 }
 
-const metal = (color = '#c7ccd1', roughness = 0.28) => mat(color, { metalness: 1, roughness })
-const GOLD = () => metal('#d6b25e', 0.3)
+export const metal = (color = '#c7ccd1', roughness = 0.28) => mat(color, { metalness: 1, roughness })
+export const GOLD = () => metal('#d6b25e', 0.3)
 
 // Text printed on a chip's top, as a texture for a box of that size.
 const chipCache = new Map()
-function chipTop(lines, width, depth, color = '#1c1c1f') {
-  const key = `${lines.join('|')}|${width}|${depth}`
+export function chipTop(lines, width, depth, color = '#1c1c1f', turned = false) {
+  const key = `${lines.join('|')}|${width}|${depth}|${turned}`
   if (!chipCache.has(key)) {
     const scale = 220
     const canvas = document.createElement('canvas')
@@ -186,8 +171,14 @@ function chipTop(lines, width, depth, color = '#1c1c1f') {
     ctx.fillStyle = 'rgba(226, 232, 240, 0.78)'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    const size = Math.min(canvas.height / (lines.length + 1.2), 42)
+    const longest = Math.max(...lines.map((line) => line.length))
+    const size = Math.min(canvas.height / (lines.length + 1.2), canvas.width / (longest * 0.7), 42)
     ctx.font = `600 ${size}px "JetBrains Mono", ui-monospace, monospace`
+    if (turned) {
+      // Printed the other way up (pin 1 on the right).
+      ctx.translate(canvas.width, canvas.height)
+      ctx.rotate(Math.PI)
+    }
     lines.forEach((line, index) => ctx.fillText(line, canvas.width / 2, canvas.height / 2 + (index - (lines.length - 1) / 2) * size * 1.25))
     const texture = new THREE.CanvasTexture(canvas)
     texture.colorSpace = THREE.SRGBColorSpace
@@ -198,28 +189,32 @@ function chipTop(lines, width, depth, color = '#1c1c1f') {
   return [side, side, chipCache.get(key), side, side, side]
 }
 
-// The ATmega328P in its DIP-28 socket, lying along x.
-function dip28(group, x, y, z) {
-  const body = box(3.56, 0.32, 0.72, chipTop(['ATMEGA328P-PU', '1932   ●'], 3.56, 0.72), x, y + 0.36, z)
-  const socket = box(3.75, 0.2, 0.98, mat('#1a1a1a', { roughness: 0.7 }), x, y + 0.1, z)
-  const notch = cylinder(0.09, 0.02, '#0e0e10', x - 1.62, y + 0.52, z, 16)
-  group.add(body, socket, notch)
-  const leg = metal('#d4d8dc', 0.35)
-  for (let i = 0; i < 14; i += 1) {
-    const lx = x - 1.651 + i * HEADER_PITCH
-    for (const side of [-1, 1]) {
-      group.add(box(0.07, 0.03, 0.14, leg, lx, y + 0.31, z + side * 0.42))
-      group.add(box(0.07, 0.16, 0.03, leg, lx, y + 0.23, z + side * 0.49))
-    }
-  }
-}
-
-// An electrolytic capacitor standing on the board.
-function electrolytic(group, x, y, z, radius = 0.3, height = 0.62) {
+// An electrolytic capacitor standing on the board; `print` is the marking
+// on its aluminium top (the Uno's read 71134 / 47 / 25V).
+export function electrolytic(group, x, y, z, radius = 0.3, height = 0.62, print = null) {
   const can = cylinder(radius, height, mat('#1e2433', { roughness: 0.35 }), x, y + height / 2, z, 28)
   const stripe = cylinder(radius + 0.003, height * 0.94, mat('#9aa4b5', { roughness: 0.4 }), x, y + height / 2, z, 28)
   stripe.geometry = new THREE.CylinderGeometry(radius + 0.003, radius + 0.003, height * 0.94, 28, 1, true, -0.5, 1)
-  const top = cylinder(radius * 0.92, 0.012, metal('#cfd4da', 0.35), x, y + height + 0.006, z, 28)
+  const aluminium = metal('#cfd4da', 0.35)
+  const face = print
+    ? new THREE.MeshStandardMaterial({
+        map: painted(`cap-${print.join('|')}`, 128, 128, (ctx) => {
+          ctx.fillStyle = '#cfd4da'
+          ctx.fillRect(0, 0, 128, 128)
+          ctx.translate(64, 64)
+          ctx.rotate(-Math.PI / 2)
+          ctx.fillStyle = '#16181c'
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.font = '700 22px "JetBrains Mono", ui-monospace, monospace'
+          print.forEach((line, index) => ctx.fillText(line, 0, (index - (print.length - 1) / 2) * 26))
+        }),
+        metalness: 0.6,
+        roughness: 0.4,
+      })
+    : aluminium
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.92, radius * 0.92, 0.012, 28), [aluminium, face, aluminium])
+  top.position.set(x, y + height + 0.006, z)
   group.add(can, stripe, top)
 }
 
@@ -230,219 +225,6 @@ function smd(group, list, top = 0.16) {
     group.add(box(w, 0.045, d, kind === 'c' ? '#b08d5a' : '#121214', x, top + 0.022, z))
     const cap = metal('#e2e5e8', 0.3)
     for (const s of [-1, 1]) group.add(box(rotated ? 0.062 : 0.025, 0.05, rotated ? 0.025 : 0.062, cap, x + (rotated ? 0 : s * 0.05), top + 0.023, z + (rotated ? s * 0.05 : 0)))
-  }
-}
-
-function unoOutline(width, depth) {
-  // The Uno's far end (away from USB) has its corners cut at 45°.
-  const shape = new THREE.Shape()
-  const x0 = -width / 2
-  const x1 = width / 2
-  const y0 = -depth / 2
-  const y1 = depth / 2
-  const r = 0.12
-  const cut = 0.32
-  shape.moveTo(x0 + r, y0)
-  shape.lineTo(x1 - cut, y0)
-  shape.lineTo(x1, y0 + cut)
-  shape.lineTo(x1, y1 - cut)
-  shape.lineTo(x1 - cut, y1)
-  shape.lineTo(x0 + r, y1)
-  shape.quadraticCurveTo(x0, y1, x0, y1 - r)
-  shape.lineTo(x0, y0 + r)
-  shape.quadraticCurveTo(x0, y0, x0 + r, y0)
-  // Mounting holes (shape y is -z).
-  for (const [hx, hz] of [[-1.9, 2.15], [-1.9, -2.15], [3.12, -1.2], [3.12, 1.62]]) {
-    const hole = new THREE.Path()
-    hole.absarc(hx, -hz, 0.16, 0, Math.PI * 2, true)
-    shape.holes.push(hole)
-  }
-  return shape
-}
-
-export function buildUno() {
-  const group = new THREE.Group()
-  group.name = 'uno'
-  const { width, depth } = UNO_SIZE
-  const layout = unoPinLayout()
-  // Silkscreen: pin names printed on the board next to the headers.
-  const scale = 180
-  const canvas = document.createElement('canvas')
-  canvas.width = Math.round(width * scale)
-  canvas.height = Math.round(depth * scale)
-  const px = (x) => (x + width / 2) * scale
-  const pz = (z) => (z + depth / 2) * scale
-  // The same drawing twice: in colour, and as a height map in which traces
-  // and silkscreen ink stand a little proud of the board and vias sink in.
-  const draw = (ctx, bump) => {
-    const ink = bump ? '#b8b8b8' : '#eefcfd'
-    ctx.fillStyle = bump ? '#808080' : '#00808a'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-    ctx.strokeStyle = bump ? '#9c9c9c' : 'rgba(110, 214, 210, 0.3)'
-    ctx.lineWidth = 5
-    ctx.lineJoin = 'round'
-    for (const pin of layout) {
-      const sx = px(pin.x)
-      const sz = pz(pin.z)
-      const toward = pin.z < 0 ? 1 : -1
-      const chip = px(1.55 - 1.651 + ((Math.abs(pin.x * 7) | 0) % 14) * HEADER_PITCH)
-      const chipZ = pz(0.75 - toward * 0.42)
-      const bend = sz + toward * (34 + ((pin.x * 40) % 30))
-      const run = Math.min(Math.abs(chip - sx), Math.abs(chipZ - bend))
-      ctx.beginPath()
-      ctx.moveTo(sx, sz + toward * 22)
-      ctx.lineTo(sx, bend)
-      ctx.lineTo(sx + Math.sign(chip - sx) * run, bend + Math.sign(chipZ - bend) * run)
-      ctx.lineTo(chip, chipZ)
-      ctx.stroke()
-    }
-    for (let i = 0; i < 46; i += 1) {
-      const vx = (((i * 97) % 61) / 61) * (width - 1.2) - width / 2 + 0.8
-      const vz = (((i * 53) % 47) / 47) * (depth - 1.6) - depth / 2 + 0.8
-      ctx.fillStyle = bump ? '#a0a0a0' : 'rgba(214, 226, 222, 0.75)'
-      ctx.beginPath()
-      ctx.arc(px(vx), pz(vz), 6, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.fillStyle = bump ? '#202020' : '#0b3b3e'
-      ctx.beginPath()
-      ctx.arc(px(vx), pz(vz), 2.5, 0, Math.PI * 2)
-      ctx.fill()
-    }
-    // Header outlines and section names, as on the real board.
-    ctx.strokeStyle = ink
-    ctx.lineWidth = 4
-    for (const [x0, x1, z] of [[0.81 - 9.5 * HEADER_PITCH, 3.0 + 0.5 * HEADER_PITCH, -2.42], [-1.27 - 0.5 * HEADER_PITCH, 0.6 + 5.5 * HEADER_PITCH, 2.42]]) {
-      ctx.strokeRect(px(x0) - 6, pz(z) - 30, px(x1) - px(x0) + 12, 60)
-    }
-    ctx.fillStyle = ink
-    ctx.textBaseline = 'middle'
-    ctx.textAlign = 'center'
-    ctx.font = '700 34px "JetBrains Mono", ui-monospace, monospace'
-    ctx.fillText('DIGITAL (PWM~)', px(1.4), pz(-1.42))
-    ctx.fillText('POWER', px(-0.5), pz(1.45))
-    ctx.fillText('ANALOG IN', px(1.25), pz(1.45))
-    ctx.font = '600 30px "JetBrains Mono", ui-monospace, monospace'
-    for (const pin of layout) {
-      ctx.save()
-      ctx.translate(px(pin.x), pz(pin.z) + (pin.z < 0 ? 40 : -40))
-      ctx.rotate(-Math.PI / 2)
-      ctx.textAlign = pin.z < 0 ? 'right' : 'left'
-      ctx.fillText(pin.id, 0, 0)
-      ctx.restore()
-    }
-    // The ∞ logo: two loops with − and + in them.
-    const lx = px(-0.65)
-    const lz = pz(-0.74)
-    ctx.strokeStyle = ink
-    ctx.lineWidth = 13
-    for (const side of [-1, 1]) {
-      ctx.beginPath()
-      ctx.ellipse(lx + side * 44, lz, 42, 29, 0, 0, Math.PI * 2)
-      ctx.stroke()
-    }
-    ctx.fillRect(lx - 58, lz - 4, 28, 8)
-    ctx.fillRect(lx + 30, lz - 4, 28, 8)
-    ctx.fillRect(lx + 40, lz - 14, 8, 28)
-    ctx.font = '700 64px "Space Grotesk", "Plus Jakarta Sans", sans-serif'
-    ctx.fillText('ARDUINO', px(-0.65), pz(-0.1))
-    ctx.font = '700 46px "Space Grotesk", "Plus Jakarta Sans", sans-serif'
-    ctx.fillText('UNO', px(-0.65), pz(0.53))
-    ctx.font = '600 22px "JetBrains Mono", ui-monospace, monospace'
-    ctx.fillText('RESET', px(-2.6), pz(-1.68))
-    ctx.fillText('ICSP', px(2.95), pz(-0.13))
-  }
-  draw(canvas.getContext('2d'), false)
-  const heights = document.createElement('canvas')
-  heights.width = canvas.width
-  heights.height = canvas.height
-  draw(heights.getContext('2d'), true)
-  const side = mat('#0d5f63', { roughness: 0.6 })
-  const top = new THREE.MeshPhysicalMaterial({
-    map: topTexture(canvas, width, depth),
-    bumpMap: topTexture(heights, width, depth, false),
-    bumpScale: 1.4,
-    roughness: 0.4,
-    clearcoat: 0.6,
-    clearcoatRoughness: 0.25,
-  })
-  const pcb = slab(unoOutline(width, depth), 0.16, [top, side])
-  pcb.userData = { kind: 'uno' }
-  group.add(pcb)
-
-  // USB-B socket: a drawn-steel shell with the plastic tongue inside.
-  const usbX = -width / 2 + 0.55
-  group.add(box(1.6, 1.1, 1.2, metal('#cdd2d7', 0.22), usbX, 0.71, -1.15))
-  group.add(box(0.02, 0.78, 0.84, mat('#0b0b0c', { roughness: 0.9 }), usbX - 0.805, 0.71, -1.15))
-  group.add(box(0.03, 0.3, 0.42, mat('#f2f2ee', { roughness: 0.6 }), usbX - 0.815, 0.71, -1.15))
-  for (const z of [-1.62, -0.68]) group.add(box(1.1, 0.04, 0.05, metal('#b9bfc5', 0.3), usbX + 0.15, 1.27, z))
-  // DC barrel jack.
-  const jackX = -width / 2 + 0.5
-  group.add(box(1.4, 1.1, 0.9, mat('#151517', { roughness: 0.5 }), jackX, 0.71, 1.75))
-  const mouth = cylinder(0.3, 0.04, mat('#050506', { roughness: 0.9 }), jackX - 0.71, 0.76, 1.75, 24)
-  mouth.rotation.z = Math.PI / 2
-  const pinCentre = cylinder(0.07, 0.06, metal(), jackX - 0.72, 0.76, 1.75, 12)
-  pinCentre.rotation.z = Math.PI / 2
-  group.add(mouth, pinCentre)
-
-  dip28(group, 1.55, 0.16, 0.75)
-  // ATmega16U2 (the USB chip), the 16 MHz crystal and the 5 V regulator.
-  group.add(box(0.5, 0.09, 0.5, chipTop(['16U2'], 0.5, 0.5), -1.55, 0.205, -1.05))
-  const crystal = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.6, 6, 16), metal('#d9dde1', 0.18))
-  crystal.rotation.z = Math.PI / 2
-  crystal.scale.set(1, 1, 0.62)
-  crystal.position.set(-1.75, 0.33, 0.35)
-  crystal.castShadow = true
-  group.add(crystal, box(0.95, 0.03, 0.32, mat('#111214'), -1.75, 0.175, 0.35))
-  group.add(box(0.65, 0.16, 0.35, mat('#18181b', { roughness: 0.5 }), -1.0, 0.24, 0.95), box(0.3, 0.02, 0.38, metal('#c9ced3'), -1.0, 0.17, 1.2))
-  electrolytic(group, -1.9, 0.16, 1.55)
-  electrolytic(group, -1.2, 0.16, 1.55)
-  // Reset push button in the corner by the USB socket.
-  group.add(box(0.6, 0.2, 0.6, metal('#c3c8cd', 0.3), -2.6, 0.26, -2.15), cylinder(0.17, 0.12, mat('#7f1d1d', { roughness: 0.45 }), -2.6, 0.42, -2.15))
-  // ICSP header (2 × 3 pins).
-  group.add(box(0.52, 0.25, 0.77, mat('#141416', { roughness: 0.6 }), 2.95, 0.285, -0.65))
-  for (const dx of [-0.127, 0.127]) for (const dz of [-0.254, 0, 0.254]) group.add(box(0.064, 0.6, 0.064, GOLD(), 2.95 + dx, 0.6, -0.65 + dz))
-  smd(group, [[0.9, -1.0, false, 'r'], [1.2, -1.0, false, 'r'], [1.5, -1.0, false, 'c'], [2.3, -0.55, false, 'c'], [2.3, -0.8, false, 'r'], [2.3, -0.3, false, 'c'], [2.4, 1.7, true, 'c'], [2.7, 1.7, true, 'r'], [-2.0, -0.2, false, 'c']])
-
-  // Black female headers along both long edges, with a contact visible in
-  // every hole.
-  const housing = mat('#141416', { roughness: 0.62 })
-  group.add(box(8 * HEADER_PITCH + 0.06, 0.85, 0.26, housing, 3.0 - 3.5 * HEADER_PITCH, 0.585, -2.42))
-  group.add(box(10 * HEADER_PITCH + 0.06, 0.85, 0.26, housing, 0.81 - 4.5 * HEADER_PITCH, 0.585, -2.42))
-  group.add(box(8 * HEADER_PITCH + 0.06, 0.85, 0.26, housing, -1.27 + 2.5 * HEADER_PITCH, 0.585, 2.42))
-  group.add(box(6 * HEADER_PITCH + 0.06, 0.85, 0.26, housing, 0.6 + 2.5 * HEADER_PITCH, 0.585, 2.42))
-
-  const markers = []
-  const pit = mat('#030303', { roughness: 1 })
-  const contact = GOLD()
-  for (const pin of layout) {
-    const hit = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 8), new THREE.MeshBasicMaterial({ color: '#22d3ee', transparent: true, opacity: 0, depthWrite: false }))
-    hit.position.set(pin.x, 1.06, pin.z)
-    hit.userData = { kind: 'pin', owner: 'uno', pin: pin.id, anchor: pin.anchor ?? pin.id, seat: -0.05 }
-    group.add(box(0.13, 0.02, 0.13, pit, pin.x, 1.004, pin.z), box(0.05, 0.02, 0.03, contact, pin.x, 1.006, pin.z - 0.03), hit)
-    markers.push(hit)
-  }
-
-  // On-board LEDs: L follows D13, ON is always lit, TX blinks with Serial.
-  const ledL = box(0.18, 0.08, 0.1, mat('#f59e0b', { emissive: '#f59e0b', emissiveIntensity: 0 }), 0.3, 0.2, -1.6)
-  ledL.material = ledL.material.clone()
-  const ledOn = box(0.18, 0.08, 0.1, mat('#22c55e', { emissive: '#22c55e', emissiveIntensity: 1.6 }), 2.6, 0.2, 0.2)
-  const ledTx = box(0.18, 0.08, 0.1, mat('#f59e0b', { emissive: '#f59e0b', emissiveIntensity: 0 }), 0.3, 0.2, -1.25)
-  ledTx.material = ledTx.material.clone()
-  group.add(ledL, ledOn, ledTx)
-  for (const [x, z] of [[0.3, -1.6], [2.6, 0.2], [0.3, -1.25]]) for (const s of [-1, 1]) group.add(box(0.03, 0.085, 0.1, metal('#e2e5e8', 0.3), x + s * 0.09, 0.2, z))
-  ;[['L', 0.3, -1.85], ['TX', 0.3, -1.0], ['ON', 2.6, 0.2]].forEach(([text, x, z]) => {
-    const sprite = label(text, { size: 0.16, color: '#e5f6f7' })
-    sprite.position.set(x - 0.35, 0.2, z)
-    group.add(sprite)
-  })
-
-  return {
-    group,
-    markers,
-    update(state) {
-      ledL.material.emissiveIntensity = (state?.pins?.[13] ?? 0) * 3
-      ledTx.material.emissiveIntensity = state?.serialActive ? 2.5 : 0
-    },
   }
 }
 
@@ -686,7 +468,7 @@ function halo(color, size, x, y, z) {
 
 // A small canvas texture drawn by `paint(ctx, w, h)`, cached by key.
 const paintedCache = new Map()
-function painted(key, width, height, paint, color = true) {
+export function painted(key, width, height, paint, color = true) {
   if (!paintedCache.has(key)) {
     const canvas = document.createElement('canvas')
     canvas.width = width

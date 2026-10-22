@@ -1,6 +1,6 @@
 // Runs the simulated Uno off the main thread so the 3D view stays smooth.
 // Messages in:  start {hex, circuit, carCircuit, track}, input {part, key, value},
-//               serial {text}, resetCar, setTrack {track}, pause, resume, stop
+//               serial {text}, resetCar, setTrack {track}, reset, pause, resume, stop
 // Messages out: frame {snapshot, serial, speed}, issues {issues}, error {message}
 import { Simulation } from './simulation.js'
 
@@ -62,6 +62,11 @@ self.onmessage = ({ data }) => {
       self.postMessage({ type: 'issues', issues: simulation.issues })
       last = performance.now()
       timer = setTimeout(loop, 0)
+      break
+    // The Uno's reset button: the program starts again from setup() with
+    // the same circuit; the Serial Monitor keeps what it showed.
+    case 'reset':
+      simulation?.boot()
       break
     case 'input':
       simulation?.setInput(data.part, data.key, data.value)

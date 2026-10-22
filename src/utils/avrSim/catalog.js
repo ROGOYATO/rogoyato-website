@@ -2,10 +2,12 @@
 // pins sit, the breadboard, and the step that turns a wired circuit into
 // running parts.
 //
-// A circuit is { parts, wires }:
+// A circuit is { parts, wires, uno? }:
 //   part: { id, type, position: [x, z] (cm), rotation (degrees), props }
 //   wire: { id, from: endpoint, to: endpoint, color }
 //   endpoint: { uno: 'D7' | '5V' | 'GND' | ..., anchor? } or { part, pin }
+//   uno: { position: [x, z], rotation } where the Uno sits (default: the
+//   origin, unturned); its id in selections and moves is UNO_ID.
 // A breadboard is a part whose pins are its holes ('a12', 'T+5'). Parts whose
 // pins land on breadboard holes are plugged in. Older circuits used
 // { part, pin, uno } wires; normalizeCircuit() converts them.
@@ -13,7 +15,13 @@
 export const UNO_DIGITAL = Array.from({ length: 14 }, (_, i) => `D${i}`)
 export const UNO_ANALOG = Array.from({ length: 6 }, (_, i) => `A${i}`)
 export const UNO_POWER = ['5V', '3V3', 'GND', 'VIN']
-export const UNO_PINS = [...UNO_DIGITAL, ...UNO_ANALOG, ...UNO_POWER]
+// The rest of the Uno R3's header holes: RESET (pulled LOW, it resets the
+// chip), AREF (the ADC's external reference) and NC (connected to nothing).
+export const UNO_OTHER = ['RESET', 'AREF', 'NC']
+export const UNO_PINS = [...UNO_DIGITAL, ...UNO_ANALOG, ...UNO_POWER, ...UNO_OTHER]
+// Holes that are another pin under a second name: wired to A4/A5 and 5V on
+// the board itself. A wire to one keeps the name as its anchor.
+export const UNO_ALIASES = { SDA: 'A4', SCL: 'A5', IOREF: '5V' }
 export const PWM_PINS = new Set(['D3', 'D5', 'D6', 'D9', 'D10', 'D11'])
 export const PITCH = 0.254 // 2.54 mm header and breadboard pitch, in cm
 
@@ -318,7 +326,13 @@ export function normalizeWire(wire) {
 }
 
 export function normalizeCircuit(circuit) {
-  return { parts: circuit.parts, wires: circuit.wires.map(normalizeWire) }
+  return { ...circuit, parts: circuit.parts, wires: circuit.wires.map(normalizeWire) }
+}
+
+export const UNO_ID = 'uno'
+
+export function unoPlacement(circuit) {
+  return { position: circuit?.uno?.position ?? [0, 0], rotation: circuit?.uno?.rotation ?? 0 }
 }
 
 export const endpointKey = (end) => (end.uno ? `U:${end.uno}` : `P:${end.part}:${end.pin}`)
@@ -411,6 +425,7 @@ export function removePart(circuit, partId) {
 // Moves a part. A part let go near a breadboard snaps into its holes; a
 // breadboard carries the parts plugged into it.
 export function movePart(circuit, partId, position) {
+  if (partId === UNO_ID) return { ...circuit, uno: { ...unoPlacement(circuit), position } }
   const part = circuit.parts.find((p) => p.id === partId)
   if (!part) return circuit
   if (part.type === 'breadboard') {
@@ -428,6 +443,10 @@ export function movePart(circuit, partId, position) {
 // Rotating a plugged-in part turns it about its first pin so it stays in
 // the board when it can.
 export function rotatePart(circuit, partId) {
+  if (partId === UNO_ID) {
+    const placement = unoPlacement(circuit)
+    return { ...circuit, uno: { ...placement, rotation: (placement.rotation + 90) % 360 } }
+  }
   const part = circuit.parts.find((p) => p.id === partId)
   if (!part) return circuit
   const rotated = { ...part, rotation: ((part.rotation ?? 0) + 90) % 360 }
@@ -507,7 +526,7 @@ export function buildNets(circuit) {
 function netSummary(nets) {
   const summary = new Map()
   const get = (root) => {
-    if (!summary.has(root)) summary.set(root, { io: [], vcc: false, gnd: false, v33: false })
+    if (!summary.has(root)) summary.set(root, { io: [], vcc: false, gnd: false, v33: false, reset: false, aref: false })
     return summary.get(root)
   }
   for (const pin of UNO_PINS) {
@@ -517,6 +536,8 @@ function netSummary(nets) {
     else if (pin === '5V' || pin === 'VIN') info.vcc = true
     else if (pin === '3V3') info.v33 = true
     else if (pin === 'GND') info.gnd = true
+    else if (pin === 'RESET') info.reset = true
+    else if (pin === 'AREF') info.aref = true
   }
   return { get, summary }
 }
@@ -530,7 +551,7 @@ export function describeNet(nets, key) {
 
 // "Kırmızı LED · +" or "Breadboard · a12 (12. sütun, a–e)" for a wire end.
 export function describeEndpoint(circuit, end) {
-  if (end.uno) return end.uno
+  if (end.uno) return UNO_ALIASES[end.anchor] ? `${end.anchor} (${end.uno})` : end.uno
   const part = circuit.parts.find((p) => p.id === end.part)
   if (!part) return end.pin
   if (part.type === 'breadboard') return `Breadboard · ${describeHole(end.pin)}`
@@ -556,6 +577,18 @@ export function resolveCircuit(input) {
       issues.push({ level: 'error', message: `Kısa devre: ${pin} doğrudan GND’ye bağlı. Gerçek kartta USB koruması devreye girer ve kart kapanır.` })
     }
   }
+
+  // AREF: the voltage on it is the ADC's top under analogReference(EXTERNAL).
+  // Left open it floats near 0 V and every reading comes out 1023.
+  const arefInfo = get(nets.find('U:AREF'))
+  const aref = arefInfo.vcc ? 5 : arefInfo.v33 ? 3.3 : 0.001
+  if (arefInfo.vcc || arefInfo.v33) {
+    issues.push({ level: 'warning', message: `AREF ${arefInfo.vcc ? '5V' : '3.3V'}’a bağlı: kodda analogRead’den önce analogReference(EXTERNAL) yazın. Yazmazsanız gerçek kartta AREF içeriden 5V’a bağlanır ve dış voltajla çakışır.` })
+  }
+  // RESET held LOW (wired to GND, a pressed button, an OUTPUT pin set LOW)
+  // keeps the chip in reset; the runtime solver watches it.
+  const resetRoot = nets.find('U:RESET')
+  const resetWired = circuit.wires.some((wire) => wire.from.uno === 'RESET' || wire.to.uno === 'RESET')
 
   const bare = { switches: [], resistors: [], leds: [], buttons: [] }
   const ioUsedByBare = new Set()
@@ -660,17 +693,26 @@ export function resolveCircuit(input) {
     }
   }
 
-  if (bare.switches.length || bare.resistors.length || bare.leds.length) {
+  // Pins wired straight to 5V, GND or another pin (no part between) read
+  // what they are tied to.
+  const tied = new Set()
+  for (const pin of [...UNO_DIGITAL, ...UNO_ANALOG]) {
+    const root = nets.find(`U:${pin}`)
+    const info = get(root)
+    if (info.vcc || info.gnd || info.v33 || info.io.length > 1) tied.add(root)
+  }
+
+  if (bare.switches.length || bare.resistors.length || bare.leds.length || resetWired || tied.size) {
     // Snapshot of which Uno pins each net touches, for the runtime solver.
     const netInfo = {}
-    const roots = new Set([...bare.switches.flatMap((s) => [s.a, s.b]), ...bare.resistors.flatMap((r) => [r.a, r.b]), ...bare.leds.flatMap((l) => [l.anode, l.cathode])])
+    const roots = new Set([...bare.switches.flatMap((s) => [s.a, s.b]), ...bare.resistors.flatMap((r) => [r.a, r.b]), ...bare.leds.flatMap((l) => [l.anode, l.cathode]), ...(resetWired ? [resetRoot] : []), ...tied])
     for (const root of roots) netInfo[root] = get(root)
     // Pins already driven by a module (sensor outputs, module buttons) are left alone.
     const moduleDriven = [...new Set(engineParts.flatMap((p) => Object.values(p.pins).filter((v) => typeof v === 'number')))]
     engineParts.push({ id: '__nets', type: 'netSolver', pins: { ...bare, netInfo, moduleDriven } })
   }
 
-  return { engineParts, issues }
+  return { engineParts, issues, aref }
 }
 
 // The robot car carries an L298N and three KH-09 sensors; the student wires

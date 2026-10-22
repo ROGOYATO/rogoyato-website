@@ -105,6 +105,16 @@ const COMPONENTS = [
     sources: [['wokwi/avr8js', 'https://github.com/wokwi/avr8js']],
   },
   {
+    name: 'Arduino Uno Rev3 tasarım dosyaları',
+    role: '3D Uno’nun kartı: kenarı, delikleri, bakır yolları ve parçaların yeri (unoBoard.json bunlardan üretilir)',
+    license: 'CC BY-SA 4.0',
+    text: 'CC-BY-SA-4.0.txt',
+    sources: [
+      ['A000066 CAD dosyaları', 'https://docs.arduino.cc/hardware/uno-rev3/'],
+      ['build-uno-board.mjs', 'https://github.com/ROGOYATO/rogoyato-website/blob/main/scripts/build-uno-board.mjs'],
+    ],
+  },
+  {
     name: 'three.js 0.181',
     role: '3D tezgâh ve araba görünümü',
     license: 'MIT',
@@ -175,7 +185,8 @@ const Licenses = forwardRef(function Licenses(_, ref) {
           <a href="https://github.com/ROGOYATO/rogoyato-website/blob/main/scripts/build-browser-compiler.mjs" target="_blank" rel="noreferrer" className={link}>
             scripts/build-browser-compiler.mjs
           </a>
-          . Simülatörün kendisi (devre modeli, 3D parçalar, robot araba) ROGOYATO tarafından yazılmıştır.
+          . Simülatörün kendisi (devre modeli, 3D parçalar, robot araba) ROGOYATO tarafından yazılmıştır; Uno’nun kart verisi Arduino’nun açık tasarım
+          dosyalarından türetilmiştir (CC BY-SA 4.0). Arduino® Arduino AG’nin tescilli markasıdır.
         </p>
       </div>
     </details>

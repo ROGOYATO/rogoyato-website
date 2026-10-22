@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   PART_CATALOG,
+  UNO_ID,
   connectEndpoints,
   describeEndpoint,
   movePart,
@@ -15,6 +16,7 @@ import {
   rotatePart,
   setDirectUnoPin,
   setStripUno,
+  unoPlacement,
 } from '../../../utils/avrSim/catalog'
 import { TRACKS } from '../../../utils/avrSim/car'
 import { Breadcrumb, Label } from '../ArduinoParts'
@@ -28,7 +30,7 @@ import RunButtons from './RunButtons'
 import { compileSketch, rememberCompiled } from './compile'
 import { onCompilerProgress, preloadCompiler } from './compiler/browserCompiler'
 import { EXAMPLES } from './examples'
-import { CarHud, CarWiring, ConnectionsPanel, IssuesList, PanelCard, PartInspector, SerialMonitor } from './Panels'
+import { CarHud, CarWiring, ConnectionsPanel, IssuesList, PanelCard, PartInspector, SerialMonitor, UnoInspector } from './Panels'
 import useSimulator from './useSimulator'
 
 // Older saved projects held the examples' answers; they are dropped.
@@ -75,12 +77,13 @@ function useDarkMode() {
 const FOOTPRINT = { breadboard: 9, motorDriver: 8, ultrasonic: 3.2, servo: 2.6, sevenSegment: 2.4, irSensor: 2 }
 const footprint = (type) => FOOTPRINT[type] ?? 1.6
 
-function nextPosition(parts, type) {
+function nextPosition(circuit, type) {
   const spots = []
   for (const z of [8, -8, 13, -13, 18]) for (const x of [0, -5, 5, -10, 10, -15, 15, -20, 20]) spots.push([x, z])
+  const [ux, uz] = unoPlacement(circuit).position
   const free = ([x, z]) =>
-    Math.hypot(x, z) > 4.4 + footprint(type) && // the Uno sits at the origin
-    parts.every((part) => Math.hypot(part.position[0] - x, part.position[1] - z) > footprint(part.type) + footprint(type) + 0.6)
+    Math.hypot(x - ux, z - uz) > 4.4 + footprint(type) &&
+    circuit.parts.every((part) => Math.hypot(part.position[0] - x, part.position[1] - z) > footprint(part.type) + footprint(type) + 0.6)
   return spots.find(free) ?? [0, 22]
 }
 
@@ -177,11 +180,11 @@ export default function SimulatorPage() {
     const turned = rotatePart(before, id)
     const fits = (circuit) => !benchApi.current || benchApi.current.fits(before, circuit, id)
     let next = fits(turned) ? turned : null
-    const part = turned.parts.find((item) => item.id === id)
+    const [x, z] = id === UNO_ID ? unoPlacement(turned).position : turned.parts.find((item) => item.id === id).position
     for (let radius = 0.4; !next && radius <= 6; radius += 0.4) {
       for (let step = 0; step < 16 && !next; step += 1) {
         const angle = (step / 16) * 2 * Math.PI
-        const moved = movePart(turned, id, [part.position[0] + radius * Math.cos(angle), part.position[1] + radius * Math.sin(angle)])
+        const moved = movePart(turned, id, [x + radius * Math.cos(angle), z + radius * Math.sin(angle)])
         if (fits(moved)) next = moved
       }
     }
@@ -197,7 +200,7 @@ export default function SimulatorPage() {
     let index = 1
     while (parts.some((part) => part.id === `${type}-${index}`)) index += 1
     const defaults = PART_CATALOG[type].props
-    const part = { id: `${type}-${index}`, type, position: nextPosition(parts, type), rotation: 0, ...(defaults ? { props: { ...defaults } } : {}) }
+    const part = { id: `${type}-${index}`, type, position: nextPosition(project.circuit, type), rotation: 0, ...(defaults ? { props: { ...defaults } } : {}) }
     // A breadboard goes beside the digital header; parts go into its holes.
     if (type === 'breadboard' && !parts.some((p) => p.type === 'breadboard')) part.position = [0, -9]
     else if (PART_CATALOG[type].bare) part.position = placeOnBreadboard(project.circuit, part) ?? part.position
@@ -451,6 +454,7 @@ export default function SimulatorPage() {
                 onConnect={(from, to) => setCircuit('circuit', (circuit) => connectEndpoints(circuit, from, to))}
                 onMovePart={(id, position) => setCircuit('circuit', (circuit) => movePart(circuit, id, position))}
                 onPress={(id, pressed) => setInput(id, 'pressed', pressed)}
+                onReset={() => running && sim.resetBoard()}
                 apiRef={benchApi}
               />
             ) : (
@@ -465,7 +469,11 @@ export default function SimulatorPage() {
 
           {project.mode === 'bench' ? (
             <>
-              {selectedPart ? (
+              {selection?.partId === UNO_ID ? (
+                <PanelCard title="Seçili parça">
+                  <UnoInspector running={running} onRotate={() => rotate(UNO_ID)} onReset={sim.resetBoard} />
+                </PanelCard>
+              ) : selectedPart ? (
                 <PanelCard title="Seçili parça">
                   <PartInspector
                     part={selectedPart}
@@ -532,25 +540,26 @@ export default function SimulatorPage() {
                   </label>
                 }
               >
-                {project.circuit.parts.length ? (
-                  <ul className="flex flex-wrap gap-2">
-                    {project.circuit.parts.map((part) => (
-                      <li key={part.id}>
+                {/* The Uno comes first; it can be moved and turned but not removed. */}
+                <ul className="flex flex-wrap gap-2">
+                  {[{ id: UNO_ID, label: 'Arduino Uno' }, ...project.circuit.parts.map((part) => ({ id: part.id, label: partLabel(part) }))].map(({ id, label }) => {
+                    const chosen = selection?.partId === id
+                    return (
+                      <li key={id}>
                         <button
                           type="button"
-                          aria-pressed={part.id === selectedPart?.id}
-                          onClick={() => setSelection(part.id === selectedPart?.id ? null : { partId: part.id })}
-                          className={`font-code inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-sm transition ${part.id === selectedPart?.id ? 'border-teal-600 bg-teal-50 text-teal-900 dark:border-teal-300/60 dark:bg-teal-400/10 dark:text-teal-100' : 'border-slate-300 text-slate-700 hover:border-teal-600 hover:text-teal-800 dark:border-white/15 dark:text-slate-200'}`}
+                          aria-pressed={chosen}
+                          onClick={() => setSelection(chosen ? null : { partId: id })}
+                          className={`font-code inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-sm transition ${chosen ? 'border-teal-600 bg-teal-50 text-teal-900 dark:border-teal-300/60 dark:bg-teal-400/10 dark:text-teal-100' : 'border-slate-300 text-slate-700 hover:border-teal-600 hover:text-teal-800 dark:border-white/15 dark:text-slate-200'}`}
                         >
-                          {part.id === selectedPart?.id ? <Check size={13} /> : null}
-                          {partLabel(part)}
+                          {chosen ? <Check size={13} /> : null}
+                          {label}
                         </button>
                       </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-slate-600 dark:text-slate-300">Masada parça yok. “Parça ekle” ile başlayın.</p>
-                )}
+                    )
+                  })}
+                </ul>
+                {project.circuit.parts.length ? null : <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Masada başka parça yok. “Parça ekle” ile başlayın.</p>}
               </PanelCard>
               <ConnectionsPanel
                 circuit={project.circuit}
