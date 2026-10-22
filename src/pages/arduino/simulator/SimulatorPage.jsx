@@ -54,7 +54,7 @@ function loadSaved() {
     for (const key of OLD_STORAGE_KEYS) window.localStorage.removeItem(key)
     const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY))
     // Projects saved before the breadboard used { part, pin, uno } wires.
-    if (saved?.code && saved?.circuit) return { ...saved, circuit: normalizeCircuit(saved.circuit), carCircuit: saved.carCircuit && normalizeCircuit(saved.carCircuit) }
+    if (saved?.code && saved?.circuit) return { ...saved, circuit: normalizeCircuit(saved.circuit), carCircuit: saved.carCircuit ? normalizeCircuit(saved.carCircuit) : clone(CAR_EXAMPLE.carCircuit) }
   } catch {
     // Storage can be unavailable (private mode); start from an example.
   }
@@ -313,7 +313,7 @@ export default function SimulatorPage() {
               </button>
             ))}
           </div>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
             <button type="button" onClick={() => setSound((value) => !value)} title={sound ? 'Sesi kapat' : 'Sesi aç'} aria-label={sound ? 'Sesi kapat' : 'Sesi aç'} className="rounded-md border border-slate-300 p-2 text-slate-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300">
               {sound ? <Volume2 size={16} /> : <VolumeX size={16} />}
             </button>

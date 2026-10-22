@@ -91,15 +91,16 @@ export function silk(text, height = 0.13, color = '#f8fafc') {
 const PIN_COLORS = { gnd: '#1f2937', vcc: '#dc2626', signal: '#d4a72c', supply: '#d4a72c', end: '#d4a72c' }
 
 // A header pin with a larger invisible sphere around its tip so it is easy
-// to click, tagged with who owns it.
-function pinMarker(group, info, position, kind = 'signal') {
+// to click, tagged with who owns it. seat: how far below the tip a jumper's
+// housing comes to rest (a female housing slides down over a male pin).
+function pinMarker(group, info, position, kind = 'signal', seat = 0) {
   // Square 0.64 mm header pins, tinted by what they carry.
   const leg = box(0.064, 0.6, 0.064, mat(PIN_COLORS[kind] ?? '#d4a72c', { metalness: kind === 'gnd' ? 0.5 : 0.9, roughness: 0.3 }), position.x, position.y - 0.3, position.z)
   leg.castShadow = false
   leg.receiveShadow = false
   const hit = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 8), new THREE.MeshBasicMaterial({ color: '#22d3ee', transparent: true, opacity: 0, depthWrite: false }))
   hit.position.copy(position)
-  hit.userData = { kind: 'pin', ...info }
+  hit.userData = { kind: 'pin', ...info, seat }
   group.add(leg, hit)
   return hit
 }
@@ -416,7 +417,7 @@ export function buildUno() {
   for (const pin of layout) {
     const hit = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 8), new THREE.MeshBasicMaterial({ color: '#22d3ee', transparent: true, opacity: 0, depthWrite: false }))
     hit.position.set(pin.x, 1.06, pin.z)
-    hit.userData = { kind: 'pin', owner: 'uno', pin: pin.id, anchor: pin.anchor ?? pin.id }
+    hit.userData = { kind: 'pin', owner: 'uno', pin: pin.id, anchor: pin.anchor ?? pin.id, seat: -0.05 }
     group.add(box(0.13, 0.02, 0.13, pit, pin.x, 1.004, pin.z), box(0.05, 0.02, 0.03, contact, pin.x, 1.006, pin.z - 0.03), hit)
     markers.push(hit)
   }
@@ -464,7 +465,7 @@ function breakout(group, partId, pins, { type, color = '#1d4ed8' }) {
   const markers = pins.map((pin) => {
     // The black plastic spacer that holds the header pins.
     group.add(box(0.254, 0.25, 0.25, mat('#121214', { roughness: 0.6 }), pin.x, 0.265, pin.z))
-    const marker = pinMarker(group, { owner: 'part', partId, pin: pin.id }, new THREE.Vector3(pin.x, 0.75, pin.z), pin.kind)
+    const marker = pinMarker(group, { owner: 'part', partId, pin: pin.id }, new THREE.Vector3(pin.x, 0.75, pin.z), pin.kind, -0.36)
     const text = silk(pin.label)
     text.position.set(pin.x, 0.145, pin.z + 0.16 + text.userData.length / 2)
     group.add(text)
@@ -1085,7 +1086,7 @@ const BUILDERS = {
     })
     const markers = definition.pins.map((pin) => {
       group.add(box(0.1, 0.02, 0.1, mat('#030303'), pin.x, 0.905, pin.z))
-      return pinMarker(group, { owner: 'part', partId: part.id, pin: pin.id }, new THREE.Vector3(pin.x, 0.92, pin.z), pin.kind)
+      return pinMarker(group, { owner: 'part', partId: part.id, pin: pin.id }, new THREE.Vector3(pin.x, 0.92, pin.z), pin.kind, -0.02)
     })
     return {
       group,
@@ -1123,7 +1124,7 @@ const BUILDERS = {
     }
     // Right-angle header along the bottom edge.
     group.add(box(1.02, 0.25, 0.25, mat('#121214', { roughness: 0.6 }), 0, 0.17, -0.3))
-    const markers = definition.pins.map((pin) => pinMarker(group, { owner: 'part', partId: part.id, pin: pin.id }, new THREE.Vector3(pin.x, 0.62, pin.z), pin.kind))
+    const markers = definition.pins.map((pin) => pinMarker(group, { owner: 'part', partId: part.id, pin: pin.id }, new THREE.Vector3(pin.x, 0.62, pin.z), pin.kind, -0.325))
     // A short sound cone in front of the sensor and the distance it is
     // currently "seeing" (set with the slider in the inspector).
     const beam = new THREE.Mesh(new THREE.ConeGeometry(1.5, 3, 24, 1, true), new THREE.MeshBasicMaterial({ color: '#38bdf8', transparent: true, opacity: 0.14, side: THREE.DoubleSide, depthWrite: false }))

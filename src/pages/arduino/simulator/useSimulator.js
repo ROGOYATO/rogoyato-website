@@ -103,6 +103,18 @@ export default function useSimulator({ sound }) {
     [playBuzzers, stop],
   )
 
+  // A sketch left running in a background tab is paused (and its buzzers
+  // silenced) until the tab is shown again.
+  useEffect(() => {
+    const onVisibility = () => {
+      const hidden = document.visibilityState === 'hidden'
+      workerRef.current?.postMessage({ type: hidden ? 'pause' : 'resume' })
+      if (hidden) playBuzzers({})
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [playBuzzers])
+
   useEffect(() => () => {
     workerRef.current?.terminate()
     for (const voice of audio.current.voices.values()) voice.oscillator.stop()

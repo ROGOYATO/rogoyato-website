@@ -217,6 +217,12 @@ export class Bench3D {
 
     this.resizeObserver = new ResizeObserver(() => this.resize())
     this.resizeObserver.observe(container)
+    this.visible = true
+    this.visibilityObserver = new IntersectionObserver(([entry]) => {
+      this.visible = entry.isIntersecting
+      this.invalidate()
+    })
+    this.visibilityObserver.observe(container)
     this.resize()
     this.setTheme(false)
 
@@ -229,6 +235,7 @@ export class Bench3D {
     this.scene.background = background
     // The far end of the mat fades into the page instead of ending.
     this.scene.fog = new THREE.Fog(background, 70, 150)
+    this.invalidate()
   }
 
   resize() {
@@ -239,6 +246,7 @@ export class Bench3D {
     this.composer.setSize(clientWidth, clientHeight)
     this.camera.aspect = clientWidth / clientHeight
     this.camera.updateProjectionMatrix()
+    this.invalidate()
   }
 
   // ---------------------------------------------------------- circuit ---
@@ -273,6 +281,7 @@ export class Bench3D {
   // Places every part from the circuit: plugged-in parts (and anything
   // resting on a breadboard) sit on top of the board.
   layout() {
+    this.invalidate()
     this.nets = buildNets(this.circuit)
     const boards = this.circuit.parts.filter((part) => part.type === 'breadboard')
     const onBoard = (part) =>
@@ -313,6 +322,14 @@ export class Bench3D {
     return entry.model.markers.find((marker) => marker.userData.pin === end.pin)?.getWorldPosition(new THREE.Vector3()) ?? null
   }
 
+  // How far below the end position a jumper's housing rests: on top of the
+  // Uno's header, or slid down over a module's male pin to its spacer.
+  endSeat(end) {
+    if (end.uno) return this.unoMarker(end)?.userData.seat ?? 0
+    const entry = this.parts.get(end.part)
+    return entry?.model.markers.find((marker) => marker.userData.pin === end.pin)?.userData.seat ?? 0
+  }
+
   rebuildWires() {
     for (const mesh of this.wireMeshes) {
       this.scene.remove(mesh)
@@ -323,8 +340,8 @@ export class Bench3D {
     this.scene.updateMatrixWorld(true)
     this.circuit.wires.forEach((raw, index) => {
       const wire = normalizeWire(raw)
-      const a = this.endPosition(wire.from)
-      const b = this.endPosition(wire.to)
+      const a = this.endPosition(wire.from)?.add(new THREE.Vector3(0, this.endSeat(wire.from), 0))
+      const b = this.endPosition(wire.to)?.add(new THREE.Vector3(0, this.endSeat(wire.to), 0))
       if (!a || !b) return
       // Dupont jumper ends: a square black housing over the pin; the wire
       // leaves from its top.
@@ -340,11 +357,17 @@ export class Bench3D {
       const material = new THREE.MeshPhysicalMaterial({ color: wireColor(wire, index), roughness: 0.45, clearcoat: 0.3, clearcoatRoughness: 0.4, emissive: selected ? '#22d3ee' : '#000000', emissiveIntensity: selected ? 0.6 : 0 })
       const radius = selected ? 0.075 : 0.055
       const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 48, radius, 10), material)
-      const ends = [a, b].flatMap((at) => {
+      // A male end's pin goes into the hole; a female end has swallowed the
+      // module's pin.
+      const ends = [
+        [a, this.endSeat(wire.from)],
+        [b, this.endSeat(wire.to)],
+      ].flatMap(([at, seat]) => {
         const shell = new THREE.Mesh(new THREE.BoxGeometry(0.23, housing, 0.23), new THREE.MeshStandardMaterial({ color: '#18181b', roughness: 0.5 }))
-        shell.position.copy(at).add(new THREE.Vector3(0, housing / 2 + 0.01, 0))
-        const pin = new THREE.Mesh(new THREE.BoxGeometry(0.064, 0.14, 0.064), new THREE.MeshStandardMaterial({ color: '#d6b25e', metalness: 1, roughness: 0.3 }))
-        pin.position.copy(at).add(new THREE.Vector3(0, -0.06, 0))
+        shell.position.copy(at).add(new THREE.Vector3(0, housing / 2, 0))
+        if (seat < -0.1) return [shell]
+        const pin = new THREE.Mesh(new THREE.BoxGeometry(0.064, 0.3, 0.064), new THREE.MeshStandardMaterial({ color: '#d6b25e', metalness: 1, roughness: 0.3 }))
+        pin.position.copy(at).add(new THREE.Vector3(0, -0.13, 0))
         return [shell, pin]
       })
       for (const part of [mesh, ...ends]) {
@@ -358,6 +381,7 @@ export class Bench3D {
 
   setSelection(selection) {
     this.selection = selection
+    this.invalidate()
     this.refreshHighlight()
     if (this.circuit) this.rebuildWires()
   }
@@ -405,6 +429,13 @@ export class Bench3D {
   setSnapshot(snapshot, inputs) {
     this.snapshot = snapshot
     this.inputs = inputs ?? {}
+    this.invalidate()
+  }
+
+  // Slider and switch values set in the inspector (pot position, distance…).
+  setInputs(inputs) {
+    this.inputs = inputs ?? {}
+    this.invalidate()
   }
 
   // ------------------------------------------------------ interaction ---
@@ -476,6 +507,7 @@ export class Bench3D {
   }
 
   onPointerDown(event) {
+    this.invalidate()
     // Only the main button picks, drags and wires; the right button pans.
     if (event.button !== 0) return
     const hit = this.pick(event)
@@ -562,6 +594,7 @@ export class Bench3D {
   }
 
   onPointerMove(event) {
+    this.invalidate()
     if (this.drag) {
       const moved = Math.hypot(event.clientX - this.down.x, event.clientY - this.down.y) > 4
       if (moved || this.drag.moved) {
@@ -607,6 +640,7 @@ export class Bench3D {
   }
 
   onPointerUp(event) {
+    this.invalidate()
     this.controls.enabled = true
     if (this.pressing) {
       this.handlers.onPress?.(this.pressing, false)
@@ -644,6 +678,7 @@ export class Bench3D {
   }
 
   onKeyDown(event) {
+    this.invalidate()
     if (event.key === 'Escape') this.cancelWiring()
   }
 
@@ -675,13 +710,29 @@ export class Bench3D {
     this.pendingRing.visible = false
     this.rubberBand.visible = false
     this.handlers.onWiring?.(null)
+    this.invalidate()
   }
 
   // ----------------------------------------------------------- render ---
 
+  // Asks for a new frame; the scene is only drawn when something changed.
+  invalidate() {
+    this.dirty = true
+  }
+
   render() {
     const dt = Math.min(0.1, this.clock.getDelta())
-    this.controls.update()
+    // Off screen (scrolled away) nothing is drawn at all.
+    if (!this.visible) {
+      this.drewLast = false
+      return
+    }
+    const moved = this.controls.update()
+    if (!moved && !this.dirty && !this.pending) {
+      this.drewLast = false
+      return
+    }
+    this.dirty = false
     const snapshot = this.snapshot
     this.uno.update(snapshot)
     for (const [id, entry] of this.parts) {
@@ -694,8 +745,9 @@ export class Bench3D {
     }
     if (this.useComposer) {
       this.composer.render(dt)
-      // After a warm-up, drop the effect if frames take too long.
-      if (this.frameTimes.length < 120) {
+      // After a warm-up of back-to-back frames, drop the effect if they take
+      // too long.
+      if (this.drewLast && this.frameTimes.length < 120) {
         this.frameTimes.push(dt)
         if (this.frameTimes.length === 120) {
           const sorted = this.frameTimes.slice(30).sort((a, b) => a - b)
@@ -705,7 +757,9 @@ export class Bench3D {
     } else {
       this.renderer.render(this.scene, this.camera)
     }
+    this.drewLast = true
   }
+
 
   // Point the camera so the Uno and every part fit in view.
   frame() {
@@ -719,6 +773,7 @@ export class Bench3D {
     this.controls.target.copy(center).setY(0)
     this.camera.position.copy(center).add(new THREE.Vector3(0, 0.78, 0.63).multiplyScalar(distance))
     this.controls.update()
+    this.invalidate()
   }
 
   focus() {
@@ -728,6 +783,7 @@ export class Bench3D {
   dispose() {
     this.renderer.setAnimationLoop(null)
     this.resizeObserver.disconnect()
+    this.visibilityObserver.disconnect()
     const el = this.renderer.domElement
     el.removeEventListener('pointerdown', this.onPointerDown)
     el.removeEventListener('pointermove', this.onPointerMove)

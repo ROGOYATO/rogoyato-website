@@ -73,11 +73,11 @@ export default function RunButtons({ compiling, running, canRun, stale, onBuildA
   const offset = (split ? -GAP : 0) + drag
   const busy = compiling
   const base =
-    'relative inline-flex h-10 select-none items-center gap-2 font-semibold transition-[transform,background-color,box-shadow] duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-60'
+    'relative inline-flex h-10 shrink-0 select-none items-center gap-2 whitespace-nowrap font-semibold transition-[transform,background-color,box-shadow] duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-60'
 
   return (
     // Joined, the pieces share one shadow and one hover, like a single button.
-    <div className={`group/run relative inline-flex items-center rounded-lg ${split ? '' : 'shadow-sm'}`} style={{ paddingLeft: split ? GAP : 0, transition: 'padding 200ms ease-out' }}>
+    <div className={`group/run relative inline-flex shrink-0 items-center rounded-lg ${split ? '' : 'shadow-sm'}`} style={{ paddingLeft: split ? GAP : 0, transition: 'padding 200ms ease-out' }}>
       {/* Derle: the piece with the tab. */}
       <button
         type="button"
@@ -104,7 +104,19 @@ export default function RunButtons({ compiling, running, canRun, stale, onBuildA
       >
         <GripVertical size={15} className="opacity-60" aria-hidden />
         {busy ? <Loader2 size={16} className="animate-spin" /> : <Hammer size={16} />}
-        {busy ? 'Derleniyor…' : split ? 'Derle' : running ? 'Yeniden derle ve' : 'Derle ve'}
+        {busy ? (
+          'Derleniyor…'
+        ) : split ? (
+          'Derle'
+        ) : running ? (
+          // Short on phones, so the joined button fits beside Durdur.
+          <>
+            <span className="sm:hidden">Derle ve</span>
+            <span className="hidden sm:inline">Yeniden derle ve</span>
+          </>
+        ) : (
+          'Derle ve'
+        )}
         {/* The tab that sits in the Çalıştır piece's socket. */}
         <span aria-hidden className="absolute -right-[7px] top-1/2 h-[14px] w-[14px] -translate-y-1/2 rounded-full bg-inherit" />
         {/* Joined, only a faint cut line shows where the pieces meet. */}

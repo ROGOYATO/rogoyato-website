@@ -53,7 +53,7 @@ export default function BenchView({ circuit, inputs, selection, dark, frameKey, 
   }, [dark])
 
   useEffect(() => {
-    if (benchRef.current) benchRef.current.inputs = inputs
+    benchRef.current?.setInputs(inputs)
   }, [inputs])
 
   return (
