@@ -139,6 +139,8 @@ export default function useSimulator({ sound }) {
     setInput: (part, key, value) => post({ type: 'input', part, key, value }),
     sendSerial: (text) => post({ type: 'serial', text }),
     resetCar: () => post({ type: 'resetCar' }),
+    // The Uno's reset button: setup() runs again, nothing is recompiled.
+    resetBoard: () => post({ type: 'reset' }),
     setTrack: (track) => post({ type: 'setTrack', track }),
     subscribe: useCallback((listener) => {
       listeners.current.add(listener)

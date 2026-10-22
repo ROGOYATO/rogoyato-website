@@ -1,4 +1,4 @@
-import { AlertTriangle, CircleX, Eraser, Plus, RotateCw, Send, Trash2 } from 'lucide-react'
+import { AlertTriangle, CircleX, Eraser, Plus, RotateCcw, RotateCw, Send, Trash2 } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 import {
   PART_CATALOG,
@@ -6,6 +6,7 @@ import {
   UNO_ANALOG,
   UNO_DIGITAL,
   UNO_PINS,
+  UNO_ID,
   UNO_POWER,
   breadboardHoles,
   buildNets,
@@ -452,6 +453,49 @@ export function PartControls({ part, inputs, onInput }) {
 
 const OPTION_LABELS = { color: 'Renk', ohms: 'Değer' }
 
+// The Uno in the parts list: it can be moved and turned, and its reset
+// button restarts the running program.
+export function UnoInspector({ running, onRotate, onReset }) {
+  const [noRoom, setNoRoom] = useState(false)
+  return (
+    <div className="space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-semibold text-slate-900 dark:text-white">Arduino Uno</p>
+          <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+            Sürükleyerek taşıyın; kablolar pinlerinde kalır. Kartın köşesindeki kırmızı RESET butonu çalışan programı baştan başlatır: setup() yeniden
+            çalışır, kod yeniden derlenmez. ~ işaretli pinler (D3, D5, D6, D9, D10, D11) analogWrite ile PWM verebilir.
+          </p>
+          {noRoom ? <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">Döndürmek için yer yok: önce kartı boş bir yere taşıyın.</p> : null}
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            if (onRotate()) return
+            setNoRoom(true)
+            setTimeout(() => setNoRoom(false), 2500)
+          }}
+          title="Döndür"
+          aria-label="Döndür"
+          className="shrink-0 rounded-md border border-slate-300 p-1.5 text-slate-600 hover:border-teal-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300"
+        >
+          <RotateCw size={15} />
+        </button>
+      </div>
+      <button
+        type="button"
+        onClick={onReset}
+        disabled={!running}
+        title={running ? 'Programı baştan başlat' : 'Program çalışırken kullanılabilir'}
+        className="inline-flex items-center gap-1.5 rounded-md border border-rose-300 px-3 py-1.5 text-sm text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-400/40 dark:text-rose-200 dark:hover:bg-rose-500/10"
+      >
+        <RotateCcw size={14} />
+        Reset
+      </button>
+    </div>
+  )
+}
+
 export function PartInspector({ part, circuit, inputs, state, onInput, onWire, onStrip, onRotate, onDelete, onProp }) {
   const [noRoom, setNoRoom] = useState(false)
   const definition = PART_CATALOG[part.type]
@@ -540,7 +584,9 @@ export function ConnectionsPanel({ circuit, selection, onSelect, onWire, onStrip
   const selectedPart = circuit.parts.find((part) => part.id === selection?.partId)
   const selectedNets = new Set((selectedPart ? PART_CATALOG[selectedPart.type].pins : []).map((pin) => nets.find(`P:${selectedPart.id}:${pin.id}`)))
   const touches = (wire) =>
-    wire.id === selection?.wireId || (selectedPart && [wire.from, wire.to].some((end) => end.part === selectedPart.id || selectedNets.has(nets.find(endpointKey(end)))))
+    wire.id === selection?.wireId ||
+    (selection?.partId === UNO_ID && [wire.from, wire.to].some((end) => end.uno)) ||
+    (selectedPart && [wire.from, wire.to].some((end) => end.part === selectedPart.id || selectedNets.has(nets.find(endpointKey(end)))))
   const wires = circuit.wires.map(normalizeWire)
   const { parts } = circuit
   const row = (active) => `rounded-md px-2 py-1 ${active ? 'bg-teal-50 dark:bg-teal-400/10' : ''}`

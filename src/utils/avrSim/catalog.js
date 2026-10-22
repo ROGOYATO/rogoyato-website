@@ -2,10 +2,12 @@
 // pins sit, the breadboard, and the step that turns a wired circuit into
 // running parts.
 //
-// A circuit is { parts, wires }:
+// A circuit is { parts, wires, uno? }:
 //   part: { id, type, position: [x, z] (cm), rotation (degrees), props }
 //   wire: { id, from: endpoint, to: endpoint, color }
 //   endpoint: { uno: 'D7' | '5V' | 'GND' | ..., anchor? } or { part, pin }
+//   uno: { position: [x, z], rotation } where the Uno sits (default: the
+//   origin, unturned); its id in selections and moves is UNO_ID.
 // A breadboard is a part whose pins are its holes ('a12', 'T+5'). Parts whose
 // pins land on breadboard holes are plugged in. Older circuits used
 // { part, pin, uno } wires; normalizeCircuit() converts them.
@@ -318,7 +320,13 @@ export function normalizeWire(wire) {
 }
 
 export function normalizeCircuit(circuit) {
-  return { parts: circuit.parts, wires: circuit.wires.map(normalizeWire) }
+  return { ...circuit, parts: circuit.parts, wires: circuit.wires.map(normalizeWire) }
+}
+
+export const UNO_ID = 'uno'
+
+export function unoPlacement(circuit) {
+  return { position: circuit?.uno?.position ?? [0, 0], rotation: circuit?.uno?.rotation ?? 0 }
 }
 
 export const endpointKey = (end) => (end.uno ? `U:${end.uno}` : `P:${end.part}:${end.pin}`)
@@ -411,6 +419,7 @@ export function removePart(circuit, partId) {
 // Moves a part. A part let go near a breadboard snaps into its holes; a
 // breadboard carries the parts plugged into it.
 export function movePart(circuit, partId, position) {
+  if (partId === UNO_ID) return { ...circuit, uno: { ...unoPlacement(circuit), position } }
   const part = circuit.parts.find((p) => p.id === partId)
   if (!part) return circuit
   if (part.type === 'breadboard') {
@@ -428,6 +437,10 @@ export function movePart(circuit, partId, position) {
 // Rotating a plugged-in part turns it about its first pin so it stays in
 // the board when it can.
 export function rotatePart(circuit, partId) {
+  if (partId === UNO_ID) {
+    const placement = unoPlacement(circuit)
+    return { ...circuit, uno: { ...placement, rotation: (placement.rotation + 90) % 360 } }
+  }
   const part = circuit.parts.find((p) => p.id === partId)
   if (!part) return circuit
   const rotated = { ...part, rotation: ((part.rotation ?? 0) + 90) % 360 }

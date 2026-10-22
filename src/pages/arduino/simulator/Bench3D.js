@@ -14,6 +14,7 @@ import {
   BREADBOARD_SIZE,
   PART_CATALOG,
   PWM_PINS,
+  UNO_ID,
   breadboardHoles,
   buildNets,
   describeEndpoint,
@@ -23,6 +24,7 @@ import {
   movePart,
   normalizeWire,
   pluggedParts,
+  unoPlacement,
 } from '../../../utils/avrSim/catalog'
 import { buildPart, buildUno } from './models'
 
@@ -172,6 +174,8 @@ export class Bench3D {
 
     this.uno = buildUno()
     this.scene.add(this.uno.group)
+    // The Uno's outline at the origin, unturned; moved and turned per circuit.
+    this.unoOutline = bodyBox(this.uno.group, new Set(this.uno.markers))
 
     this.raycaster = new THREE.Raycaster()
     this.pointer = new THREE.Vector2()
@@ -282,6 +286,10 @@ export class Bench3D {
   // resting on a breadboard) sit on top of the board.
   layout() {
     this.invalidate()
+    const { position, rotation } = unoPlacement(this.circuit)
+    this.uno.group.position.set(position[0], 0, position[1])
+    this.uno.group.rotation.y = (rotation * Math.PI) / 180
+    this.uno.group.updateMatrixWorld(true)
     this.nets = buildNets(this.circuit)
     const boards = this.circuit.parts.filter((part) => part.type === 'breadboard')
     const onBoard = (part) =>
@@ -397,7 +405,7 @@ export class Bench3D {
       })
       this.highlight = null
     }
-    const entry = this.selection?.partId && this.parts.get(this.selection.partId)
+    const entry = this.selection?.partId === UNO_ID ? { model: this.uno } : this.selection?.partId && this.parts.get(this.selection.partId)
     if (!entry) return
     const bounds = bodyBox(entry.model.group, new Set(entry.model.markers))
     if (bounds.isEmpty()) return
@@ -518,13 +526,18 @@ export class Bench3D {
       this.controls.enabled = false
       this.pressing = data.partId
       this.handlers.onPress?.(data.partId, true)
-    } else if (data.kind === 'part' || data.kind === 'board') {
-      const entry = this.parts.get(data.partId)
+    } else if (data.kind === 'reset') {
+      this.controls.enabled = false
+      this.resetting = true
+      this.uno.setReset(true)
+    } else if (data.kind === 'part' || data.kind === 'board' || data.kind === 'uno') {
+      const partId = data.kind === 'uno' ? UNO_ID : data.partId
+      const position = partId === UNO_ID ? unoPlacement(this.circuit).position : this.parts.get(partId)?.part.position
       const point = this.floorPoint(event)
-      if (entry && point) {
+      if (position && point) {
         this.controls.enabled = false
-        const moving = this.movingWith(this.circuit, data.partId)
-        this.drag = { partId: data.partId, offset: [point.x - entry.part.position[0], point.z - entry.part.position[1]], base: this.circuit, moved: false, moving, overlapping: this.overlaps(this.circuit, moving) }
+        const moving = this.movingWith(this.circuit, partId)
+        this.drag = { partId, offset: [point.x - position[0], point.z - position[1]], base: this.circuit, moved: false, moving, overlapping: this.overlaps(this.circuit, moving) }
       }
     }
   }
@@ -554,7 +567,11 @@ export class Bench3D {
   footprint(part) {
     const entry = this.parts.get(part.id)
     if (!entry) return null
-    const box = this.outline(entry)
+    return this.turnedBox(this.outline(entry), part)
+  }
+
+  // An outline turned and moved to { position, rotation } on the mat.
+  turnedBox(box, part) {
     const turn = ((part.rotation ?? 0) * Math.PI) / 180
     const up = new THREE.Vector3(0, 1, 0)
     const corners = [
@@ -571,14 +588,14 @@ export class Bench3D {
   // Pairs ("a|b") of a moving part and something it runs into. Parts may
   // rest on a breadboard; the Uno and other parts are solid.
   overlaps(circuit, moving) {
-    this.unoBox ??= bodyBox(this.uno.group, new Set(this.uno.markers))
-    const uno = { id: 'uno', box: [this.unoBox.min.x, this.unoBox.max.x, this.unoBox.min.z, this.unoBox.max.z] }
-    const solids = circuit.parts.map((part) => ({ id: part.id, board: part.type === 'breadboard', box: this.footprint(part) })).filter((item) => item.box)
+    const uno = { id: UNO_ID, box: this.turnedBox(this.unoOutline, unoPlacement(circuit)) }
+    const solids = [uno, ...circuit.parts.map((part) => ({ id: part.id, board: part.type === 'breadboard', box: this.footprint(part) })).filter((item) => item.box)]
     const hit = (a, b, gap = 0.03) => a[0] < b[1] - gap && b[0] < a[1] - gap && a[2] < b[3] - gap && b[2] < a[3] - gap
     const pairs = new Set()
     for (const item of solids.filter((solid) => moving.has(solid.id))) {
-      for (const other of [uno, ...solids.filter((solid) => !moving.has(solid.id))]) {
-        if (item.board !== Boolean(other.board) && other.id !== 'uno') continue
+      for (const other of solids.filter((solid) => !moving.has(solid.id))) {
+        // Parts may sit on a breadboard; nothing sits on the Uno or under it.
+        if (item.board !== Boolean(other.board) && other.id !== UNO_ID && item.id !== UNO_ID) continue
         if (hit(item.box, other.box)) pairs.add(`${item.id}|${other.id}`)
       }
     }
@@ -624,7 +641,7 @@ export class Bench3D {
     const target = this.target(hit)
     this.setHover(target)
     const kind = hit?.object.userData.kind
-    this.renderer.domElement.style.cursor = target || kind === 'press' ? 'pointer' : kind === 'part' || kind === 'board' ? 'grab' : 'default'
+    this.renderer.domElement.style.cursor = target || kind === 'press' || kind === 'reset' ? 'pointer' : kind === 'part' || kind === 'board' || kind === 'uno' ? 'grab' : 'default'
     const rect = this.renderer.domElement.getBoundingClientRect()
     this.handlers.onHover?.(target ? { text: this.describe(target.end), x: event.clientX - rect.left, y: event.clientY - rect.top } : null)
 
@@ -642,6 +659,13 @@ export class Bench3D {
   onPointerUp(event) {
     this.invalidate()
     this.controls.enabled = true
+    if (this.resetting) {
+      // Like the real button: the program starts again on release.
+      this.resetting = false
+      this.uno.setReset(false)
+      this.handlers.onReset?.()
+      return
+    }
     if (this.pressing) {
       this.handlers.onPress?.(this.pressing, false)
       this.pressing = null
@@ -670,7 +694,6 @@ export class Bench3D {
     const target = this.target(hit)
     if (target) this.clickTarget(target)
     else if (data?.kind === 'wire') this.handlers.onSelect?.({ wireId: data.wireId })
-    else if (data?.kind === 'uno') this.handlers.onSelect?.(null)
     else {
       this.cancelWiring()
       this.handlers.onSelect?.(null)

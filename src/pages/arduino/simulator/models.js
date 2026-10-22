@@ -2,7 +2,7 @@
 // primitives at real-world scale (1 unit = 1 cm). Every model exposes its
 // pins as clickable markers and an update(state) that animates it.
 import * as THREE from 'three'
-import { BREADBOARD_HEIGHT, BREADBOARD_SIZE, MODULE_SIZE, breadboardHoles } from '../../../utils/avrSim/catalog'
+import { BREADBOARD_HEIGHT, BREADBOARD_SIZE, MODULE_SIZE, PWM_PINS, breadboardHoles } from '../../../utils/avrSim/catalog'
 
 const materials = new Map()
 export function mat(color, options = {}) {
@@ -327,7 +327,8 @@ export function buildUno() {
       ctx.translate(px(pin.x), pz(pin.z) + (pin.z < 0 ? 40 : -40))
       ctx.rotate(-Math.PI / 2)
       ctx.textAlign = pin.z < 0 ? 'right' : 'left'
-      ctx.fillText(pin.id, 0, 0)
+      // PWM pins carry a ~, as printed on the real board.
+      ctx.fillText(PWM_PINS.has(pin.id) ? `~${pin.id}` : pin.id, 0, 0)
       ctx.restore()
     }
     // The ∞ logo: two loops with − and + in them.
@@ -396,8 +397,13 @@ export function buildUno() {
   group.add(box(0.65, 0.16, 0.35, mat('#18181b', { roughness: 0.5 }), -1.0, 0.24, 0.95), box(0.3, 0.02, 0.38, metal('#c9ced3'), -1.0, 0.17, 1.2))
   electrolytic(group, -1.9, 0.16, 1.55)
   electrolytic(group, -1.2, 0.16, 1.55)
-  // Reset push button in the corner by the USB socket.
-  group.add(box(0.6, 0.2, 0.6, metal('#c3c8cd', 0.3), -2.6, 0.26, -2.15), cylinder(0.17, 0.12, mat('#7f1d1d', { roughness: 0.45 }), -2.6, 0.42, -2.15))
+  // Reset push button in the corner by the USB socket: it restarts the
+  // running program.
+  const resetBase = box(0.6, 0.2, 0.6, metal('#c3c8cd', 0.3), -2.6, 0.26, -2.15)
+  const resetCap = cylinder(0.17, 0.12, mat('#7f1d1d', { roughness: 0.45 }), -2.6, 0.42, -2.15)
+  resetBase.userData = { kind: 'reset' }
+  resetCap.userData = { kind: 'reset' }
+  group.add(resetBase, resetCap)
   // ICSP header (2 × 3 pins).
   group.add(box(0.52, 0.25, 0.77, mat('#141416', { roughness: 0.6 }), 2.95, 0.285, -0.65))
   for (const dx of [-0.127, 0.127]) for (const dz of [-0.254, 0, 0.254]) group.add(box(0.064, 0.6, 0.064, GOLD(), 2.95 + dx, 0.6, -0.65 + dz))
@@ -436,9 +442,17 @@ export function buildUno() {
     group.add(sprite)
   })
 
+  // Every other solid piece picks up (and drags) the whole board.
+  group.traverse((child) => {
+    if (child.isMesh && !child.userData.kind) child.userData = { kind: 'uno' }
+  })
+
   return {
     group,
     markers,
+    setReset(pressed) {
+      resetCap.position.y = pressed ? 0.37 : 0.42
+    },
     update(state) {
       ledL.material.emissiveIntensity = (state?.pins?.[13] ?? 0) * 3
       ledTx.material.emissiveIntensity = state?.serialActive ? 2.5 : 0
