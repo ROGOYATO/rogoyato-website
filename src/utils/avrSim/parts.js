@@ -1,6 +1,7 @@
 // Electronic parts wired to the simulated Uno. Each part reads the pins the
 // chip drives and/or drives the pins the chip reads, with the same timing
 // the real part has, so unmodified Arduino libraries work against them.
+import { motorRpm } from './car.js'
 import { lightLux } from './catalog.js'
 import { CYCLES_PER_US, PinState } from './uno.js'
 
@@ -204,6 +205,17 @@ export function ldrOhms(lux) {
 
 const POT_OHMS = 10_000
 
+// A TT motor on an L298N channel: OUT1 follows IN1, OUT2 follows IN2, so a
+// motor with its red lead on OUT1 turns forward when IN1 is HIGH. On the
+// bench its wheel turns in the air, unloaded.
+class TtMotor extends Part {
+  update(sample) {
+    const { enable, forward, backward, sign } = this.config
+    const command = sign * motorOutput(sample, this.uno, enable, forward, backward)
+    this.state = { command, rpm: motorRpm(command, 1) }
+  }
+}
+
 // Bare components on a breadboard: resistors, a pot, an LDR, tact buttons,
 // LEDs, a buzzer. Each frame it finds the voltage of every net: driven nets
 // (5 V, GND, an OUTPUT pin and its PWM duty) are fixed, and every other net
@@ -360,6 +372,7 @@ export const PART_TYPES = {
   dht11: Dht11,
   irSensor: IrSensor,
   motorDriver: MotorDriver,
+  ttMotor: TtMotor,
   netSolver: NetSolver,
 }
 

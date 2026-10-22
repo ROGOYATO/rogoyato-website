@@ -483,7 +483,7 @@ export function LockButton({ locked, onToggle }) {
 
 const lockedNote = 'Konumu kilitli: üstünden sürükleyince kamera döner. Taşımak için kilidi açın.'
 
-export function UnoInspector({ running, locked, onToggleLock, onRotate, onReset }) {
+export function UnoInspector({ running, locked, board, onBoard, onToggleLock, onRotate, onReset }) {
   const [noRoom, setNoRoom] = useState(false)
   return (
     <div className="space-y-3">
@@ -526,6 +526,27 @@ export function UnoInspector({ running, locked, onToggleLock, onRotate, onReset 
         <RotateCcw size={14} />
         Reset
       </button>
+      {/* Both boards have their headers in the same places. */}
+      <fieldset>
+        <legend className="mb-1.5 text-sm text-slate-600 dark:text-slate-300">Kart</legend>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            ['ch340', 'Kitteki kart', 'Uno R3 klon · CH340, SMD'],
+            ['r3', 'Resmî Uno R3', 'Arduino A000066'],
+          ].map(([kind, title, note]) => (
+            <button
+              key={kind}
+              type="button"
+              aria-pressed={board === kind}
+              onClick={() => onBoard(kind)}
+              className={`rounded-md border px-2 py-1.5 text-left text-sm transition ${board === kind ? 'border-teal-700 bg-teal-50 text-teal-900 dark:border-teal-300/60 dark:bg-teal-400/10 dark:text-teal-100' : 'border-slate-300 text-slate-700 hover:border-teal-600 dark:border-white/15 dark:text-slate-200'}`}
+            >
+              <span className="block font-semibold">{title}</span>
+              <span className="block text-xs text-slate-500 dark:text-slate-400">{note}</span>
+            </button>
+          ))}
+        </div>
+      </fieldset>
     </div>
   )
 }
@@ -854,7 +875,8 @@ export function CarHud({ car }) {
 export function CarWiring({ circuit, onWire }) {
   const wireFor = (part, pin) => directUnoPin(circuit, part, pin)
   const groups = [
-    { part: 'driver', title: 'L298N motor sürücü', pins: PART_CATALOG.motorDriver.pins },
+    // The motors and the battery pack are wired with the chassis.
+    { part: 'driver', title: 'L298N motor sürücü', pins: PART_CATALOG.motorDriver.pins.filter((pin) => pin.kind === 'signal' || pin.kind === 'gnd'), note: 'Motorlar OUT1–OUT4’e, 4×AA pil +12V ve GND’ye takılı. GND’yi Arduino GND’sine de bağlayın.' },
     ...['left', 'center', 'right'].map((side) => ({ part: `ir-${side}`, title: `KH-09 ${{ left: 'sol', center: 'orta', right: 'sağ' }[side]} sensör`, pins: PART_CATALOG.irSensor.pins })),
   ]
   return (
@@ -862,6 +884,7 @@ export function CarWiring({ circuit, onWire }) {
       {groups.map((group) => (
         <div key={group.part}>
           <p className="mb-1.5 text-sm font-semibold text-slate-800 dark:text-slate-100">{group.title}</p>
+          {group.note ? <p className="mb-1.5 text-xs text-slate-600 dark:text-slate-300">{group.note}</p> : null}
           <div className="space-y-1.5">
             {group.pins.map((pin) => (
               <div key={pin.id} className="grid grid-cols-[3.5rem_1fr] items-center gap-2">

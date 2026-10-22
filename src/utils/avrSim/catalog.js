@@ -6,8 +6,9 @@
 //   part: { id, type, position: [x, z] (cm), rotation (degrees), props }
 //   wire: { id, from: endpoint, to: endpoint, color }
 //   endpoint: { uno: 'D7' | '5V' | 'GND' | ..., anchor? } or { part, pin }
-//   uno: { position: [x, z], rotation } where the Uno sits (default: the
-//   origin, unturned); its id in selections and moves is UNO_ID.
+//   uno: { position: [x, z], rotation, board } where the Uno sits (default:
+//   the origin, unturned) and which board it is ('ch340', the kit's clone,
+//   or 'r3'); its id in selections and moves is UNO_ID.
 // A breadboard is a part whose pins are its holes ('a12', 'T+5'). Parts whose
 // pins land on breadboard holes are plugged in. Older circuits used
 // { part, pin, uno } wires; normalizeCircuit() converts them.
@@ -174,17 +175,47 @@ export const PART_CATALOG = {
     pins: moduleRow('irSensor', [{ id: 'VCC', label: 'VCC', kind: 'vcc' }, { id: 'GND', label: 'GND', kind: 'gnd' }, { id: 'OUT', label: 'OUT', kind: 'signal', output: true }]),
   },
   motorDriver: {
-    name: 'L298N + 2 motor',
-    help: 'IN1/IN2 sol motorun, IN3/IN4 sağ motorun yönünü belirler. ENA/ENB’ye PWM verirseniz hız ayarlanır; boş bırakırsanız jumper tam hız verir. GND, Arduino GND’sine bağlanmalı.',
-    pins: moduleRow('motorDriver', [
-      { id: 'ENA', label: 'ENA', kind: 'signal', optional: true },
-      { id: 'IN1', label: 'IN1', kind: 'signal' },
-      { id: 'IN2', label: 'IN2', kind: 'signal' },
-      { id: 'IN3', label: 'IN3', kind: 'signal' },
-      { id: 'IN4', label: 'IN4', kind: 'signal' },
-      { id: 'ENB', label: 'ENB', kind: 'signal', optional: true },
-      { id: 'GND', label: 'GND', kind: 'gnd' },
-    ]),
+    name: 'L298N motor sürücü',
+    help: 'IN1/IN2, OUT1–OUT2’ye bağlı motorun; IN3/IN4, OUT3–OUT4’e bağlı motorun yönünü belirler. ENA/ENB’ye PWM verirseniz hız ayarlanır; boş bırakırsanız jumper tam hız verir. Motorlar +12V girişine bağlı pilden beslenir; pilin − ucu ve Arduino GND’si L298N’in GND’sinde ortaklanır.',
+    pins: [
+      ...moduleRow('motorDriver', [
+        { id: 'ENA', label: 'ENA', kind: 'signal', optional: true },
+        { id: 'IN1', label: 'IN1', kind: 'signal' },
+        { id: 'IN2', label: 'IN2', kind: 'signal' },
+        { id: 'IN3', label: 'IN3', kind: 'signal' },
+        { id: 'IN4', label: 'IN4', kind: 'signal' },
+        { id: 'ENB', label: 'ENB', kind: 'signal', optional: true },
+      ]),
+      // Screw terminals: the motor outputs on either side, power in front.
+      { id: 'OUT1', label: 'OUT1', kind: 'motor', terminal: true, x: -1.85, z: -0.25 },
+      { id: 'OUT2', label: 'OUT2', kind: 'motor', terminal: true, x: -1.85, z: 0.25 },
+      { id: 'OUT3', label: 'OUT3', kind: 'motor', terminal: true, x: 1.85, z: 0.25 },
+      { id: 'OUT4', label: 'OUT4', kind: 'motor', terminal: true, x: 1.85, z: -0.25 },
+      { id: 'VS', label: '+12V', kind: 'battery', terminal: true, x: -0.5, z: 1.85 },
+      { id: 'GND', label: 'GND', kind: 'gnd', terminal: true, x: 0, z: 1.85 },
+      { id: 'V5', label: '+5V', kind: 'supply', terminal: true, optional: true, x: 0.5, z: 1.85 },
+    ],
+  },
+  ttMotor: {
+    name: 'TT motor + teker (6 V, 250 rpm)',
+    help: 'Redüktörlü DC motor ve 66 mm teker. İki kablosu L298N’in aynı kanalına (OUT1–OUT2 ya da OUT3–OUT4) bağlanır; kabloları ters bağlarsanız ters döner. Arduino pinine doğrudan bağlanmaz: pin motorun akımını veremez.',
+    pins: [
+      { id: 'M1', label: 'kırmızı', kind: 'motorLead', x: -0.25, z: -6.4 },
+      { id: 'M2', label: 'siyah', kind: 'motorLead', x: 0.25, z: -6.4 },
+    ],
+    driven: true,
+    noPlug: true,
+  },
+  battery: {
+    name: '4×AA pil yuvası (6 V)',
+    help: 'Dört kalem pil seri bağlıdır: yaklaşık 6 V. Kırmızı kablo (+) L298N’in +12V girişine, siyah kablo (−) L298N’in GND’sine gider; o GND ayrıca Arduino GND’sine bağlanır. Pili Arduino’nun 5V pinine bağlamayın.',
+    // The ends of its red and black leads.
+    pins: [
+      { id: 'PLUS', label: '+ (kırmızı)', kind: 'vcc', x: -0.35, z: -3.7 },
+      { id: 'MINUS', label: '− (siyah)', kind: 'gnd', x: 0.35, z: -3.7 },
+    ],
+    power: true,
+    noPlug: true,
   },
 }
 
@@ -365,8 +396,10 @@ export function normalizeCircuit(circuit) {
 
 export const UNO_ID = 'uno'
 
+// Where the Uno sits and which board it is: the kit's CH340 clone unless
+// the official R3 was chosen.
 export function unoPlacement(circuit) {
-  return { position: circuit?.uno?.position ?? [0, 0], rotation: circuit?.uno?.rotation ?? 0 }
+  return { position: circuit?.uno?.position ?? [0, 0], rotation: circuit?.uno?.rotation ?? 0, board: circuit?.uno?.board === 'r3' ? 'r3' : 'ch340' }
 }
 
 export const endpointKey = (end) => (end.uno ? `U:${end.uno}` : `P:${end.part}:${end.pin}`)
@@ -628,11 +661,27 @@ export function resolveCircuit(input) {
   const resetWired = circuit.wires.some((wire) => wire.from.uno === 'RESET' || wire.to.uno === 'RESET')
 
   const bare = { switches: [], resistors: [], leds: [], buttons: [], pots: [], ldrs: [], buzzers: [] }
+  const channels = [] // L298N outputs that can turn a motor
   const ioUsedByBare = new Set()
+
+  // Battery packs: where their + and − leads go.
+  const batteryPlus = new Set()
+  const batteryMinus = new Set()
+  for (const part of circuit.parts.filter((p) => p.type === 'battery')) {
+    const plus = nets.find(`P:${part.id}:PLUS`)
+    const minus = nets.find(`P:${part.id}:MINUS`)
+    batteryPlus.add(plus)
+    batteryMinus.add(minus)
+    const name = partLabel(part)
+    const top = get(plus)
+    if (plus === minus) issues.push({ part: part.id, level: 'error', message: `Kısa devre: ${name} + ve − uçları birbirine bağlı. Gerçekte piller ısınır.` })
+    else if (top.vcc || top.io.length || top.v33) issues.push({ part: part.id, level: 'error', message: `${name}: + ucu Arduino’nun ${top.vcc ? '5V' : top.v33 ? '3.3V' : 'bir'} pinine bağlı. 6 V doğrudan 5 V hattına ya da pinlere verilmez; kart zarar görebilir.` })
+    else if (top.gnd) issues.push({ part: part.id, level: 'error', message: `Kısa devre: ${name} + ucu GND’ye bağlı.` })
+  }
 
   for (const part of circuit.parts) {
     const definition = PART_CATALOG[part.type]
-    if (!definition || part.type === 'breadboard') continue
+    if (!definition || part.type === 'breadboard' || definition.power || definition.driven) continue
     const name = partLabel(part)
 
     if (definition.bare) {
@@ -654,7 +703,14 @@ export function resolveCircuit(input) {
     const io = {}
     const constant = {}
     for (const pin of definition.pins) {
-      const info = get(nets.find(`P:${part.id}:${pin.id}`))
+      const root = nets.find(`P:${part.id}:${pin.id}`)
+      const info = get(root)
+      // The L298N's motor supply comes from the battery, not the Uno.
+      if (pin.kind === 'motor') continue
+      if (pin.kind === 'battery') {
+        if (!batteryPlus.has(root)) problems.push(info.vcc ? `${pin.label} girişi Arduino’nun 5V’una bağlı; motorlar için pil gerekir (4×AA).` : `${pin.label} girişine pil bağlı değil (4×AA pil yuvasının + ucu).`)
+        continue
+      }
       const connected = info.io.length || info.vcc || info.gnd || info.v33
       if (!connected) {
         if (!pin.optional && pin.kind !== 'end') problems.push(`${pin.label} ucu bağlı değil.`)
@@ -684,6 +740,9 @@ export function resolveCircuit(input) {
       if ((other.io.length || other.v33) && !other.vcc && !other.gnd) problems.push('Butonun diğer ucu 5V’a ya da GND’ye bağlanmalı.')
       extra = { toward: other.gnd ? 'gnd' : 'vcc' }
     }
+    if (part.type === 'motorDriver' && batteryPlus.has(nets.find(`P:${part.id}:VS`)) && !batteryMinus.has(nets.find(`P:${part.id}:GND`))) {
+      problems.push('Pilin − ucu L298N’in GND’sine bağlanmalı (Arduino GND’siyle ortak).')
+    }
     if (problems.length) {
       issues.push({ part: part.id, level: 'error', message: `${name} çalışmıyor: ${problems.join(' ')}` })
       continue
@@ -699,6 +758,29 @@ export function resolveCircuit(input) {
       motorDriver: () => ({ ena: io.ENA, in1: io.IN1, in2: io.IN2, enb: io.ENB, in3: io.IN3, in4: io.IN4 }),
     }[part.type]()
     engineParts.push({ id: part.id, type: part.type, pins: { ...pins, ...extra } })
+    if (part.type === 'motorDriver') {
+      const out = (pin) => nets.find(`P:${part.id}:${pin}`)
+      channels.push({ driver: part.id, enable: io.ENA, forward: io.IN1, backward: io.IN2, outs: [out('OUT1'), out('OUT2')] })
+      channels.push({ driver: part.id, enable: io.ENB, forward: io.IN3, backward: io.IN4, outs: [out('OUT3'), out('OUT4')] })
+    }
+  }
+
+  // Each motor turns with the L298N channel its two leads are screwed to.
+  for (const part of circuit.parts.filter((p) => p.type === 'ttMotor')) {
+    const name = partLabel(part)
+    const [a, b] = ['M1', 'M2'].map((pin) => nets.find(`P:${part.id}:${pin}`))
+    const ends = [get(a), get(b)]
+    if (ends.some((info) => info.io.length || info.vcc || info.gnd || info.v33)) {
+      issues.push({ part: part.id, level: 'error', message: `${name}: kablosu doğrudan Arduino’ya bağlı. Pin motorun akımını veremez, kart zarar görebilir; motoru L298N’in OUT uçlarına bağlayın.` })
+      continue
+    }
+    const channel = channels.find(({ outs }) => (outs[0] === a && outs[1] === b) || (outs[0] === b && outs[1] === a))
+    if (!channel) {
+      const known = new Set(circuit.parts.filter((p) => p.type === 'motorDriver').flatMap((d) => ['OUT1', 'OUT2', 'OUT3', 'OUT4'].map((pin) => nets.find(`P:${d.id}:${pin}`))))
+      if (known.has(a) || known.has(b)) issues.push({ part: part.id, level: 'warning', message: `${name}: iki kablo da L298N’in aynı kanalına bağlanmalı (OUT1–OUT2 ya da OUT3–OUT4).` })
+      continue
+    }
+    engineParts.push({ id: part.id, type: 'ttMotor', pins: { enable: channel.enable, forward: channel.forward, backward: channel.backward, sign: channel.outs[0] === a ? 1 : -1 } })
   }
 
   // Static checks on the bare components, following nets through resistors
@@ -723,12 +805,15 @@ export function resolveCircuit(input) {
       warn(led.part, `${partLabel(part)} ters takılmış: ${part.type === 'bareLed' ? 'uzun bacak (+) pine ya da 5V’a, kısa bacak (−) GND’ye' : 'ortak katot (COM, −) GND’ye'} gelmeli. Bu hâliyle yanmaz.`)
     }
   }
+  // A button from a pin to GND is the INPUT_PULLUP circuit: the chip's own
+  // pull-up holds the pin (the runtime lets it float if the sketch forgets).
+  // A button to 5V needs a pull-down the chip does not have.
   for (const sw of bare.switches) {
-    for (const net of [sw.a, sw.b]) {
+    for (const [net, other] of [[sw.a, sw.b], [sw.b, sw.a]]) {
       const info = get(net)
-      if (info.io.length && !info.vcc && !info.gnd && !neighbours(net).length) {
+      if (info.io.length && !info.vcc && !info.gnd && !neighbours(net).length && reaches(other, (o) => o.vcc)) {
         const pin = info.io.map(pinNames).join(', ')
-        issues.push({ part: sw.part, level: 'warning', message: `${pin} butona bağlı ama pull-down/pull-up direnci yok: buton bırakılınca pin boşta kalır ve rastgele okur. 10 kΩ direnç ekleyin ya da kodda INPUT_PULLUP kullanın.` })
+        issues.push({ part: sw.part, level: 'warning', message: `${pin} butonla 5V’a bağlı ama pull-down direnci yok: buton bırakılınca pin boşta kalır ve rastgele okur. Pini 10 kΩ ile GND’ye bağlayın ya da butonu GND’ye bağlayıp kodda INPUT_PULLUP kullanın.` })
       }
     }
   }

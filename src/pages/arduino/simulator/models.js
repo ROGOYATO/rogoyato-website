@@ -244,7 +244,7 @@ function breakout(group, partId, pins, { type, color = '#1d4ed8' }) {
   const pcb = slab(roundedRect(width, depth, 0.08), 0.14, [pcbMaterial(color), mat(color, { roughness: 0.7 })])
   pcb.userData = { kind: 'part', partId }
   group.add(pcb)
-  const markers = pins.map((pin) => {
+  const markers = pins.filter((pin) => !pin.terminal).map((pin) => {
     // The black plastic spacer that holds the header pins.
     group.add(box(0.254, 0.25, 0.25, mat('#121214', { roughness: 0.6 }), pin.x, 0.265, pin.z))
     const marker = pinMarker(group, { owner: 'part', partId, pin: pin.id }, new THREE.Vector3(pin.x, 0.75, pin.z), pin.kind, -0.36)
@@ -1080,62 +1080,180 @@ const BUILDERS = {
     }
   },
 
+  // A 4×AA holder: black box with four cells side by side (alternating
+  // ends, as the springs wire them in series) and red and black leads.
+  battery(part, definition) {
+    const group = new THREE.Group()
+    const plastic = mat('#161618', { roughness: 0.6 })
+    const shell = new THREE.Shape()
+    shell.moveTo(-3.1, -2.9)
+    shell.lineTo(3.1, -2.9)
+    shell.lineTo(3.1, 2.9)
+    shell.lineTo(-3.1, 2.9)
+    shell.lineTo(-3.1, -2.9)
+    const well = new THREE.Path()
+    well.moveTo(-2.95, -2.7)
+    well.lineTo(-2.95, 2.7)
+    well.lineTo(2.95, 2.7)
+    well.lineTo(2.95, -2.7)
+    well.lineTo(-2.95, -2.7)
+    shell.holes.push(well)
+    group.add(slab(shell, 1.5, [plastic, plastic]), box(6.2, 0.15, 5.8, plastic, 0, 0.075, 0))
+    const wrap = mat('#1c1c1e', { roughness: 0.35, metalness: 0.2 })
+    const band = mat('#b8742a', { roughness: 0.35, metalness: 0.5 })
+    const steel = metal('#cfd3d7', 0.3)
+    for (let i = 0; i < 4; i += 1) {
+      const cell = new THREE.Group()
+      const body = cylinder(0.7, 4.9, wrap, 0, 0, 0, 32)
+      const top = cylinder(0.705, 1.6, band, 0, 1.6, 0, 32)
+      const nub = cylinder(0.25, 0.12, steel, 0, 2.51, 0, 20)
+      cell.add(body, top, nub)
+      cell.rotation.x = (i % 2 ? -1 : 1) * (Math.PI / 2)
+      cell.position.set(-2.19 + i * 1.46, 0.85, 0)
+      group.add(cell)
+    }
+    // Springs and plates at both ends.
+    for (const z of [-2.62, 2.62]) for (let i = 0; i < 4; i += 1) group.add(box(0.9, 1.0, 0.05, steel, -2.19 + i * 1.46, 0.7, z))
+    const markers = definition.pins.map((pin) => {
+      const colour = pin.id === 'PLUS' ? '#c81e1e' : '#141416'
+      const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(pin.x * 2, 0.5, -2.85), new THREE.Vector3(pin.x * 1.6, 0.35, -3.2), new THREE.Vector3(pin.x, 0.2, pin.z + 0.15), new THREE.Vector3(pin.x, 0.2, pin.z)])
+      const lead = new THREE.Mesh(new THREE.TubeGeometry(curve, 20, 0.05, 8), mat(colour, { roughness: 0.45 }))
+      lead.castShadow = true
+      group.add(lead)
+      return pinMarker(group, { owner: 'part', partId: part.id, pin: pin.id }, new THREE.Vector3(pin.x, 0.55, pin.z), pin.kind, -0.3)
+    })
+    return { group, markers, update() {} }
+  },
+
+  // The L298N board: the chip under its finned heat sink, the logic header
+  // (ENA, IN1–IN4, ENB) and blue screw terminals: OUT1/OUT2 and OUT3/OUT4 for
+  // the motors on either side, +12V, GND and +5V in front. A wire to a
+  // terminal ends under its screw.
   motorDriver(part, definition) {
     const group = new THREE.Group()
     const { markers } = breakout(group, part.id, definition.pins, { type: 'motorDriver', color: '#b91c1c' })
-    // The L298N under its finned black heat sink.
     const sink = mat('#16161a', { metalness: 0.6, roughness: 0.45 })
-    group.add(box(2.4, 1.6, 0.4, sink, 0, 0.94, 0.3))
-    for (let i = 0; i < 7; i += 1) group.add(box(0.06, 0.4, 0.9, sink, -1.1 + i * 0.36, 1.9, 0.3))
-    // Screw terminals for the motors.
-    for (const x of [-1.6, 1.6]) {
-      group.add(box(0.75, 0.75, 0.75, mat('#1d4ed8', { roughness: 0.45 }), x, 0.52, 1.6))
-      for (const dx of [-0.18, 0.18]) {
-        group.add(cylinder(0.12, 0.04, metal('#cfd4da', 0.3), x + dx, 0.91, 1.6, 20), box(0.18, 0.02, 0.03, mat('#5b6168'), x + dx, 0.935, 1.6))
-      }
+    group.add(box(2.4, 1.6, 0.4, sink, 0, 0.94, -0.1))
+    for (let i = 0; i < 7; i += 1) group.add(box(0.06, 0.4, 0.9, sink, -1.1 + i * 0.36, 1.9, -0.1))
+    const blue = mat('#1d4ed8', { roughness: 0.45 })
+    const screw = metal('#cfd4da', 0.3)
+    for (const pin of definition.pins.filter((p) => p.terminal)) {
+      const sideways = Math.abs(pin.x) > 1.5
+      group.add(box(sideways ? 0.75 : 0.5, 0.75, sideways ? 0.5 : 0.75, blue, pin.x, 0.52, pin.z))
+      group.add(cylinder(0.12, 0.04, screw, pin.x, 0.91, pin.z, 20), box(0.18, 0.02, 0.03, mat('#5b6168'), pin.x, 0.935, pin.z))
+      const hit = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 8), new THREE.MeshBasicMaterial({ color: '#22d3ee', transparent: true, opacity: 0, depthWrite: false }))
+      hit.position.set(pin.x, 0.98, pin.z)
+      hit.userData = { kind: 'pin', owner: 'part', partId: part.id, pin: pin.id, seat: -0.05 }
+      group.add(hit)
+      markers.push(hit)
+      const text = silk(pin.label, 0.11)
+      text.rotation.set(-Math.PI / 2, 0, 0)
+      text.position.set(pin.x + (sideways ? -Math.sign(pin.x) * 0.62 : 0), 0.145, pin.z + (sideways ? 0 : -0.52))
+      group.add(text)
     }
-    electrolytic(group, 1.4, 0.14, -0.9, 0.3, 0.8)
-    smd(group, [[-1.2, -1.0, false, 'r'], [-0.8, -1.0, false, 'r']], 0.14)
-    const wheels = []
+    electrolytic(group, 1.0, 0.14, 1.0, 0.3, 0.8)
+    electrolytic(group, -1.0, 0.14, 1.0, 0.3, 0.8)
+    smd(group, [[-1.2, -1.1, false, 'r'], [-0.8, -1.1, false, 'r']], 0.14)
+    // The 5V-EN jumper behind the power terminal.
+    group.add(box(0.25, 0.3, 0.5, mat('#141416'), 1.3, 0.3, 1.9))
+    return { group, markers, update() {} }
+  },
+
+  // A TT gear motor from the 2WD kit at its real size: a 48 mm yellow
+  // gearbox (22.5 mm tall, 18.8 mm thick) with the silver motor can at one
+  // end and the white output shaft through its side near the other, and
+  // the kit's 66 mm wheel pressed on that shaft. A clear acrylic bracket
+  // holds it up as on the chassis. Its red and black leads go to an
+  // L298N's OUT terminals; it turns with the voltage across them.
+  ttMotor(part, definition) {
+    const group = new THREE.Group()
     const yellow = new THREE.MeshPhysicalMaterial({ color: '#f5c518', roughness: 0.45, clearcoat: 0.3 })
-    const rubber = mat('#151517', { roughness: 0.85 })
-    for (const side of [-1, 1]) {
-      const motor = box(2.2, 1.9, 2.2, yellow, side * 4.2, 0.95, 0.6)
-      group.add(motor)
-      // The motor can sticking out of the gearbox.
-      const can = cylinder(0.55, 0.9, metal('#c7ccd1', 0.35), side * 4.2, 0.95, -0.95, 28)
-      can.rotation.x = Math.PI / 2
-      group.add(can)
-      const wheel = new THREE.Group()
-      const tyre = new THREE.Mesh(new THREE.TorusGeometry(1.25, 0.4, 18, 48), rubber)
-      tyre.rotation.y = Math.PI / 2
-      tyre.castShadow = true
-      for (let i = 0; i < 24; i += 1) {
-        const angle = (i / 24) * Math.PI * 2
-        const tread = box(0.7, 0.12, 0.16, rubber, 0, Math.cos(angle) * 1.62, Math.sin(angle) * 1.62)
-        tread.rotation.x = angle
-        wheel.add(tread)
-      }
-      const hub = cylinder(0.95, 0.6, yellow, 0, 0, 0, 6)
-      hub.rotation.z = Math.PI / 2
-      const cap = cylinder(0.25, 0.64, mat('#f8fafc'), 0, 0, 0, 16)
-      cap.rotation.z = Math.PI / 2
-      wheel.add(tyre, hub, cap)
-      wheel.position.set(side * 5.75, 1.65, 0.6)
-      group.add(wheel)
-      wheels.push(wheel)
-    }
+    const acrylic = new THREE.MeshPhysicalMaterial({ color: '#dfe9ef', transparent: true, opacity: 0.35, roughness: 0.1, transmission: 0.6 })
+    const axle = 3.3
+    // The shaft is 1 cm from the gearbox's front end (z = 0 at the shaft).
+    group.add(box(1.88, 2.25, 4.8, yellow, 0, axle - 0.35, -1.4))
+    group.add(cylinder(0.32, 0.3, yellow, 0, axle + 0.83, -3.4, 16)) // the screw boss on top
+    const can = cylinder(1.0, 2.2, metal('#c7ccd1', 0.35), 0, axle - 0.35, -4.9, 32)
+    can.rotation.x = Math.PI / 2
+    can.scale.set(0.8, 1, 1) // its flattened sides
+    const endCap = cylinder(0.85, 0.12, mat('#d8d8d2', { roughness: 0.6 }), 0, axle - 0.35, -6.04, 28)
+    endCap.rotation.x = Math.PI / 2
+    group.add(can, endCap)
+    // The output shaft, white D-profile, out of both sides.
+    const shaft = cylinder(0.27, 3.0, mat('#f1f1ec', { roughness: 0.5 }), 0.4, axle, 0, 16)
+    shaft.rotation.z = Math.PI / 2
+    group.add(shaft)
+    group.add(box(0.3, axle - 1.5, 3.2, acrylic, -1.1, (axle - 1.5) / 2 + 0.02, -1.4), box(0.3, 1.3, 3.2, acrylic, -1.1, axle - 0.6, -1.4))
+    // The can's two solder tabs and the leads down to their ends.
+    const markers = definition.pins.map((pin, index) => {
+      const colour = index === 0 ? '#c81e1e' : '#141416'
+      const tab = [pin.x * 1.8, axle - 0.35, -6.12]
+      const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(...tab), new THREE.Vector3(pin.x * 1.8, axle - 1.6, -6.3), new THREE.Vector3(pin.x, 0.5, pin.z + 0.2), new THREE.Vector3(pin.x, 0.3, pin.z)])
+      const lead = new THREE.Mesh(new THREE.TubeGeometry(curve, 24, 0.05, 8), mat(colour, { roughness: 0.45 }))
+      lead.castShadow = true
+      group.add(lead, box(0.12, 0.22, 0.04, metal('#d6b25e', 0.3), tab[0], tab[1], tab[2] + 0.02))
+      return pinMarker(group, { owner: 'part', partId: part.id, pin: pin.id }, new THREE.Vector3(pin.x, 0.6, pin.z), index === 0 ? 'vcc' : 'gnd', -0.3)
+    })
+    const wheel = ttWheel(yellow)
+    wheel.position.set(0.94 + 0.12 + 1.3, axle, 0)
+    group.add(wheel)
     return {
       group,
       markers,
       update(state, inputs, dt = 1 / 60) {
-        const speeds = [state?.left ?? 0, state?.right ?? 0]
-        wheels.forEach((wheel, index) => {
-          wheel.rotation.x += speeds[index] * 18 * dt
-        })
+        wheel.rotation.x += (((state?.rpm ?? 0) * 2 * Math.PI) / 60) * dt
       },
     }
   },
+}
+
+// The kit's wheel: 66 mm across, 26 mm wide, a treaded rubber tyre on a
+// yellow six-spoke rim; its axis along x.
+function ttWheel(yellow) {
+  const wheel = new THREE.Group()
+  const rubber = mat('#151517', { roughness: 0.85 })
+  // The tyre turned from its cross-section: flat tread, rounded shoulders.
+  const profile = []
+  for (let i = 0; i <= 16; i += 1) {
+    const a = -Math.PI / 2 + (i / 16) * Math.PI
+    profile.push(new THREE.Vector2(2.65 + 0.65 * Math.cos(a) ** 0.6, 1.3 * Math.sin(a)))
+  }
+  profile.unshift(new THREE.Vector2(2.35, -1.25))
+  profile.push(new THREE.Vector2(2.35, 1.25))
+  const tyre = new THREE.Mesh(new THREE.LatheGeometry(profile, 64), rubber)
+  tyre.rotation.z = Math.PI / 2
+  tyre.castShadow = true
+  wheel.add(tyre)
+  // Tread blocks across the face.
+  for (let i = 0; i < 40; i += 1) {
+    const angle = (i / 40) * Math.PI * 2
+    for (const x of [-0.6, 0.6]) {
+      const block = box(0.9, 0.06, 0.22, rubber, x + (i % 2 ? 0.15 : -0.15), Math.cos(angle) * 3.28, Math.sin(angle) * 3.28)
+      block.rotation.x = angle
+      wheel.add(block)
+    }
+  }
+  // The rim: a ring, six spokes and the hub that grips the shaft.
+  const rim = new THREE.Mesh(new THREE.CylinderGeometry(2.38, 2.38, 2.2, 48, 1, true), new THREE.MeshPhysicalMaterial({ color: '#f5c518', roughness: 0.45, side: THREE.DoubleSide }))
+  rim.rotation.z = Math.PI / 2
+  const face = new THREE.Shape()
+  face.absarc(0, 0, 2.4, 0, Math.PI * 2, false)
+  for (let i = 0; i < 6; i += 1) {
+    const a0 = (i / 6) * Math.PI * 2 + 0.16
+    const a1 = ((i + 1) / 6) * Math.PI * 2 - 0.16
+    const hole = new THREE.Path()
+    hole.absarc(0, 0, 2.05, a0, a1, false)
+    hole.absarc(0, 0, 0.85, a1, a0, true)
+    face.holes.push(hole)
+  }
+  const disc = new THREE.Mesh(new THREE.ExtrudeGeometry(face, { depth: 0.25, bevelEnabled: false, curveSegments: 24 }), yellow)
+  disc.rotation.y = Math.PI / 2
+  disc.position.x = 0.75
+  disc.castShadow = true
+  const hub = cylinder(0.6, 1.9, yellow, 0, 0, 0, 24)
+  hub.rotation.z = Math.PI / 2
+  wheel.add(rim, disc, hub)
+  return wheel
 }
 
 export function buildPart(part, definition) {
