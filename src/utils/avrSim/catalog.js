@@ -357,6 +357,50 @@ export function setDirectUnoPin(circuit, partId, pinId, uno) {
   return { ...circuit, wires }
 }
 
+// A free hole in a breadboard strip (a column half such as "21b", or a rail
+// such as "T+") for a new jumper: in a column the outermost one, on a rail
+// the one nearest the Uno. Null when the strip is full.
+export function freeHole(circuit, boardId, strip) {
+  const board = circuit.parts.find((part) => part.id === boardId)
+  if (!board) return null
+  const used = new Set([
+    ...[...pluggedParts(circuit)].filter(([, info]) => info.board === boardId).flatMap(([, info]) => Object.values(info.holes)),
+    ...circuit.wires.map(normalizeWire).flatMap((wire) => [wire.from, wire.to].filter((end) => end.part === boardId).map((end) => end.pin)),
+  ])
+  const free = breadboardHoles().list.filter((hole) => hole.strip === strip && !used.has(hole.id))
+  if (!free.length) return null
+  if (free[0].rail) return free.reduce((best, hole) => (Math.hypot(...holeWorldPosition(board, hole.id)) < Math.hypot(...holeWorldPosition(board, best.id)) ? hole : best)).id
+  const outer = strip.endsWith('t') ? 'abcde' : 'jihgf'
+  return free.sort((a, b) => outer.indexOf(a.row) - outer.indexOf(b.row))[0].id
+}
+
+// The Uno pin a breadboard strip is jumpered to directly, if any.
+export function directStripUno(circuit, boardId, strip) {
+  const byId = breadboardHoles().byId
+  for (const wire of circuit.wires.map(normalizeWire)) {
+    if (wire.from.part === boardId && byId.get(wire.from.pin)?.strip === strip && wire.to.uno) return wire.to.uno
+    if (wire.to.part === boardId && byId.get(wire.to.pin)?.strip === strip && wire.from.uno) return wire.from.uno
+  }
+  return null
+}
+
+// The breadboard boxes: replace the jumper from a strip straight to the Uno
+// (in place, from the same hole), add one from a free hole, or remove it.
+export function setStripUno(circuit, boardId, strip, uno) {
+  const byId = breadboardHoles().byId
+  const inStrip = (end) => end.part === boardId && byId.get(end.pin)?.strip === strip
+  const isDirect = (wire) => (inStrip(wire.from) && wire.to.uno) || (inStrip(wire.to) && wire.from.uno)
+  const all = circuit.wires.map(normalizeWire)
+  const at = all.findIndex(isDirect)
+  const wires = all.filter((wire) => !isDirect(wire))
+  if (uno) {
+    const hole = at >= 0 ? (inStrip(all[at].from) ? all[at].from.pin : all[at].to.pin) : freeHole(circuit, boardId, strip)
+    if (!hole) return circuit
+    wires.splice(at < 0 ? wires.length : at, 0, { id: at < 0 ? newWireId() : all[at].id, from: { part: boardId, pin: hole }, to: { uno } })
+  }
+  return { ...circuit, wires }
+}
+
 export function removePart(circuit, partId) {
   return {
     parts: circuit.parts.filter((part) => part.id !== partId),

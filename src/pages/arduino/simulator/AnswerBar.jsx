@@ -80,7 +80,7 @@ export default function AnswerBar({ example, onShowCode, onShowWires, onReset })
       {asking ? (
         <form onSubmit={submit} className="flex flex-wrap items-center gap-2 rounded-md border border-amber-300/70 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-300/30 dark:bg-amber-400/10 dark:text-amber-100">
           <KeyRound size={15} />
-          <span>Bu cevap kilitli. Uygulamanın kodunu ya da {example.week === 5 ? 'yarışma haftasının' : `${example.week}. haftanın`} kodunu girin:</span>
+          <span>Bu cevap kilitli. Uygulamanın, {example.week === 5 ? 'yarışma haftasının' : `${example.week}. haftanın`} ya da tüm uygulamaların kodunu girin:</span>
           <input
             value={code}
             onChange={(event) => setCode(event.target.value)}
