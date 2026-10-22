@@ -1,6 +1,20 @@
 import { AlertTriangle, CircleX, Eraser, RotateCw, Send, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { PART_CATALOG, PWM_PINS, UNO_ANALOG, UNO_DIGITAL, breadboardHoles, buildNets, describeHole, describeNet, directUnoPin, partLabel } from '../../../utils/avrSim/catalog'
+import {
+  PART_CATALOG,
+  PWM_PINS,
+  UNO_ANALOG,
+  UNO_DIGITAL,
+  breadboardHoles,
+  buildNets,
+  describeEndpoint,
+  describeHole,
+  describeNet,
+  directUnoPin,
+  endpointKey,
+  normalizeWire,
+  partLabel,
+} from '../../../utils/avrSim/catalog'
 
 export function PanelCard({ title, actions, children, className = '' }) {
   return (
@@ -193,7 +207,7 @@ export function PartInspector({ part, circuit, inputs, state, onInput, onWire, o
         <BreadboardSummary part={part} circuit={circuit} nets={nets} plugged={plugged} />
       ) : (
         <div>
-          <p className="font-code mb-2 text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Bağlantılar</p>
+          <p className="font-code mb-2 text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Pinler</p>
           {holes ? <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">Breadboard’a takılı. Uno’ya doğrudan kablo da çekebilirsiniz.</p> : null}
           <div className="space-y-1.5">
             {definition.pins.map((pin) => (
@@ -212,35 +226,78 @@ export function PartInspector({ part, circuit, inputs, state, onInput, onWire, o
   )
 }
 
-// Every part's pins and the Uno pins they reach, directly or through the
-// breadboard; always shown at the bottom of the parts card.
-export function ConnectionsSummary({ circuit, onSelect }) {
+// The circuit's connections, under the parts: the wires as built, or every
+// part pin and the Uno pins it reaches (directly or through the breadboard).
+// Whatever touches the selection comes first.
+export function ConnectionsPanel({ circuit, selection, onSelect }) {
+  const [view, setView] = useState('wires')
   const { nets } = buildNets(circuit)
+  const selectedPart = circuit.parts.find((part) => part.id === selection?.partId)
+  const selectedNets = new Set((selectedPart ? PART_CATALOG[selectedPart.type].pins : []).map((pin) => nets.find(`P:${selectedPart.id}:${pin.id}`)))
+  const touches = (wire) =>
+    wire.id === selection?.wireId || (selectedPart && [wire.from, wire.to].some((end) => end.part === selectedPart.id || selectedNets.has(nets.find(endpointKey(end)))))
+  const wires = circuit.wires.map(normalizeWire)
   const parts = circuit.parts.filter((part) => part.type !== 'breadboard')
-  if (!parts.length) return null
+  const first = (list, test) => [...list.filter(test), ...list.filter((item) => !test(item))]
+  const row = (active) => `rounded-md px-2 py-1 ${active ? 'bg-teal-50 dark:bg-teal-400/10' : ''}`
+  const tab = (active) =>
+    `rounded px-2 py-0.5 text-xs transition ${active ? 'bg-teal-700 text-white dark:bg-teal-400 dark:text-teal-950' : 'text-slate-600 hover:text-teal-700 dark:text-slate-300 dark:hover:text-teal-300'}`
   return (
-    <div className="mt-4 border-t border-slate-200 pt-3 dark:border-white/10">
-      <p className="font-code mb-2 text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Tüm bağlantılar</p>
-      <ul className="space-y-1.5 text-sm">
-        {parts.map((part) => (
-          <li key={part.id} className="grid grid-cols-[minmax(0,9rem)_1fr] gap-2">
-            <button type="button" onClick={() => onSelect(part.id)} className="truncate text-left text-slate-800 hover:text-teal-700 dark:text-slate-100 dark:hover:text-teal-300">
-              {partLabel(part)}
-            </button>
-            <span className="font-code flex flex-wrap gap-x-3 text-xs leading-5 text-slate-600 dark:text-slate-300">
-              {PART_CATALOG[part.type].pins.map((pin) => {
-                const uno = describeNet(nets, `P:${part.id}:${pin.id}`)
-                return (
-                  <span key={pin.id} className={uno.length ? '' : 'text-slate-400 dark:text-slate-500'}>
-                    {pin.label} → {uno.length ? uno.join(', ') : 'boşta'}
-                  </span>
-                )
-              })}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <PanelCard
+      title="Bağlantılar"
+      actions={
+        <div className="font-code flex gap-1 rounded-md border border-slate-300 p-0.5 dark:border-white/15" role="group" aria-label="Bağlantı görünümü">
+          <button type="button" aria-pressed={view === 'wires'} onClick={() => setView('wires')} className={tab(view === 'wires')}>
+            Kablolar
+          </button>
+          <button type="button" aria-pressed={view === 'pins'} onClick={() => setView('pins')} className={tab(view === 'pins')}>
+            Bacaklar
+          </button>
+        </div>
+      }
+    >
+      {view === 'wires' ? (
+        wires.length ? (
+          <ul className="font-code space-y-0.5 text-sm">
+            {first(wires, touches).map((wire) => (
+              <li key={wire.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelect({ wireId: wire.id })}
+                  className={`${row(touches(wire))} block w-full text-left text-slate-700 hover:text-teal-700 dark:text-slate-200 dark:hover:text-teal-300 ${wire.id === selection?.wireId ? 'font-semibold' : ''}`}
+                >
+                  {describeEndpoint(circuit, wire.from)} ↔ {describeEndpoint(circuit, wire.to)}
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-slate-500 dark:text-slate-400">Henüz bağlantı yok.</p>
+        )
+      ) : parts.length ? (
+        <ul className="space-y-0.5 text-sm">
+          {first(parts, (part) => part.id === selectedPart?.id).map((part) => (
+            <li key={part.id} className={`${row(part.id === selectedPart?.id)} grid grid-cols-[minmax(0,9rem)_1fr] gap-2`}>
+              <button type="button" onClick={() => onSelect({ partId: part.id })} className="truncate text-left text-slate-800 hover:text-teal-700 dark:text-slate-100 dark:hover:text-teal-300">
+                {partLabel(part)}
+              </button>
+              <span className="font-code flex flex-wrap gap-x-3 text-xs leading-5 text-slate-600 dark:text-slate-300">
+                {PART_CATALOG[part.type].pins.map((pin) => {
+                  const uno = describeNet(nets, `P:${part.id}:${pin.id}`)
+                  return (
+                    <span key={pin.id} className={uno.length ? '' : 'text-slate-400 dark:text-slate-500'}>
+                      {pin.label} → {uno.length ? uno.join(', ') : 'boşta'}
+                    </span>
+                  )
+                })}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-slate-500 dark:text-slate-400">Masada bağlanacak parça yok.</p>
+      )}
+    </PanelCard>
   )
 }
 

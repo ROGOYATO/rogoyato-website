@@ -1,4 +1,4 @@
-import { Bot, Cpu, Loader2, Play, Plus, RotateCcw, Square, Volume2, VolumeX } from 'lucide-react'
+import { Bot, Check, Cpu, Loader2, Play, Plus, RotateCcw, Square, Volume2, VolumeX } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
@@ -25,7 +25,7 @@ import AnswerBar from './AnswerBar'
 import { compileSketch, rememberCompiled } from './compile'
 import { onCompilerProgress, preloadCompiler } from './compiler/browserCompiler'
 import { EXAMPLES } from './examples'
-import { CarHud, CarWiring, ConnectionsSummary, IssuesList, PanelCard, PartInspector, SerialMonitor } from './Panels'
+import { CarHud, CarWiring, ConnectionsPanel, IssuesList, PanelCard, PartInspector, SerialMonitor } from './Panels'
 import useSimulator from './useSimulator'
 
 // Older saved projects held the examples' answers; they are dropped.
@@ -403,7 +403,7 @@ export default function SimulatorPage() {
           {project.mode === 'bench' ? (
             <>
               <PanelCard
-                title={selectedPart ? 'Seçili parça' : selectedWire ? 'Seçili kablo' : 'Parçalar'}
+                title="Parçalar"
                 actions={
                   <label className="relative">
                     <span className="sr-only">Parça ekle</span>
@@ -432,7 +432,28 @@ export default function SimulatorPage() {
                   </label>
                 }
               >
-                {selectedPart ? (
+                {project.circuit.parts.length ? (
+                  <ul className="flex flex-wrap gap-2">
+                    {[...project.circuit.parts.filter((part) => part.id === selectedPart?.id), ...project.circuit.parts.filter((part) => part.id !== selectedPart?.id)].map((part) => (
+                      <li key={part.id}>
+                        <button
+                          type="button"
+                          aria-pressed={part.id === selectedPart?.id}
+                          onClick={() => setSelection(part.id === selectedPart?.id ? null : { partId: part.id })}
+                          className={`font-code inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-sm transition ${part.id === selectedPart?.id ? 'border-teal-600 bg-teal-50 text-teal-900 dark:border-teal-300/60 dark:bg-teal-400/10 dark:text-teal-100' : 'border-slate-300 text-slate-700 hover:border-teal-600 hover:text-teal-800 dark:border-white/15 dark:text-slate-200'}`}
+                        >
+                          {part.id === selectedPart?.id ? <Check size={13} /> : null}
+                          {partLabel(part)}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-slate-600 dark:text-slate-300">Masada parça yok. “Parça ekle” ile başlayın.</p>
+                )}
+              </PanelCard>
+              {selectedPart ? (
+                <PanelCard title="Seçili parça">
                   <PartInspector
                     part={selectedPart}
                     circuit={project.circuit}
@@ -447,7 +468,9 @@ export default function SimulatorPage() {
                     }}
                     onProp={(key, value) => setCircuit('circuit', (circuit) => ({ ...circuit, parts: circuit.parts.map((part) => (part.id === selectedPart.id ? { ...part, props: { ...part.props, [key]: value } } : part)) }))}
                   />
-                ) : selectedWire ? (
+                </PanelCard>
+              ) : selectedWire ? (
+                <PanelCard title="Seçili kablo">
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-code text-sm text-slate-700 dark:text-slate-200">
                       {describeEndpoint(project.circuit, selectedWire.from)} ↔ {describeEndpoint(project.circuit, selectedWire.to)}
@@ -463,25 +486,9 @@ export default function SimulatorPage() {
                       Kabloyu sök
                     </button>
                   </div>
-                ) : project.circuit.parts.length ? (
-                  <ul className="flex flex-wrap gap-2">
-                    {project.circuit.parts.map((part) => (
-                      <li key={part.id}>
-                        <button
-                          type="button"
-                          onClick={() => setSelection({ partId: part.id })}
-                          className="font-code rounded-md border border-slate-300 px-2.5 py-1 text-sm text-slate-700 hover:border-teal-600 hover:text-teal-800 dark:border-white/15 dark:text-slate-200"
-                        >
-                          {partLabel(part)}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-slate-600 dark:text-slate-300">Masada parça yok. “Parça ekle” ile başlayın.</p>
-                )}
-                <ConnectionsSummary circuit={project.circuit} onSelect={(partId) => setSelection({ partId })} />
-              </PanelCard>
+                </PanelCard>
+              ) : null}
+              <ConnectionsPanel circuit={project.circuit} selection={selection} onSelect={setSelection} />
               {issues.length ? (
                 <PanelCard title="Devre kontrolü">
                   <IssuesList issues={issues} />
