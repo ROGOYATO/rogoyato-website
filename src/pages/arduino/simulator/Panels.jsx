@@ -18,12 +18,16 @@ import {
   partLabel,
 } from '../../../utils/avrSim/catalog'
 
-export function PanelCard({ title, actions, children, className = '' }) {
+// titleLang: an English title ("Serial Monitor") is upper-cased with an
+// English I, not the Turkish İ.
+export function PanelCard({ title, titleLang, actions, children, className = '' }) {
   return (
     <section className={`rounded-xl border border-slate-300/80 bg-white/95 dark:border-teal-300/15 dark:bg-[#0f1d1f]/95 ${className}`}>
       {title ? (
         <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-2.5 dark:border-white/10">
-          <h3 className="font-code text-xs font-semibold uppercase tracking-[0.12em] text-teal-700 dark:text-teal-300">{title}</h3>
+          <h3 lang={titleLang} className="font-code text-xs font-semibold uppercase tracking-[0.12em] text-teal-700 dark:text-teal-300">
+            {title}
+          </h3>
           {actions}
         </div>
       ) : null}
@@ -565,6 +569,7 @@ export function SerialMonitor({ text, running, baud, onSend, onClear }) {
   return (
     <PanelCard
       title={baud ? `Serial Monitor · ${baud} baud` : 'Serial Monitor'}
+      titleLang="en"
       actions={
         <div className="flex items-center gap-3">
           <label className="font-code flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
