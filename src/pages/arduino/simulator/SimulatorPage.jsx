@@ -95,6 +95,10 @@ export default function SimulatorPage() {
     return requested ? projectFromExample(requested) : (loadSaved() ?? projectFromExample(EXAMPLES[0]))
   })
   const [selection, setSelection] = useState(null)
+  // The Uno always starts locked (on every visit and every exercise), so a
+  // drag meant for the camera does not knock it aside; unlocking it lasts
+  // for this visit only.
+  const [unoUnlocked, setUnoUnlocked] = useState(false)
   const [compile, setCompile] = useState({ state: 'idle' })
   const [sound, setSound] = useState(true)
   const [track, setTrack] = useState('oval')
@@ -170,13 +174,19 @@ export default function SimulatorPage() {
   }
 
   const update = (changes) => setProject((current) => ({ ...current, ...changes }))
-  // Parts locked where they are ({ id: true }, the Uno is UNO_ID). Kept out
-  // of the circuit so locking does not restart a running sketch.
-  const locked = project.locked ?? {}
-  const toggleLock = (id) => setProject((current) => ({ ...current, locked: { ...current.locked, [id]: !current.locked?.[id] } }))
-  const benchIds = [UNO_ID, ...project.circuit.parts.map((part) => part.id)]
-  const allLocked = benchIds.every((id) => locked[id])
-  const lockAll = (value) => update({ locked: value ? Object.fromEntries(benchIds.map((id) => [id, true])) : {} })
+  // Parts locked where they are ({ id: true }), saved with the project but
+  // kept out of the circuit so locking does not restart a running sketch.
+  // The Uno's lock is not saved (see unoUnlocked).
+  const locked = { [UNO_ID]: !unoUnlocked, ...Object.fromEntries(project.circuit.parts.map((part) => [part.id, Boolean(project.locked?.[part.id])])) }
+  const toggleLock = (id) => {
+    if (id === UNO_ID) setUnoUnlocked((value) => !value)
+    else setProject((current) => ({ ...current, locked: { ...current.locked, [id]: !current.locked?.[id] } }))
+  }
+  const allLocked = Object.values(locked).every(Boolean)
+  const lockAll = (value) => {
+    setUnoUnlocked(!value)
+    update({ locked: Object.fromEntries(project.circuit.parts.map((part) => [part.id, value])) })
+  }
   const setCircuit = (key, fn) => setProject((current) => ({ ...current, [key]: fn(current[key]) }))
 
   // Turns a part a quarter; if it would then run into another part or the
@@ -228,6 +238,7 @@ export default function SimulatorPage() {
     sim.stop()
     setSelection(null)
     setCompile({ state: 'idle' })
+    setUnoUnlocked(false)
     setProject(projectFromExample(next))
   }
 
@@ -265,6 +276,7 @@ export default function SimulatorPage() {
     sim.stop()
     setSelection(null)
     setCompile({ state: 'idle' })
+    setUnoUnlocked(false)
     setProject(projectFromExample(example))
   }
 
