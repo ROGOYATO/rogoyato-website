@@ -279,7 +279,7 @@ function BreadboardPins({ circuit, board, nets, onStrip }) {
           <PinSelect
             label={`Breadboard ${strip.rail ? strip.name : `${strip.name} sütunu`}`}
             value={direct}
-            reached={uno.length ? { text: `→ ${uno.join(', ')}`, uno: true } : { text: 'Uno’ya bağlı değil', uno: false }}
+            reached={uno.length ? { text: `→ ${uno.join(', ')}`, uno: true } : { text: 'Uno’ya doğrudan bağlı değil', uno: false }}
             onChange={(next) => onStrip(board.id, strip.strip, next)}
           />
         </div>
