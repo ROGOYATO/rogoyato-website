@@ -66,7 +66,7 @@ function suggestPins(text) {
 
 // A text box that suggests while typing; focusing it lists every option.
 // noneLabel adds an option that clears it (an empty box clears it too).
-function SuggestBox({ label, value, display, suggest, parse, onChange, placeholder, noneLabel, unknown }) {
+function SuggestBox({ label, value, display, suggest, parse, onChange, placeholder, placeholderClass = '', noneLabel, unknown }) {
   const [draft, setDraft] = useState(null) // the text being typed, null when not editing
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(-1) // the option picked with the arrow keys
@@ -134,7 +134,7 @@ function SuggestBox({ label, value, display, suggest, parse, onChange, placehold
         }}
         onKeyDown={onKeyDown}
         onBlur={commit}
-        className={selectClass}
+        className={`${selectClass} ${placeholderClass}`}
       />
       {open && options.length ? (
         <ul
@@ -164,8 +164,9 @@ function SuggestBox({ label, value, display, suggest, parse, onChange, placehold
   )
 }
 
-// The Uno pin a part pin is wired to; empty means "boşta".
-export function PinSelect({ value, onChange, label }) {
+// The Uno pin a part pin is wired to directly. Without such a wire the box
+// says how the pin is reached anyway ("h17 deliği → D13") or "boşta".
+export function PinSelect({ value, onChange, label, reached }) {
   return (
     <SuggestBox
       label={label}
@@ -174,11 +175,21 @@ export function PinSelect({ value, onChange, label }) {
       suggest={suggestPins}
       parse={parsePin}
       onChange={onChange}
-      placeholder="— boşta —"
+      placeholder={reached ?? '— boşta —'}
+      placeholderClass={reached?.includes('→') ? 'placeholder:text-teal-700 dark:placeholder:text-teal-300' : ''}
       noneLabel="— boşta —"
       unknown={(text) => `“${text}” diye bir pin yok.`}
     />
   )
+}
+
+// How a pin with no direct wire to the Uno is reached anyway: through its
+// breadboard hole and jumpers ("h17 deliği → D13"), or null.
+function reachedWithout(nets, plugged, part, pinId) {
+  const uno = describeNet(nets, `P:${part.id}:${pinId}`)
+  const hole = plugged.get(part.id)?.holes?.[pinId]
+  if (!hole && !uno.length) return null
+  return [hole ? `${hole} deliği` : null, uno.length ? `→ ${uno.join(', ')}` : '· boşta'].filter(Boolean).join(' ')
 }
 
 // Wire ends as text: "P:<part>:<pin>" or "U:<pin>".
@@ -328,12 +339,6 @@ export function PartInspector({ part, circuit, inputs, state, onInput, onWire, o
   const definition = PART_CATALOG[part.type]
   const { nets, plugged } = buildNets(circuit)
   const holes = plugged.get(part.id)?.holes
-  // What each pin reaches through the breadboard and other jumpers.
-  const reach = (pin) => {
-    const uno = describeNet(nets, `P:${part.id}:${pin}`)
-    const via = holes?.[pin] ? `${holes[pin]} deliği` : null
-    return [via, `→ ${uno.length ? uno.join(', ') : 'boşta'}`].filter(Boolean).join(' ')
-  }
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3">
@@ -379,12 +384,14 @@ export function PartInspector({ part, circuit, inputs, state, onInput, onWire, o
           {holes ? <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">Breadboard’a takılı. Uno’ya doğrudan kablo da çekebilirsiniz.</p> : null}
           <div className="space-y-1.5">
             {definition.pins.map((pin) => (
-              <div key={pin.id} className="grid grid-cols-[5.5rem_1fr] items-center gap-2">
-                <span className="font-code text-sm text-slate-700 dark:text-slate-200">
-                  {pin.label}
-                  <span className="block text-[0.7rem] leading-tight text-slate-500 dark:text-slate-400">{reach(pin.id)}</span>
-                </span>
-                <PinSelect label={`${partLabel(part)} ${pin.label}`} value={directUnoPin(circuit, part.id, pin.id)} onChange={(uno) => onWire(part.id, pin.id, uno)} />
+              <div key={pin.id} className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-2">
+                <span className="font-code text-sm text-slate-700 dark:text-slate-200">{pin.label}</span>
+                <PinSelect
+                  label={`${partLabel(part)} ${pin.label}`}
+                  value={directUnoPin(circuit, part.id, pin.id)}
+                  reached={reachedWithout(nets, plugged, part, pin.id)}
+                  onChange={(uno) => onWire(part.id, pin.id, uno)}
+                />
               </div>
             ))}
           </div>
@@ -478,22 +485,17 @@ export function ConnectionsPanel({ circuit, selection, onSelect, onWire, onConne
                 {partLabel(part)}
               </button>
               <div className="mt-1 space-y-1">
-                {PART_CATALOG[part.type].pins.map((pin) => {
-                  const uno = describeNet(nets, `P:${part.id}:${pin.id}`)
-                  const direct = directUnoPin(circuit, part.id, pin.id)
-                  const hole = plugged.get(part.id)?.holes?.[pin.id]
-                  // Reached some other way than a direct wire: through the breadboard.
-                  const via = uno.length && !direct ? `${hole ? `${hole} deliği ` : ''}→ ${uno.join(', ')}` : null
-                  return (
-                    <div key={pin.id} className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-2">
-                      <span className="font-code text-xs text-slate-700 dark:text-slate-200">
-                        {pin.label}
-                        {via ? <span className="block text-[0.7rem] leading-tight text-slate-500 dark:text-slate-400">{via}</span> : null}
-                      </span>
-                      <PinSelect label={`${partLabel(part)} ${pin.label}`} value={direct} onChange={(next) => onWire(part.id, pin.id, next)} />
-                    </div>
-                  )
-                })}
+                {PART_CATALOG[part.type].pins.map((pin) => (
+                  <div key={pin.id} className="grid grid-cols-[3rem_minmax(0,1fr)] items-center gap-2">
+                    <span className="font-code text-xs text-slate-700 dark:text-slate-200">{pin.label}</span>
+                    <PinSelect
+                      label={`${partLabel(part)} ${pin.label}`}
+                      value={directUnoPin(circuit, part.id, pin.id)}
+                      reached={reachedWithout(nets, plugged, part, pin.id)}
+                      onChange={(next) => onWire(part.id, pin.id, next)}
+                    />
+                  </div>
+                ))}
               </div>
             </li>
           ))}
