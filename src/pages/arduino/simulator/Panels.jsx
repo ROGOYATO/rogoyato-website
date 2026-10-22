@@ -44,7 +44,8 @@ const PIN_OPTIONS = [
   ...UNO_ANALOG.map((pin) => ({ value: pin, label: pin, note: 'analog' })),
   ...UNO_POWER.map((pin) => ({ value: pin, label: pin, note: 'güç' })),
 ]
-const lower = (text) => text.trim().toLocaleLowerCase('tr')
+// Turkish lower case, with ı read as i: "IN2" and "in2" match.
+const lower = (text) => text.trim().toLocaleLowerCase('tr').replace(/ı/g, 'i')
 
 // What students type: "d9", "9", "a0", "gnd", "5v", "3.3v".
 const cleanPin = (text) => text.toUpperCase().replace(/\s+/g, '').replace(/^PIN/, '').replace(',', '.')
@@ -153,8 +154,8 @@ function SuggestBox({ label, value, display, suggest, parse, onChange, placehold
               onMouseEnter={() => setActive(index)}
               className={`flex cursor-pointer justify-between gap-3 px-2 py-1 ${index === highlighted ? 'bg-teal-50 text-teal-900 dark:bg-teal-400/10 dark:text-teal-100' : 'text-slate-800 dark:text-slate-100'}`}
             >
-              <span className={`truncate ${option.value === value ? 'font-semibold' : ''}`}>{option.label}</span>
-              <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400">{option.note}</span>
+              <span className={`shrink-0 ${option.value === value ? 'font-semibold' : ''}`}>{option.title ?? option.label}</span>
+              <span className="min-w-0 truncate text-right text-xs text-slate-500 dark:text-slate-400">{option.note}</span>
             </li>
           ))}
         </ul>
@@ -209,17 +210,19 @@ function EndSelect({ circuit, label, value, onChange }) {
   const holes = board ? breadboardHoles().byId : null
   const partPins = circuit.parts
     .filter((part) => part.type !== 'breadboard')
-    .flatMap((part) => PART_CATALOG[part.type].pins.map((pin) => ({ value: `P:${part.id}:${pin.id}`, label: `${partLabel(part)} · ${pin.label}`, note: '' })))
-  const unoPins = PIN_OPTIONS.map((option) => ({ ...option, value: `U:${option.value}`, label: `Uno ${option.label}` }))
+    .flatMap((part) => PART_CATALOG[part.type].pins.map((pin) => ({ value: `P:${part.id}:${pin.id}`, label: `${partLabel(part)} · ${pin.label}`, title: pin.label, note: partLabel(part) })))
+  // Listed as "D9" with "Uno · ~PWM" beside it; typed as "uno d9" or "d9".
+  const asUno = (option) => ({ value: `U:${option.value}`, label: `Uno ${option.label}`, title: option.label, note: `Uno · ${option.note}` })
+  const unoPins = PIN_OPTIONS.map(asUno)
   const hole = (text) => {
     const typed = text.trim().replace(/^([tb])/i, (letter) => letter.toUpperCase())
     const id = HOLE.test(typed) ? (/^[a-j]/i.test(typed) ? typed.toLowerCase() : typed) : null
-    return holes && id && holes.has(id) ? { value: `P:${board.id}:${id}`, label: `Breadboard · ${describeHole(id)}`, note: '' } : null
+    return holes && id && holes.has(id) ? { value: `P:${board.id}:${id}`, label: `Breadboard · ${describeHole(id)}`, title: id, note: `Breadboard · ${describeHole(id).replace(id, '').trim()}` } : null
   }
   const suggest = (text) => {
     if (!text.trim()) return [...partPins, ...unoPins]
     const found = hole(text)
-    const pins = suggestPins(text).map((option) => ({ ...option, value: `U:${option.value}`, label: `Uno ${option.label}` }))
+    const pins = suggestPins(text).map(asUno)
     // "d13" is both an Uno pin and a hole: the pin comes first.
     return [...partPins.filter((option) => wordsMatch(option.label, text)), ...(cleanPin(text) ? pins : []), ...(found ? [found] : [])]
   }
@@ -456,9 +459,9 @@ export function ConnectionsPanel({ circuit, selection, onSelect, onWire, onConne
           )}
           {adding ? (
             <div className="space-y-2 rounded-md border border-slate-200 p-2 dark:border-white/10">
-              <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-2">
+              <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-start">
                 <EndSelect circuit={circuit} label="Kablonun bir ucu" value={adding.from} onChange={(from) => setAdding((current) => ({ ...current, from }))} />
-                <span className="font-code pt-1.5 text-slate-500">↔</span>
+                <span className="font-code text-center text-slate-500 sm:pt-1.5">↔</span>
                 <EndSelect circuit={circuit} label="Kablonun öbür ucu" value={adding.to} onChange={(to) => setAdding((current) => ({ ...current, to }))} />
               </div>
               <div className="flex items-center gap-3">
