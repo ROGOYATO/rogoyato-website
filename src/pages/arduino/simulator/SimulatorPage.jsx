@@ -1,4 +1,4 @@
-import { Bot, Check, Columns2, Columns3, Cpu, LayoutTemplate, Loader2, Lock, LockOpen, Play, Plus, RotateCcw, Square, Usb, Volume2, VolumeX } from 'lucide-react'
+import { Bot, Check, Columns2, Columns3, Cpu, LayoutTemplate, Loader2, Lock, LockOpen, Pause, Play, Plus, RotateCcw, Usb, Volume2, VolumeX } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
@@ -182,8 +182,9 @@ export default function SimulatorPage() {
   const powered = power.usb || power.battery
   const togglePower = (which) => setCircuit('circuit', (circuit) => ({ ...circuit, uno: { ...unoPlacement(circuit), [which]: !unoPlacement(circuit)[which] } }))
   // The program on the chip: the last one uploaded over USB. It stays there
-  // when the cable comes out and runs whenever the board gets power.
-  const flashRef = useRef(null)
+  // (saved with the project) when the cable comes out or the page closes,
+  // and runs whenever the board has power.
+  const flashRef = useRef(project.flash ?? null)
   const [uploadBlocked, setUploadBlocked] = useState(false)
 
   // Rewiring a running board restarts it, like unplugging and powering it
@@ -204,6 +205,10 @@ export default function SimulatorPage() {
     if (flashRef.current && (running || !was)) launchRef.current(flashRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project.circuit, project.carCircuit, project.mode])
+  // A board that already has a program starts it as soon as the page opens.
+  useEffect(() => {
+    if (poweredRef.current && flashRef.current) launchRef.current(flashRef.current)
+  }, [])
 
   // The code the last good build came from (the "Çalıştır" piece runs it).
   const [built, setBuilt] = useState(null)
@@ -230,6 +235,7 @@ export default function SimulatorPage() {
     }
     setUploadBlocked(false)
     flashRef.current = hexRef.current
+    update({ flash: hexRef.current })
     setCarResetToken((token) => token + 1)
     launch(hexRef.current)
   }
@@ -300,6 +306,7 @@ export default function SimulatorPage() {
     const dirty = example && (project.code !== example.code || JSON.stringify(project.circuit) !== JSON.stringify(example.circuit))
     if (dirty && !window.confirm('Kodunuz ve devreniz bu örnekle değiştirilecek. Devam edilsin mi?')) return
     sim.stop()
+    flashRef.current = null // a fresh exercise starts with an empty board
     setSelection(null)
     setCompile({ state: 'idle' })
     setUnoUnlocked(false)
@@ -338,6 +345,7 @@ export default function SimulatorPage() {
     const changed = project.code !== example.code || JSON.stringify(project.circuit) !== JSON.stringify(example.circuit) || JSON.stringify(project.carCircuit) !== JSON.stringify(example.carCircuit ?? CAR_EXAMPLE.carCircuit)
     if (changed && !window.confirm('Kodunuz ve devreniz alıştırmanın başlangıç hâline dönecek. Devam edilsin mi?')) return
     sim.stop()
+    flashRef.current = null
     setSelection(null)
     setCompile({ state: 'idle' })
     setUnoUnlocked(false)
@@ -422,7 +430,7 @@ export default function SimulatorPage() {
                 : 'GCC ile derleniyor…'}
           </p>
         ) : (
-          <p className="text-slate-500 dark:text-slate-400">Hazır. “Derle ve çalıştır” ile başlatın.</p>
+          <p className="text-slate-500 dark:text-slate-400">Hazır. “Derle ve yükle” ile kodu karta yükleyin; kart enerji aldığı sürece çalışır.</p>
         )}
         {sim.runtimeError ? <p className="mt-1 text-rose-700 dark:text-rose-300">Simülasyon durdu: {sim.runtimeError}</p> : null}
       </div>
@@ -452,8 +460,9 @@ export default function SimulatorPage() {
       )}
       {running ? (
         <span className="font-code pointer-events-none absolute right-3 top-3 rounded-md bg-emerald-600/90 px-2 py-1 text-xs text-white">
-          ● çalışıyor{project.mode === 'bench' && !power.usb ? ' · 9V pilden' : ''}
-          {sim.hud?.speed ? ` · gerçek zamanın %${Math.round(Math.min(1, sim.hud.speed) * 100)}’i` : ''}
+          {sim.paused ? '❚❚ duraklatıldı' : '● çalışıyor'}
+          {project.mode === 'bench' && !power.usb ? ' · 9V pilden' : ''}
+          {sim.hud?.speed && !sim.paused ? ` · gerçek zamanın %${Math.round(Math.min(1, sim.hud.speed) * 100)}’i` : ''}
         </span>
       ) : null}
     </section>
@@ -742,15 +751,20 @@ export default function SimulatorPage() {
               <button type="button" onClick={() => setSound((value) => !value)} title={sound ? 'Sesi kapat' : 'Sesi aç'} aria-label={sound ? 'Sesi kapat' : 'Sesi aç'} className="rounded-md border border-slate-300 p-2 text-slate-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300">
                 {sound ? <Volume2 size={16} /> : <VolumeX size={16} />}
               </button>
+              {/* The board runs while it has power; this only freezes the simulation. */}
               {running ? (
-                <button type="button" onClick={sim.stop} className="inline-flex items-center gap-2 rounded-md bg-rose-600 px-4 py-2 font-semibold text-white hover:bg-rose-700">
-                  <Square size={15} />
-                  Durdur
+                <button
+                  type="button"
+                  onClick={() => sim.setPaused(!sim.paused)}
+                  title={sim.paused ? 'Simülasyonu kaldığı yerden sürdür' : 'Simülasyonu dondur (kartın durumu korunur)'}
+                  className="inline-flex items-center gap-2 rounded-md border border-slate-300 px-3 py-2 font-semibold text-slate-700 hover:border-teal-600 hover:text-teal-800 dark:border-white/15 dark:text-slate-200"
+                >
+                  {sim.paused ? <Play size={15} /> : <Pause size={15} />}
+                  {sim.paused ? 'Sürdür' : 'Duraklat'}
                 </button>
               ) : null}
               <RunButtons
                 compiling={compile.state === 'compiling'}
-                running={running}
                 canRun={built !== null}
                 stale={built !== null && built !== project.code}
                 onBuildAndRun={() => run()}

@@ -1,10 +1,10 @@
-import { GripVertical, Hammer, Loader2, Play, RotateCw } from 'lucide-react'
+import { GripVertical, Hammer, Loader2, Upload } from 'lucide-react'
 import { useRef, useState } from 'react'
 
 const STORAGE_KEY = 'rogoyato-derle-calistir-ayri'
 const SPLIT_AT = 28 // px of drag that splits or joins the pieces
 const GAP = 14 // px between the pieces once split
-// The socket: a bite the size of the tab out of the Çalıştır piece's left edge.
+// The socket: a bite the size of the tab out of the Yükle piece's left edge.
 const SOCKET = 'radial-gradient(circle 7px at 0 50%, transparent 6.6px, #000 7px)'
 const joinedHover = 'group-hover/run:bg-teal-800 dark:group-hover/run:bg-teal-300'
 
@@ -16,11 +16,12 @@ function remembered() {
   }
 }
 
-// "Derle ve çalıştır" as two puzzle pieces. Together they are one button.
+// "Derle ve yükle" as two puzzle pieces. Together they are one button.
 // Drag the Derle piece to the left (or Alt+←) and they come apart into
-// Derle (compile only) and Çalıştır (run the last build); drag it back
-// (or Alt+→) to join them again.
-export default function RunButtons({ compiling, running, canRun, stale, onBuildAndRun, onBuild, onRun }) {
+// Derle (compile only) and Yükle (upload the last build to the board);
+// drag it back (or Alt+→) to join them again. Once uploaded, the board
+// runs the program for as long as it has power.
+export default function RunButtons({ compiling, canRun, stale, onBuildAndRun, onBuild, onRun }) {
   const [split, setSplit] = useState(remembered)
   const [drag, setDrag] = useState(0) // live offset of the Derle piece while dragged
   const start = useRef(null)
@@ -81,8 +82,8 @@ export default function RunButtons({ compiling, running, canRun, stale, onBuildA
       {/* Derle: the piece with the tab. */}
       <button
         type="button"
-        aria-label={split ? 'Derle' : 'Derle ve çalıştır'}
-        title={split ? 'Derle (sağa sürükleyince birleşir)' : 'Derle ve çalıştır (Derle’yi sola sürükleyince ayrılır)'}
+        aria-label={split ? 'Derle' : 'Derle ve yükle'}
+        title={split ? 'Derle (sağa sürükleyince birleşir)' : 'Derle ve karta yükle (Derle’yi sola sürükleyince ayrılır)'}
         disabled={busy}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -104,20 +105,8 @@ export default function RunButtons({ compiling, running, canRun, stale, onBuildA
       >
         <GripVertical size={15} className="opacity-60" aria-hidden />
         {busy ? <Loader2 size={16} className="animate-spin" /> : <Hammer size={16} />}
-        {busy ? (
-          'Derleniyor…'
-        ) : split ? (
-          'Derle'
-        ) : running ? (
-          // Short on phones, so the joined button fits beside Durdur.
-          <>
-            <span className="sm:hidden">Derle ve</span>
-            <span className="hidden sm:inline">Yeniden derle ve</span>
-          </>
-        ) : (
-          'Derle ve'
-        )}
-        {/* The tab that sits in the Çalıştır piece's socket. */}
+        {busy ? 'Derleniyor…' : split ? 'Derle' : 'Derle ve'}
+        {/* The tab that sits in the Yükle piece's socket. */}
         <span aria-hidden className="absolute -right-[7px] top-1/2 h-[14px] w-[14px] -translate-y-1/2 rounded-full bg-inherit" />
         {/* Joined, only a faint cut line shows where the pieces meet. */}
         {split ? null : (
@@ -127,18 +116,18 @@ export default function RunButtons({ compiling, running, canRun, stale, onBuildA
         )}
       </button>
 
-      {/* Çalıştır: the piece with the socket. */}
+      {/* Yükle: the piece with the socket. */}
       <button
         type="button"
-        aria-label={split ? 'Çalıştır' : 'Derle ve çalıştır'}
-        title={split ? (canRun ? (stale ? 'Son derlenen programı çalıştır (kod o zamandan beri değişti)' : 'Son derlenen programı çalıştır') : 'Önce derleyin') : 'Derle ve çalıştır'}
+        aria-label={split ? 'Yükle' : 'Derle ve yükle'}
+        title={split ? (canRun ? (stale ? 'Son derlenen programı karta yükle (kod o zamandan beri değişti)' : 'Son derlenen programı karta yükle') : 'Önce derleyin') : 'Derle ve karta yükle'}
         disabled={busy || (split && !canRun)}
         onClick={() => (split ? onRun() : onBuildAndRun())}
         style={{ WebkitMaskImage: SOCKET, maskImage: SOCKET }}
         className={`${base} -ml-px rounded-r-lg pl-5 pr-4 ${split ? 'rounded-l-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 dark:bg-emerald-400 dark:text-emerald-950 dark:hover:bg-emerald-300' : `bg-teal-700 text-white dark:bg-teal-400 dark:text-teal-950 ${joinedHover}`}`}
       >
-        {split && running ? <RotateCw size={16} /> : <Play size={16} />}
-        {split ? (running ? 'Yeniden başlat' : 'Çalıştır') : 'çalıştır'}
+        <Upload size={16} />
+        {split ? 'Yükle' : 'yükle'}
         {split && stale && canRun ? <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-amber-300" aria-hidden /> : null}
       </button>
     </div>

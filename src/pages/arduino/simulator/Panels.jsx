@@ -870,7 +870,7 @@ export function SerialMonitor({ text, running, baud, offline = false, onSend, on
           value={line}
           onChange={(event) => setLine(event.target.value)}
           disabled={!running || offline}
-          placeholder={offline ? 'USB kablosu takılı değil' : running ? 'Arduino’ya gönder…' : 'Önce programı çalıştırın'}
+          placeholder={offline ? 'USB kablosu takılı değil' : running ? 'Arduino’ya gönder…' : 'Önce kodu karta yükleyin'}
           className="font-code min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100"
         />
         <button type="submit" disabled={!running || offline} className="inline-flex items-center gap-1 rounded-md bg-teal-700 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-40 dark:bg-teal-400 dark:text-teal-950">
@@ -894,7 +894,7 @@ function Bar({ value }) {
 
 export function CarHud({ car }) {
   if (!car) {
-    return <p className="text-sm text-slate-600 dark:text-slate-300">Programı çalıştırınca araba hareket eder; turlar ve sensörler burada görünür.</p>
+    return <p className="text-sm text-slate-600 dark:text-slate-300">Kodu karta yükleyince araba hareket eder; turlar ve sensörler burada görünür.</p>
   }
   const best = car.lapTimes.length ? Math.min(...car.lapTimes) : null
   return (
