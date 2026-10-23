@@ -513,7 +513,7 @@ export function LockButton({ locked, onToggle }) {
 
 const lockedNote = 'Konumu kilitli: üstünden sürükleyince kamera döner. Taşımak için kilidi açın.'
 
-export function UnoInspector({ running, locked, board, onBoard, onToggleLock, onRotate, onReset }) {
+export function UnoInspector({ running, locked, board, power, onBoard, onPower, onToggleLock, onRotate, onReset }) {
   const [noRoom, setNoRoom] = useState(false)
   return (
     <div className="space-y-3">
@@ -556,6 +556,39 @@ export function UnoInspector({ running, locked, board, onBoard, onToggleLock, on
         <RotateCcw size={14} />
         Reset
       </button>
+      {/* The kit's A-to-B USB cable and its 9 V battery on the barrel jack cable. */}
+      <fieldset>
+        <legend className="mb-1.5 text-sm text-slate-600 dark:text-slate-300">Güç ve yükleme</legend>
+        <div className="space-y-2">
+          {[
+            ['usb', 'USB kablosu', 'Bilgisayara bağlar: kartı 5 V ile besler, kodu yükler, Serial Monitor bunun üzerinden çalışır.'],
+            ['battery', '9V pil (DC jak)', 'Bilgisayarsız çalıştırır: VIN ≈ 9 V, kart kendi 5 V’unu üretir. Karta en son yüklenen program çalışır.'],
+          ].map(([which, title, note]) => (
+            <div key={which} className="flex items-start justify-between gap-3 rounded-md border border-slate-200 px-2.5 py-2 dark:border-white/10">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{title}</p>
+                <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">{note}</p>
+              </div>
+              <button
+                type="button"
+                aria-pressed={power[which]}
+                onClick={() => onPower(which)}
+                className={`shrink-0 rounded-md border px-2.5 py-1 text-sm font-semibold transition ${power[which] ? 'border-teal-700 bg-teal-700 text-white dark:border-teal-400 dark:bg-teal-400 dark:text-teal-950' : 'border-slate-300 text-slate-700 hover:border-teal-600 dark:border-white/15 dark:text-slate-200'}`}
+              >
+                {power[which] ? 'Takılı' : 'Tak'}
+              </button>
+            </div>
+          ))}
+          <p className="text-xs text-slate-600 dark:text-slate-300">
+            {power.usb
+              ? 'Kart USB’den besleniyor; kod yüklenebilir.'
+              : power.battery
+                ? 'Kart 9V pilden besleniyor. Kod yüklemek ve Serial Monitor için USB kablosunu takın.'
+                : 'Kartta güç yok: ON LED’i sönük, program çalışmaz.'}{' '}
+            Takılı olanı 3B görünümde fişine tıklayarak da çıkarabilirsiniz.
+          </p>
+        </div>
+      </fieldset>
       {/* Both boards have their headers in the same places. */}
       <fieldset>
         <legend className="mb-1.5 text-sm text-slate-600 dark:text-slate-300">Kart</legend>
@@ -799,7 +832,8 @@ export function IssuesList({ issues }) {
   )
 }
 
-export function SerialMonitor({ text, running, baud, onSend, onClear }) {
+// offline: the USB cable is out, so the computer hears nothing.
+export function SerialMonitor({ text, running, baud, offline = false, onSend, onClear }) {
   const outputRef = useRef(null)
   const [line, setLine] = useState('')
   const [follow, setFollow] = useState(true)
@@ -829,17 +863,17 @@ export function SerialMonitor({ text, running, baud, onSend, onClear }) {
       }
     >
       <pre ref={outputRef} className="font-code h-40 overflow-auto whitespace-pre-wrap rounded-md bg-slate-950 p-3 text-xs leading-relaxed text-emerald-300">
-        {text || (running ? '' : 'Program çalışınca Serial.print çıktıları burada görünür.')}
+        {offline ? 'USB kablosu takılı değil: Serial Monitor bilgisayarla karta USB üzerinden konuşur.' : text || (running ? '' : 'Program çalışınca Serial.print çıktıları burada görünür.')}
       </pre>
       <form onSubmit={send} className="mt-2 flex gap-2">
         <input
           value={line}
           onChange={(event) => setLine(event.target.value)}
-          disabled={!running}
-          placeholder={running ? 'Arduino’ya gönder…' : 'Önce programı çalıştırın'}
+          disabled={!running || offline}
+          placeholder={offline ? 'USB kablosu takılı değil' : running ? 'Arduino’ya gönder…' : 'Önce programı çalıştırın'}
           className="font-code min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100"
         />
-        <button type="submit" disabled={!running} className="inline-flex items-center gap-1 rounded-md bg-teal-700 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-40 dark:bg-teal-400 dark:text-teal-950">
+        <button type="submit" disabled={!running || offline} className="inline-flex items-center gap-1 rounded-md bg-teal-700 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-40 dark:bg-teal-400 dark:text-teal-950">
           <Send size={14} />
           Gönder
         </button>

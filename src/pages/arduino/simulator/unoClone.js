@@ -6,7 +6,7 @@
 import * as THREE from 'three'
 import { PWM_PINS } from '../../../utils/avrSim/catalog'
 import { chipTop, cylinder, electrolytic, metal } from './models'
-import { BUILD, UNO_SIZE, boardSlab, bx, bz, chipPart, headerHoles, leads, placePart, plastic, unoElement, unoPinLayout } from './unoModel'
+import { BUILD, UNO_SIZE, boardSlab, bx, bz, chipPart, headerHoles, leads, placePart, plastic, powerGear, unoElement, unoPinLayout } from './unoModel'
 
 const PITCH = 0.254
 
@@ -55,7 +55,7 @@ const PARTS = [
   { name: 'L', build: 'LED', x: 28.6, y: 23.2, rot: 90 },
   ...[39.2, 32.8, 26.4, 20.0].map((y, i) => ({ name: `R${i}`, build: 'R0805', x: 28.6, y, rot: 90 })),
   ...[
-    [24.6, 38.6], [24.6, 44.6], [13.2, 30.4], [13.2, 27.4], [19.2, 20.4], [16.6, 20.4], [22.0, 22.8],
+    [24.6, 38.6], [36.0, 23.0], [13.2, 30.4], [13.2, 27.4], [19.2, 20.4], [16.6, 20.4], [22.0, 22.8],
     [12.0, 22.4], [33.8, 33.0], [33.8, 20.0], [50.2, 30.6], [50.2, 22.6], [38.6, 33.6], [38.6, 19.0], [35.0, 12.2],
   ].map(([x, y], i) => ({ name: `C${i + 10}`, build: i % 3 === 2 ? 'R0805' : 'C0805', x, y, rot: i % 2 ? 90 : 0 })),
   { name: 'T1', build: 'SOT-23', x: 22.4, y: 15.4, rot: 90 },
@@ -250,13 +250,13 @@ function drawCloneTop(scale, bump) {
   // Titles run along the headers, as printed on the board.
   ctx.textAlign = 'center'
   ctx.font = 'italic 700 96px "Space Grotesk", "Plus Jakarta Sans", sans-serif'
-  ctx.fillText('UNO', mmx(50), mmz(39.5))
+  ctx.fillText('UNO', mmx(50), mmz(36.6))
   ctx.font = '700 24px "JetBrains Mono", ui-monospace, monospace'
-  ctx.fillText('DIGITAL PWM(~)', mmx(45), mmz(44.4))
+  ctx.fillText('DIGITAL PWM(~)', mmx(47), mmz(41.5))
   ctx.lineWidth = 3
   ctx.beginPath()
-  ctx.moveTo(mmx(31), mmz(45.6))
-  ctx.lineTo(mmx(66), mmz(45.6))
+  ctx.moveTo(mmx(33.5), mmz(42.9))
+  ctx.lineTo(mmx(66), mmz(42.9))
   ctx.stroke()
   ctx.font = '700 26px "JetBrains Mono", ui-monospace, monospace'
   ctx.fillText('POWER', mmx(37.5), mmz(11.2))
@@ -333,13 +333,20 @@ export function buildUnoClone() {
   spare.userData = { kind: 'uno', info: INFO.extra }
   group.add(spare)
   const markers = headerHoles(group)
+  const gear = powerGear()
+  group.add(gear.group)
 
-  const { L: ledL, TX: ledTx, RX: ledRx, RESET: resetCap } = named
+  const { L: ledL, TX: ledTx, RX: ledRx, ON: ledOn, RESET: resetCap } = named
   return {
     group,
     markers,
     setReset(pressed) {
       resetCap.position.y = pressed ? 0.37 : 0.42
+    },
+    // Which cables are in; the ON LED shows whether the board has power.
+    setPower(power) {
+      gear.set(power)
+      ledOn.material.emissiveIntensity = power.usb || power.battery ? 1.6 : 0
     },
     update(state) {
       ledL.material.emissiveIntensity = (state?.pins?.[13] ?? 0) * 3

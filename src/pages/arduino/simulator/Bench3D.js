@@ -35,11 +35,13 @@ const WIRE_PALETTE = ['#f97316', '#22c55e', '#3b82f6', '#a855f7', '#eab308', '#e
 
 // The solid bodies of a model, left after pin markers, labels and see-through
 // effects (hit areas, sound cones).
+// The cables and battery plugged into the Uno lie on the mat and do not
+// count as its body.
 function bodyBox(group, skip) {
   const box = new THREE.Box3()
   group.updateMatrixWorld(true)
   group.traverse((child) => {
-    if (!child.isMesh || skip.has(child)) return
+    if (!child.isMesh || skip.has(child) || child.userData.kind === 'power') return
     const materials = [child.material].flat()
     if (materials.every((material) => material.transparent && material.opacity < 0.5)) return
     child.geometry.computeBoundingBox()
@@ -302,6 +304,7 @@ export class Bench3D {
     }
     this.boardKind = kind
     this.uno = kind === 'r3' ? buildUno() : buildUnoClone()
+    this.uno.setPower(this.power ?? { usb: true, battery: false })
     this.scene.add(this.uno.group)
     // The Uno's outline at the origin, unturned; moved and turned per circuit.
     this.unoOutline = bodyBox(this.uno.group, new Set(this.uno.markers))
@@ -311,8 +314,10 @@ export class Bench3D {
   // resting on a breadboard) sit on top of the board.
   layout() {
     this.invalidate()
-    this.setBoard(unoPlacement(this.circuit).board)
-    const { position, rotation } = unoPlacement(this.circuit)
+    const { position, rotation, board, usb, battery } = unoPlacement(this.circuit)
+    this.setBoard(board)
+    this.power = { usb, battery }
+    this.uno.setPower(this.power)
     this.uno.group.position.set(position[0], 0, position[1])
     this.uno.group.rotation.y = (rotation * Math.PI) / 180
     this.uno.group.updateMatrixWorld(true)
@@ -474,7 +479,7 @@ export class Bench3D {
   // The part (or the Uno) a hit belongs to.
   partOf(hit) {
     const data = hit?.object.userData
-    if (data?.kind === 'uno' || data?.kind === 'reset') return UNO_ID
+    if (data?.kind === 'uno' || data?.kind === 'reset' || data?.kind === 'power') return UNO_ID
     if (data?.kind === 'part' || data?.kind === 'board' || data?.kind === 'press') return data.partId
     return null
   }
@@ -577,6 +582,10 @@ export class Bench3D {
       this.controls.enabled = false
       this.resetting = true
       this.uno.setReset(true)
+    } else if (data.kind === 'power') {
+      // A click on a plug pulls it out (the Uno card puts it back).
+      this.controls.enabled = false
+      this.unplugging = data.which
     } else if ((data.kind === 'part' || data.kind === 'board' || data.kind === 'uno') && !this.isLocked(data.kind === 'uno' ? UNO_ID : data.partId)) {
       const partId = data.kind === 'uno' ? UNO_ID : data.partId
       const position = partId === UNO_ID ? unoPlacement(this.circuit).position : this.parts.get(partId)?.part.position
@@ -690,7 +699,7 @@ export class Bench3D {
     const kind = hit?.object.userData.kind
     const owner = this.partOf(hit)
     const fixed = owner && this.isLocked(owner)
-    this.renderer.domElement.style.cursor = target || kind === 'press' || kind === 'reset' ? 'pointer' : (kind === 'part' || kind === 'board' || kind === 'uno') && !fixed ? 'grab' : 'default'
+    this.renderer.domElement.style.cursor = target || kind === 'press' || kind === 'reset' || kind === 'power' ? 'pointer' : (kind === 'part' || kind === 'board' || kind === 'uno') && !fixed ? 'grab' : 'default'
     const rect = this.renderer.domElement.getBoundingClientRect()
     // A pin or hole tells where it goes; a part tells what it is (a part of
     // the Uno, what it does) and whether it is locked.
@@ -719,6 +728,12 @@ export class Bench3D {
       return
     }
     this.controls.enabled = true
+    if (this.unplugging) {
+      const which = this.unplugging
+      this.unplugging = null
+      if (this.down && Math.hypot(event.clientX - this.down.x, event.clientY - this.down.y) < 6) this.handlers.onPower?.(which)
+      return
+    }
     if (this.resetting) {
       // Like the real button: the program starts again on release.
       this.resetting = false
@@ -848,7 +863,7 @@ export class Bench3D {
 
   // Point the camera so the Uno and every part fit in view.
   frame() {
-    const bounds = new THREE.Box3().setFromObject(this.uno.group)
+    const bounds = bodyBox(this.uno.group, new Set(this.uno.markers))
     for (const entry of this.parts.values()) bounds.expandByObject(entry.model.group)
     const center = bounds.getCenter(new THREE.Vector3())
     const size = bounds.getSize(new THREE.Vector3())

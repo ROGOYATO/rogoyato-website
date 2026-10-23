@@ -6,9 +6,11 @@
 //   part: { id, type, position: [x, z] (cm), rotation (degrees), props }
 //   wire: { id, from: endpoint, to: endpoint, color }
 //   endpoint: { uno: 'D7' | '5V' | 'GND' | ..., anchor? } or { part, pin }
-//   uno: { position: [x, z], rotation, board } where the Uno sits (default:
-//   the origin, unturned) and which board it is ('ch340', the kit's clone,
-//   or 'r3'); its id in selections and moves is UNO_ID.
+//   uno: { position: [x, z], rotation, board, usb, battery } where the Uno
+//   sits (default: the origin, unturned), which board it is ('ch340', the
+//   kit's clone, or 'r3') and what powers it (the USB cable unless usb is
+//   false, the 9 V battery if battery is true); its id in selections and
+//   moves is UNO_ID.
 // A breadboard is a part whose pins are its holes ('a12', 'T+5'). Parts whose
 // pins land on breadboard holes are plugged in. Older circuits used
 // { part, pin, uno } wires; normalizeCircuit() converts them.
@@ -398,8 +400,11 @@ export const UNO_ID = 'uno'
 
 // Where the Uno sits and which board it is: the kit's CH340 clone unless
 // the official R3 was chosen.
+// Its power: the USB cable from the computer (in unless taken out) and the
+// 9 V battery in the DC jack (out unless put in).
 export function unoPlacement(circuit) {
-  return { position: circuit?.uno?.position ?? [0, 0], rotation: circuit?.uno?.rotation ?? 0, board: circuit?.uno?.board === 'r3' ? 'r3' : 'ch340' }
+  const uno = circuit?.uno
+  return { position: uno?.position ?? [0, 0], rotation: uno?.rotation ?? 0, board: uno?.board === 'r3' ? 'r3' : 'ch340', usb: uno?.usb !== false, battery: uno?.battery === true }
 }
 
 export const endpointKey = (end) => (end.uno ? `U:${end.uno}` : `P:${end.part}:${end.pin}`)

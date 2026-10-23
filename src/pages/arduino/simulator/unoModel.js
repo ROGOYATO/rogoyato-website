@@ -6,6 +6,7 @@
 import * as THREE from 'three'
 import { PWM_PINS } from '../../../utils/avrSim/catalog'
 import { GOLD, box, chipTop, crystal, cylinder, electrolytic, mat, metal, slab, topTexture } from './models'
+import { buildPowerGear } from './powerModels'
 import board from './unoBoard.json'
 
 const HEADER_PITCH = 0.254
@@ -537,6 +538,23 @@ export function headerHoles(group) {
   return markers
 }
 
+// The USB cable and the 9 V battery, at the board's USB socket and DC jack
+// (the clone has both where the R3 has them).
+export function powerGear() {
+  const frame = (element) => ({ position: new THREE.Vector3(bx(element.x), 0, bz(element.y)), rotation: (element.rot * Math.PI) / 180 })
+  const usb = unoElement('X2')
+  const [ux, uz, , ud] = footprint(usb)
+  const dc = unoElement('X1')
+  const [dx, dz, , dd] = footprint(dc)
+  // The barrel jack's mouth faces the footprint's +y: turn its frame half
+  // round so the plug, too, comes out along +z.
+  const dcFrame = frame(dc)
+  return buildPowerGear({
+    usb: { ...frame(usb), x: ux, y: 0.705, mouth: uz + ud / 2 },
+    dc: { position: dcFrame.position, rotation: dcFrame.rotation + Math.PI, x: -dx, y: 0.76, mouth: dd / 2 - dz, batteryAt: [-10.6, 4.2] },
+  })
+}
+
 // The official board's parts by name (the clone keeps its connectors and
 // headers where they are).
 export const unoElement = (name) => board.elements.find((element) => element.name === name)
@@ -554,13 +572,20 @@ export function buildUno() {
     if (build) named[element.name] = placePart(group, element, build, infoFor(element))
   }
   const markers = headerHoles(group)
+  const gear = powerGear()
+  group.add(gear.group)
 
-  const { L: ledL, TX: ledTx, RX: ledRx, RESET: resetCap } = named
+  const { L: ledL, TX: ledTx, RX: ledRx, ON: ledOn, RESET: resetCap } = named
   return {
     group,
     markers,
     setReset(pressed) {
       resetCap.position.y = pressed ? 0.37 : 0.42
+    },
+    // Which cables are in; the ON LED shows whether the board has power.
+    setPower(power) {
+      gear.set(power)
+      ledOn.material.emissiveIntensity = power.usb || power.battery ? 1.6 : 0
     },
     update(state) {
       ledL.material.emissiveIntensity = (state?.pins?.[13] ?? 0) * 3

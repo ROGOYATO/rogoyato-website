@@ -1,4 +1,4 @@
-import { Bot, Check, Columns2, Columns3, Cpu, LayoutTemplate, Loader2, Lock, LockOpen, Play, Plus, RotateCcw, Square, Volume2, VolumeX } from 'lucide-react'
+import { Bot, Check, Columns2, Columns3, Cpu, LayoutTemplate, Loader2, Lock, LockOpen, Play, Plus, RotateCcw, Square, Usb, Volume2, VolumeX } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
@@ -176,13 +176,32 @@ export default function SimulatorPage() {
     [start, project.mode, project.circuit, project.carCircuit, project.inputs, track],
   )
 
-  // Rewiring a running board restarts it, like unplugging and powering it again.
+  // What powers the bench's Uno: the USB cable (power, uploads, Serial
+  // Monitor) and/or the 9 V battery. The car carries its own.
+  const power = project.mode === 'bench' ? unoPlacement(project.circuit) : { usb: true, battery: true }
+  const powered = power.usb || power.battery
+  const togglePower = (which) => setCircuit('circuit', (circuit) => ({ ...circuit, uno: { ...unoPlacement(circuit), [which]: !unoPlacement(circuit)[which] } }))
+  // The program on the chip: the last one uploaded over USB. It stays there
+  // when the cable comes out and runs whenever the board gets power.
+  const flashRef = useRef(null)
+  const [uploadBlocked, setUploadBlocked] = useState(false)
+
+  // Rewiring a running board restarts it, like unplugging and powering it
+  // again; taking its power away stops it, giving it back starts the
+  // program on the chip.
   const launchRef = useRef(launch)
   useEffect(() => {
     launchRef.current = launch
   })
+  const poweredRef = useRef(powered)
   useEffect(() => {
-    if (running && hexRef.current) launchRef.current(hexRef.current)
+    const was = poweredRef.current
+    poweredRef.current = powered
+    if (!powered) {
+      if (running) sim.stop()
+      return
+    }
+    if (flashRef.current && (running || !was)) launchRef.current(flashRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project.circuit, project.carCircuit, project.mode])
 
@@ -202,8 +221,15 @@ export default function SimulatorPage() {
     setCompile({ state: 'ok', source: result.source, size: result.size, libraries: result.libraries, seconds: (performance.now() - started) / 1000 })
     return result.hex
   }
+  // "Çalıştır" uploads over USB; without the cable nothing reaches the chip.
   const runBuilt = () => {
     if (!hexRef.current) return
+    if (!power.usb) {
+      setUploadBlocked(true)
+      return
+    }
+    setUploadBlocked(false)
+    flashRef.current = hexRef.current
     setCarResetToken((token) => token + 1)
     launch(hexRef.current)
   }
@@ -322,7 +348,7 @@ export default function SimulatorPage() {
   const selectedWire = selection?.wireId ? project.circuit.wires.find((wire) => wire.id === selection.wireId) : null
   const diagnostics = useMemo(() => (compile.state === 'error' ? (compile.diagnostics ?? []) : []), [compile])
 
-  const serialPanel = <SerialMonitor text={sim.serial} running={running} baud={sim.hud?.baud} onSend={sim.sendSerial} onClear={sim.clearSerial} />
+  const serialPanel = <SerialMonitor text={sim.serial} running={running} baud={sim.hud?.baud} offline={!power.usb} onSend={sim.sendSerial} onClear={sim.clearSerial} />
   const editorPane = (
     <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-300/80 bg-white dark:border-teal-300/15 dark:bg-[#0b1517]">
       <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-[#0f1d1f]">
@@ -417,6 +443,7 @@ export default function SimulatorPage() {
           onMovePart={(id, position) => setCircuit('circuit', (circuit) => movePart(circuit, id, position))}
           onPress={(id, pressed) => setInput(id, 'pressed', pressed)}
           onReset={() => running && sim.resetBoard()}
+          onPower={togglePower}
           locked={locked}
           apiRef={benchApi}
         />
@@ -425,7 +452,8 @@ export default function SimulatorPage() {
       )}
       {running ? (
         <span className="font-code pointer-events-none absolute right-3 top-3 rounded-md bg-emerald-600/90 px-2 py-1 text-xs text-white">
-          ● çalışıyor{sim.hud?.speed ? ` · gerçek zamanın %${Math.round(Math.min(1, sim.hud.speed) * 100)}’i` : ''}
+          ● çalışıyor{project.mode === 'bench' && !power.usb ? ' · 9V pilden' : ''}
+          {sim.hud?.speed ? ` · gerçek zamanın %${Math.round(Math.min(1, sim.hud.speed) * 100)}’i` : ''}
         </span>
       ) : null}
     </section>
@@ -439,6 +467,8 @@ export default function SimulatorPage() {
               <UnoInspector
                 running={running}
                 board={unoPlacement(project.circuit).board}
+                power={power}
+                onPower={togglePower}
                 onBoard={(board) => setCircuit('circuit', (circuit) => ({ ...circuit, uno: { ...unoPlacement(circuit), board } }))}
                 locked={Boolean(locked[UNO_ID])}
                 onToggleLock={() => toggleLock(UNO_ID)}
@@ -729,6 +759,15 @@ export default function SimulatorPage() {
               />
             </div>
           </div>
+          {uploadBlocked && !power.usb ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-amber-300/70 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-300/30 dark:bg-amber-400/10 dark:text-amber-100">
+              <Usb size={15} />
+              Kod karta yüklenemedi: USB kablosu takılı değil. Kod bilgisayardan karta USB üzerinden gider.
+              <button type="button" onClick={() => togglePower('usb')} className="rounded-md bg-amber-600 px-2.5 py-1 font-semibold text-white">
+                USB kablosunu tak
+              </button>
+            </div>
+          ) : null}
           {example ? (
             <div className="mt-2 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
               <p className="min-w-0 flex-1 basis-80 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{example.summary}</p>
