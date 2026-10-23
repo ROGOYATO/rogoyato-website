@@ -1,4 +1,4 @@
-import { Bot, Check, Columns2, Columns3, Cpu, LayoutTemplate, Lock, LockOpen, Pause, Play, Plus, RotateCcw, Usb, Volume2, VolumeX } from 'lucide-react'
+import { Bot, Check, Columns2, Columns3, Cpu, GripVertical, LayoutTemplate, Lock, LockOpen, Pause, Play, Plus, RotateCcw, Usb, Volume2, VolumeX } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
@@ -395,6 +395,49 @@ export default function SimulatorPage() {
   const selectedWire = selection?.wireId ? project.circuit.wires.find((wire) => wire.id === selection.wireId) : null
   const diagnostics = useMemo(() => (compile.state === 'error' ? (compile.diagnostics ?? []) : []), [compile])
 
+  // The code and the 3D view, always open, swap places by dragging one's
+  // bar onto the other (or ←/→ on its grip). Not from a control in the bar:
+  // where the pointer went down is noted on the bar.
+  const paneBar = (pane) =>
+    wide
+      ? {
+          draggable: true,
+          onPointerDown: (event) => {
+            event.currentTarget.dataset.onControl = Boolean(event.target.closest?.('select, input, textarea, label'))
+          },
+          onDragStart: (event) => {
+            if (event.currentTarget.dataset.onControl === 'true') {
+              event.preventDefault()
+              return
+            }
+            event.dataTransfer.effectAllowed = 'move'
+            event.dataTransfer.setData('text/plain', pane)
+            dock.setPaneDragging(pane)
+          },
+          onDragEnd: () => dock.setPaneDragging(null),
+        }
+      : {}
+  const paneGrip = (pane, label) =>
+    wide ? (
+      <button
+        type="button"
+        data-pane-grip={pane}
+        aria-label={`${label}: yerini değiştir (← →)`}
+        title="Sürükleyerek yerini değiştirin (ya da ← → tuşlarıyla)"
+        onKeyDown={(event) => {
+          const first = dock.layout.panes[0] === pane
+          if ((event.key === 'ArrowRight' && first) || (event.key === 'ArrowLeft' && !first)) {
+            event.preventDefault()
+            dock.swapPanes()
+            requestAnimationFrame(() => document.querySelector(`[data-pane-grip="${pane}"]`)?.focus())
+          }
+        }}
+        className="cursor-grab rounded p-0.5 text-slate-400 hover:text-teal-700 active:cursor-grabbing dark:text-slate-500 dark:hover:text-teal-300"
+      >
+        <GripVertical size={14} />
+      </button>
+    ) : null
+
   const serialPanel =
     target === 'real' ? (
       <SerialMonitor
@@ -412,8 +455,11 @@ export default function SimulatorPage() {
     )
   const editorPane = (
     <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-300/80 bg-white dark:border-teal-300/15 dark:bg-[#0b1517]">
-      <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-[#0f1d1f]">
-        <span className="font-code text-xs text-slate-600 dark:text-slate-300">sketch.ino</span>
+      <div {...paneBar('code')} className={`flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-[#0f1d1f] ${wide ? 'cursor-grab pl-1.5 active:cursor-grabbing' : ''}`}>
+        <span className="font-code flex items-center gap-1 text-xs text-slate-600 dark:text-slate-300">
+          {paneGrip('code', 'Kod')}
+          sketch.ino
+        </span>
         <button
           type="button"
           onClick={() => example && update({ code: example.code })}
@@ -527,6 +573,12 @@ export default function SimulatorPage() {
       ) : (
         <CarView track={track} view={carView} dark={dark} subscribe={sim.subscribe} resetToken={carResetToken} />
       )}
+      {wide ? (
+        <div {...paneBar('bench')} className="font-code absolute left-3 top-3 flex cursor-grab items-center gap-1 rounded-md bg-slate-900/70 py-1 pl-1 pr-2.5 text-xs text-white backdrop-blur-sm active:cursor-grabbing [&_button]:text-white/70 [&_button:hover]:text-white">
+          {paneGrip('bench', '3B görünüm')}
+          {project.mode === 'bench' ? '3B tezgâh' : '3B parkur'}
+        </div>
+      ) : null}
       {running ? (
         <span className="font-code pointer-events-none absolute right-3 top-3 rounded-md bg-emerald-600/90 px-2 py-1 text-xs text-white">
           {sim.paused ? '❚❚ duraklatıldı' : '● çalışıyor'}
@@ -763,17 +815,36 @@ export default function SimulatorPage() {
   // Dragging works from the latest widths, so fast drags keep up.
   const resize = (side, delta) => dock.update((current) => ({ [side]: widths(current)[side] + delta }))
   const resizeTop = (delta) => dock.update((current) => ({ top: Math.max(320, (current.top ?? viewportHeight - 270) + delta) }))
-  // A column: its pane on top (the code grows with its text) and the dock
-  // under it (sides, beside: see Dock).
-  const column = (sides, beside, pane, code = false) => (
-    <div className="flex min-w-0 flex-col">
-      <div className="flex flex-col" style={code ? { minHeight: topHeight } : { height: topHeight }}>
-        {pane}
+  // A column: its pane on top (the code grows with its text), where the
+  // other pane can be dropped to swap them, and the dock under it (sides,
+  // beside: see Dock).
+  const column = (sides, beside, pane) => {
+    const code = pane === 'code'
+    const target = dock.paneDragging && dock.paneDragging !== pane
+    return (
+      <div className="flex min-w-0 flex-col">
+        <div
+          onDragOver={(event) => {
+            if (!target) return
+            event.preventDefault()
+            event.dataTransfer.dropEffect = 'move'
+          }}
+          onDrop={(event) => {
+            if (!target) return
+            event.preventDefault()
+            dock.swapPanes()
+            dock.setPaneDragging(null)
+          }}
+          className={`flex flex-col rounded-xl ${target ? 'outline-2 outline-offset-2 outline-dashed outline-teal-500/60' : ''}`}
+          style={code ? { minHeight: topHeight } : { height: topHeight }}
+        >
+          {code ? editorPane : benchPane}
+        </div>
+        <Splitter direction="horizontal" label="3B görünüm ile kodun yüksekliği" onMove={resizeTop} />
+        {hasDock(sides) ? <Dock sides={sides} beside={beside} dock={dock} panels={panels} className="space-y-3" /> : null}
       </div>
-      <Splitter direction="horizontal" label="3B görünüm ile kodun yüksekliği" onMove={resizeTop} />
-      {hasDock(sides) ? <Dock sides={sides} beside={beside} dock={dock} panels={panels} className="space-y-3" /> : null}
-    </div>
-  )
+    )
+  }
 
   return (
     <>
@@ -917,15 +988,15 @@ export default function SimulatorPage() {
             </div>
             {twoColumns ? (
               <div className="grid items-start" style={{ gridTemplateColumns: `${codeWidth}px auto minmax(0,1fr)` }} ref={workspaceRef}>
-                {column(['left'], { right: 'right' }, editorPane, true)}
+                {column(['left'], { right: 'right' }, layout.panes[0])}
                 <Splitter label="Kod ile 3B görünümün genişliği" onMove={(dx) => resize('left2', dx)} />
-                {column(['center', 'right'], { left: 'left' }, benchPane)}
+                {column(['center', 'right'], { left: 'left' }, layout.panes[1])}
               </div>
             ) : (
               <div className="grid items-start" style={{ gridTemplateColumns: `${leftWidth}px auto minmax(0,1fr) auto ${rightWidth}px` }} ref={workspaceRef}>
-                {column(['left'], { right: 'center' }, editorPane, true)}
+                {column(['left'], { right: 'center' }, layout.panes[0])}
                 <Splitter label="Kod ile 3B görünümün genişliği" onMove={(dx) => resize('left', dx)} />
-                {column(['center'], { left: 'left', right: 'right' }, benchPane)}
+                {column(['center'], { left: 'left', right: 'right' }, layout.panes[1])}
                 <Splitter label="3B görünüm ile panellerin genişliği" onMove={(dx) => resize('right', -dx)} />
                 <Dock sides={['right']} beside={{ left: 'center' }} dock={dock} panels={panels} className="space-y-3" />
               </div>
