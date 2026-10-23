@@ -750,7 +750,7 @@ export default function SimulatorPage() {
   const { layout } = dock
   const columnCount = layout.columns ?? autoColumns
   const twoColumns = columnCount === 2
-  const hasDock = (side) => layout.docks[side].some((id) => panelIds.has(id)) || Boolean(dock.dragging)
+  const hasDock = (sides) => sides.some((side) => layout.docks[side].some((id) => panelIds.has(id))) || Boolean(dock.dragging)
   // Column widths stay within the screen; the 3D view keeps at least 380 px
   // (480 in two columns, where the code column is wider).
   const room = Math.max(0, workspaceWidth - 32)
@@ -764,14 +764,14 @@ export default function SimulatorPage() {
   const resize = (side, delta) => dock.update((current) => ({ [side]: widths(current)[side] + delta }))
   const resizeTop = (delta) => dock.update((current) => ({ top: Math.max(320, (current.top ?? viewportHeight - 270) + delta) }))
   // A column: its pane on top (the code grows with its text) and the dock
-  // under it.
-  const column = (side, pane, code = false) => (
+  // under it (sides, beside: see Dock).
+  const column = (sides, beside, pane, code = false) => (
     <div className="flex min-w-0 flex-col">
       <div className="flex flex-col" style={code ? { minHeight: topHeight } : { height: topHeight }}>
         {pane}
       </div>
       <Splitter direction="horizontal" label="3B görünüm ile kodun yüksekliği" onMove={resizeTop} />
-      {side && hasDock(side) ? <Dock side={side} dock={dock} panels={panels} className="space-y-3" /> : null}
+      {hasDock(sides) ? <Dock sides={sides} beside={beside} dock={dock} panels={panels} className="space-y-3" /> : null}
     </div>
   )
 
@@ -917,17 +917,17 @@ export default function SimulatorPage() {
             </div>
             {twoColumns ? (
               <div className="grid items-start" style={{ gridTemplateColumns: `${codeWidth}px auto minmax(0,1fr)` }} ref={workspaceRef}>
-                {column('left', editorPane, true)}
+                {column(['left'], { right: 'right' }, editorPane, true)}
                 <Splitter label="Kod ile 3B görünümün genişliği" onMove={(dx) => resize('left2', dx)} />
-                {column('right', benchPane)}
+                {column(['center', 'right'], { left: 'left' }, benchPane)}
               </div>
             ) : (
               <div className="grid items-start" style={{ gridTemplateColumns: `${leftWidth}px auto minmax(0,1fr) auto ${rightWidth}px` }} ref={workspaceRef}>
-                {column('left', editorPane, true)}
+                {column(['left'], { right: 'center' }, editorPane, true)}
                 <Splitter label="Kod ile 3B görünümün genişliği" onMove={(dx) => resize('left', dx)} />
-                {column(null, benchPane)}
+                {column(['center'], { left: 'left', right: 'right' }, benchPane)}
                 <Splitter label="3B görünüm ile panellerin genişliği" onMove={(dx) => resize('right', -dx)} />
-                <Dock side="right" dock={dock} panels={panels} className="space-y-3" />
+                <Dock sides={['right']} beside={{ left: 'center' }} dock={dock} panels={panels} className="space-y-3" />
               </div>
             )}
           </div>
@@ -936,7 +936,7 @@ export default function SimulatorPage() {
           <div className="space-y-4">
             <div className="h-[380px] sm:h-[520px]">{benchPane}</div>
             <div className="h-[460px] sm:h-[540px]">{editorPane}</div>
-            {[...layout.docks.left, ...layout.docks.right].map((id) => (panels[id] ? <div key={id}>{panels[id]}</div> : null))}
+            {[...layout.docks.left, ...layout.docks.center, ...layout.docks.right].map((id) => (panels[id] ? <div key={id}>{panels[id]}</div> : null))}
           </div>
         )}
 

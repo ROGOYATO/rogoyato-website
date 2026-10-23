@@ -5,32 +5,57 @@ import { useState } from 'react'
 import { DockContext } from './dockLayout'
 
 // One dock: the panels in `panels` (id → element, null when not shown) in
-// the layout's order, each one a drop target, the dock's end another.
-export function Dock({ side, dock, panels, className = '' }) {
+// the layout's order, each one a drop target, the dock's end another. It
+// shows the layout's docks in `sides` one after another (in two columns the
+// 3D view's holds the centre's and the panel column's); a drop at its end
+// goes into the last. `beside` names the docks the arrow keys move a panel
+// to: { left, right }.
+export function Dock({ sides, beside = {}, dock, panels, className = '' }) {
   const { layout, move, toggle, dragging, setDragging } = dock
   const [over, setOver] = useState(null) // panel id, or 'end'
-  const ids = layout.docks[side].filter((id) => panels[id])
+  const list = sides.flatMap((side) => layout.docks[side] ?? [])
+  const ids = list.filter((id) => panels[id])
+  const sideOf = (id) => sides.find((side) => layout.docks[side]?.includes(id))
+  const last = sides[sides.length - 1]
   const allow = (event) => {
     if (!dragging) return
     event.preventDefault()
     event.dataTransfer.dropEffect = 'move'
   }
-  const drop = (event, before) => {
+  // Where a drop at the pointer would go: before the first panel whose
+  // middle is below it, or (null) at the end. The gaps between panels count
+  // too, so the line shown is always where the panel lands.
+  const targetAt = (event) => {
+    for (const element of event.currentTarget.querySelectorAll(':scope > [data-dock-panel]')) {
+      const box = element.getBoundingClientRect()
+      if (event.clientY < box.top + box.height / 2) return element.dataset.dockPanel
+    }
+    return null
+  }
+  // Dropping a panel just before itself or the panel after it leaves it
+  // where it is.
+  const stays = (before) => {
+    const index = ids.indexOf(dragging)
+    return index >= 0 && (before === dragging || before === (ids[index + 1] ?? null))
+  }
+  const drop = (event) => {
     if (!dragging) return
     event.preventDefault()
-    event.stopPropagation()
-    if (dragging !== before) move(dragging, side, before)
+    const before = targetAt(event)
+    if (!stays(before)) move(dragging, before ? sideOf(before) : last, before)
     setDragging(null)
     setOver(null)
   }
   // Arrow keys on a grip: up/down reorder, left/right change docks.
   const keys = (event, id) => {
-    const list = layout.docks[side]
     const index = list.indexOf(id)
-    if (event.key === 'ArrowUp' && index > 0) move(id, side, list[index - 1])
-    else if (event.key === 'ArrowDown' && index < list.length - 1) move(id, side, list[index + 2] ?? null)
-    else if (event.key === 'ArrowLeft' && side === 'right') move(id, 'left')
-    else if (event.key === 'ArrowRight' && side === 'left') move(id, 'right')
+    if (event.key === 'ArrowUp' && index > 0) move(id, sideOf(list[index - 1]), list[index - 1])
+    else if (event.key === 'ArrowDown' && index < list.length - 1) {
+      const after = list[index + 2]
+      if (after) move(id, sideOf(after), after)
+      else move(id, sideOf(list[index + 1]))
+    } else if (event.key === 'ArrowLeft' && beside.left) move(id, beside.left)
+    else if (event.key === 'ArrowRight' && beside.right) move(id, beside.right)
     else return
     event.preventDefault()
     // Keep the focus on the grip that moved.
@@ -40,26 +65,20 @@ export function Dock({ side, dock, panels, className = '' }) {
     <div
       className={`${className} ${dragging ? 'rounded-xl outline-2 outline-dashed outline-teal-500/40' : ''}`}
       onDragOver={(event) => {
+        if (!dragging) return
         allow(event)
-        if (dragging && over === null) setOver('end')
+        const before = targetAt(event)
+        const next = stays(before) ? null : (before ?? 'end')
+        if (next !== over) setOver(next)
       }}
       onDragLeave={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setOver(null)
       }}
-      onDrop={(event) => drop(event, null)}
+      onDrop={drop}
     >
       {ids.map((id) => (
-        <div
-          key={id}
-          data-dock-panel={id}
-          onDragOver={(event) => {
-            allow(event)
-            if (dragging) setOver(id)
-          }}
-          onDrop={(event) => drop(event, id)}
-          className={`relative ${dragging === id ? 'opacity-40' : ''}`}
-        >
-          {over === id && dragging !== id ? <div className="absolute -top-1.5 left-2 right-2 h-1 rounded-full bg-teal-500" /> : null}
+        <div key={id} data-dock-panel={id} className={`relative ${dragging === id ? 'opacity-40' : ''}`}>
+          {over === id ? <div className="absolute -top-2 left-2 right-2 h-1 rounded-full bg-teal-500" /> : null}
           <DockContext.Provider
             value={{
               id,
