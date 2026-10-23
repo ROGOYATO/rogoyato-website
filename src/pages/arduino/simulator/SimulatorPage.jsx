@@ -1,4 +1,4 @@
-import { Bot, Check, Cpu, Loader2, Lock, LockOpen, Play, Plus, RotateCcw, Square, Volume2, VolumeX } from 'lucide-react'
+import { Bot, Check, Columns2, Columns3, Cpu, LayoutTemplate, Loader2, Lock, LockOpen, Play, Plus, RotateCcw, Square, Volume2, VolumeX } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
@@ -19,10 +19,11 @@ import {
   unoPlacement,
 } from '../../../utils/avrSim/catalog'
 import { TRACKS } from '../../../utils/avrSim/car'
-import { Breadcrumb, Label } from '../ArduinoParts'
 import BenchView from './BenchView'
 import CarView from './CarView'
 import CodeEditor from './CodeEditor'
+import { Dock, Splitter } from './Dock'
+import { useAutoColumns, useDockLayout, useWideScreen } from './dockLayout'
 import Licenses from './Licenses'
 import AnswerBar from './AnswerBar'
 import LibraryList from './LibraryList'
@@ -114,7 +115,8 @@ export default function SimulatorPage() {
     const chip = anchor && document.querySelector(`[data-part-chip="${CSS.escape(anchor.id)}"]`)
     if (!chip) return
     const moved = chip.getBoundingClientRect().top - anchor.top
-    if (Math.abs(moved) > 1) window.scrollBy({ top: moved, behavior: 'instant' })
+    // In the wide layout the dock scrolls, not the page.
+    if (Math.abs(moved) > 1) (chip.closest('[data-dock-scroll]') ?? window).scrollBy({ top: moved, behavior: 'instant' })
   }, [selection])
   // The Uno always starts locked (on every visit and every exercise), so a
   // drag meant for the camera does not knock it aside; unlocking it lasts
@@ -131,6 +133,18 @@ export default function SimulatorPage() {
   const licensesRef = useRef(null)
   useEffect(() => onCompilerProgress(setDownload), [])
   const sim = useSimulator({ sound })
+  const dock = useDockLayout()
+  const wide = useWideScreen()
+  const autoColumns = useAutoColumns()
+  const workspaceRef = useRef(null)
+  const [workspaceWidth, setWorkspaceWidth] = useState(1200)
+  useEffect(() => {
+    const element = workspaceRef.current
+    if (!element) return undefined
+    const observer = new ResizeObserver(() => setWorkspaceWidth(element.parentElement.getBoundingClientRect().width))
+    observer.observe(element.parentElement)
+    return () => observer.disconnect()
+  }, [wide, dock.layout.columns, autoColumns])
   const { running, start } = sim
 
   useEffect(() => {
@@ -305,410 +319,497 @@ export default function SimulatorPage() {
   const selectedWire = selection?.wireId ? project.circuit.wires.find((wire) => wire.id === selection.wireId) : null
   const diagnostics = useMemo(() => (compile.state === 'error' ? (compile.diagnostics ?? []) : []), [compile])
 
-  return (
-    <div className="space-y-5">
-      <Breadcrumb current="Simülatör" />
-      <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <Label>Tarayıcıda gerçek Arduino</Label>
-          <h1 className="mt-1 font-hero text-3xl font-extrabold leading-tight text-slate-900 dark:text-white sm:text-4xl sm:leading-10">Arduino Simülatörü</h1>
-          <p className="mt-2 max-w-3xl leading-relaxed text-slate-600 dark:text-slate-300">
-            Kodunuz gerçek Arduino derleyicisiyle (GCC) kendi tarayıcınızda derlenir ve 16 MHz’lik ATmega328P işlemcisi komut komut çalıştırılır; sunucu
-            gerekmez. Parçaları masaya ve breadboard’a koyun, kablolarla Uno’ya bağlayın; laptopu ya da malzemesi olmayan da derse katılabilsin.
-          </p>
-        </div>
-      </header>
-
-      <PanelCard>
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            aria-label="Örnek proje"
-            value={project.exampleId}
-            onChange={(event) => chooseExample(event.target.value)}
-            className="font-code w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 py-2 text-sm dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100 sm:w-auto sm:min-w-[16rem]"
-          >
-            {[1, 2, 3, 4, 5, 0].map((week) => (
-              <optgroup key={week} label={WEEK_LABELS[week]}>
-                {EXAMPLES.filter((item) => item.week === week).map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.title}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-          <div className="flex rounded-md border border-slate-300 p-0.5 dark:border-white/15">
-            {[
-              ['bench', 'Tezgâh', <Cpu key="icon" size={15} />],
-              ['car', 'Robot araba', <Bot key="icon" size={15} />],
-            ].map(([mode, text, icon]) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => {
-                  setSelection(null)
-                  update({ mode })
-                }}
-                className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm transition ${project.mode === mode ? 'bg-teal-700 text-white dark:bg-teal-400 dark:text-teal-950' : 'text-slate-600 hover:text-teal-800 dark:text-slate-300'}`}
-              >
-                {icon}
-                {text}
-              </button>
-            ))}
-          </div>
-          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-            <button type="button" onClick={() => setSound((value) => !value)} title={sound ? 'Sesi kapat' : 'Sesi aç'} aria-label={sound ? 'Sesi kapat' : 'Sesi aç'} className="rounded-md border border-slate-300 p-2 text-slate-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300">
-              {sound ? <Volume2 size={16} /> : <VolumeX size={16} />}
-            </button>
-            {running ? (
-              <button type="button" onClick={sim.stop} className="inline-flex items-center gap-2 rounded-md bg-rose-600 px-4 py-2 font-semibold text-white hover:bg-rose-700">
-                <Square size={15} />
-                Durdur
-              </button>
-            ) : null}
-            <RunButtons
-              compiling={compile.state === 'compiling'}
-              running={running}
-              canRun={built !== null}
-              stale={built !== null && built !== project.code}
-              onBuildAndRun={() => run()}
-              onBuild={() => build()}
-              onRun={runBuilt}
-            />
-          </div>
-        </div>
-        {example ? (
+  const serialPanel = <SerialMonitor text={sim.serial} running={running} baud={sim.hud?.baud} onSend={sim.sendSerial} onClear={sim.clearSerial} />
+  const editorPane = (
+    <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-slate-300/80 bg-white dark:border-teal-300/15 dark:bg-[#0b1517]">
+      <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-[#0f1d1f]">
+        <span className="font-code text-xs text-slate-600 dark:text-slate-300">sketch.ino</span>
+        <button
+          type="button"
+          onClick={() => example && update({ code: example.code })}
+          className="font-code inline-flex items-center gap-1 text-xs text-slate-500 hover:text-teal-700 dark:text-slate-400 dark:hover:text-teal-300"
+        >
+          <RotateCcw size={12} />
+          başlangıç koduna dön
+        </button>
+      </div>
+      <div className="min-h-0 flex-1">
+        <CodeEditor
+          value={project.code}
+          onChange={(code) => {
+            // The compiler (about 5 MB, once) starts downloading as soon as the code is edited.
+            if (!preloaded.current) {
+              preloaded.current = true
+              preloadCompiler()
+            }
+            update({ code })
+          }}
+          diagnostics={diagnostics}
+          dark={dark}
+        />
+      </div>
+      <div className="font-code border-t border-slate-200 bg-slate-50 px-3 py-2 text-xs dark:border-white/10 dark:bg-[#0f1d1f]">
+        {compile.state === 'error' ? (
           <>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{example.summary}</p>
-            <AnswerBar key={example.id} example={example} onShowCode={showCode} onShowWires={showWires} onReset={resetExercise} />
-          </>
-        ) : null}
-      </PanelCard>
-
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-        <div className="order-2 min-w-0 space-y-4 lg:order-0">
-          <section className="overflow-hidden rounded-xl border border-slate-300/80 dark:border-teal-300/15">
-            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-[#0f1d1f]">
-              <span className="font-code text-xs text-slate-600 dark:text-slate-300">sketch.ino</span>
-              <button
-                type="button"
-                onClick={() => example && update({ code: example.code })}
-                className="font-code inline-flex items-center gap-1 text-xs text-slate-500 hover:text-teal-700 dark:text-slate-400 dark:hover:text-teal-300"
-              >
-                <RotateCcw size={12} />
-                başlangıç koduna dön
-              </button>
-            </div>
-            <div className="h-[420px] sm:h-[480px]">
-              <CodeEditor
-                value={project.code}
-                onChange={(code) => {
-                  // The compiler (about 5 MB, once) starts downloading as soon as the code is edited.
-                  if (!preloaded.current) {
-                    preloaded.current = true
-                    preloadCompiler()
-                  }
-                  update({ code })
-                }}
-                diagnostics={diagnostics}
-                dark={dark}
-              />
-            </div>
-            <div className="font-code border-t border-slate-200 bg-slate-50 px-3 py-2 text-xs dark:border-white/10 dark:bg-[#0f1d1f]">
-              {compile.state === 'error' ? (
-                <>
-                  <pre className="max-h-40 overflow-auto whitespace-pre-wrap text-rose-700 dark:text-rose-300">{compile.errors}</pre>
-                  {Object.keys(project.prefer ?? {}).length ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        update({ prefer: {} })
-                        run({})
-                      }}
-                      className="mt-1 text-slate-600 underline hover:text-teal-700 dark:text-slate-300 dark:hover:text-teal-300"
-                    >
-                      kütüphane seçimlerini sıfırla
-                    </button>
-                  ) : null}
-                </>
-              ) : compile.state === 'ok' ? (
-                <>
-                  <p className="text-emerald-700 dark:text-emerald-300">
-                    {compile.source === 'example'
-                      ? 'Hazır derlenmiş örnek yüklendi.'
-                      : `${compile.source === 'browser' ? 'Tarayıcıda derlendi' : 'Derlendi'} (${compile.seconds.toFixed(1)} s).`}{' '}
-                    {compile.size?.split('\n')[0]}
-                  </p>
-                  <LibraryList
-                    libraries={compile.libraries}
-                    prefer={project.prefer ?? {}}
-                    onPrefer={(header, name) => {
-                      const prefer = { ...project.prefer, [header]: name }
-                      update({ prefer })
-                      run(prefer)
-                    }}
-                  />
-                </>
-              ) : compile.state === 'compiling' ? (
-                <p className="text-slate-500 dark:text-slate-400">
-                  {download && !download.preparing && download.loaded < download.total
-                    ? `Derleyici indiriliyor (yalnızca ilk seferde): ${(download.loaded / 1e6).toFixed(1)} / ${(download.total / 1e6).toFixed(1)} MB`
-                    : download?.library
-                      ? `Kütüphane: ${download.library}… (ilk seferde biraz sürebilir)`
-                      : 'GCC ile derleniyor…'}
-                </p>
-              ) : (
-                <p className="text-slate-500 dark:text-slate-400">Hazır. “Derle ve çalıştır” ile başlatın.</p>
-              )}
-              {sim.runtimeError ? <p className="mt-1 text-rose-700 dark:text-rose-300">Simülasyon durdu: {sim.runtimeError}</p> : null}
-            </div>
-            <p className="border-t border-slate-200 px-3 py-1.5 text-[0.7rem] text-slate-500 dark:border-white/10 dark:text-slate-400">
-              Tarayıcıda çalışır. Derleyici: GCC 7.3.0 ve GNU binutils 2.42 (WebAssembly, GPL-3.0); kütüphaneler Arduino Library Manager’dan indirilir.{' '}
+            <pre className="max-h-40 overflow-auto whitespace-pre-wrap text-rose-700 dark:text-rose-300">{compile.errors}</pre>
+            {Object.keys(project.prefer ?? {}).length ? (
               <button
                 type="button"
                 onClick={() => {
-                  licensesRef.current.open = true
-                  licensesRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  update({ prefer: {} })
+                  run({})
                 }}
-                className="underline hover:text-teal-700 dark:hover:text-teal-300"
+                className="mt-1 text-slate-600 underline hover:text-teal-700 dark:text-slate-300 dark:hover:text-teal-300"
               >
-                Lisanslar ve kaynaklar
+                kütüphane seçimlerini sıfırla
               </button>
-            </p>
-          </section>
-          <SerialMonitor text={sim.serial} running={running} baud={sim.hud?.baud} onSend={sim.sendSerial} onClear={sim.clearSerial} />
-        </div>
-
-        {/* On phones the 3D view comes first; on large screens it sits on the right. */}
-        <div className="order-1 min-w-0 space-y-4 lg:order-0">
-          <section className="relative h-[380px] overflow-hidden rounded-xl border border-slate-300/80 bg-slate-200 dark:border-teal-300/15 dark:bg-[#0d1517] sm:h-[520px]">
-            {project.mode === 'bench' ? (
-              <BenchView
-                circuit={project.circuit}
-                inputs={project.inputs}
-                selection={selection}
-                dark={dark}
-                frameKey={project.exampleId}
-                subscribe={sim.subscribe}
-                onSelect={setSelection}
-                onConnect={(from, to) => setCircuit('circuit', (circuit) => connectEndpoints(circuit, from, to))}
-                onMovePart={(id, position) => setCircuit('circuit', (circuit) => movePart(circuit, id, position))}
-                onPress={(id, pressed) => setInput(id, 'pressed', pressed)}
-                onReset={() => running && sim.resetBoard()}
-                locked={locked}
-                apiRef={benchApi}
-              />
-            ) : (
-              <CarView track={track} view={carView} dark={dark} subscribe={sim.subscribe} resetToken={carResetToken} />
-            )}
-            {running ? (
-              <span className="font-code pointer-events-none absolute right-3 top-3 rounded-md bg-emerald-600/90 px-2 py-1 text-xs text-white">
-                ● çalışıyor{sim.hud?.speed ? ` · gerçek zamanın %${Math.round(Math.min(1, sim.hud.speed) * 100)}’i` : ''}
-              </span>
             ) : null}
-          </section>
-
-          {project.mode === 'bench' ? (
-            <>
-              {selection?.partId === UNO_ID ? (
-                <PanelCard title="Seçili parça">
-                  <UnoInspector
-                    running={running}
-                    board={unoPlacement(project.circuit).board}
-                    onBoard={(board) => setCircuit('circuit', (circuit) => ({ ...circuit, uno: { ...unoPlacement(circuit), board } }))}
-                    locked={Boolean(locked[UNO_ID])}
-                    onToggleLock={() => toggleLock(UNO_ID)}
-                    onRotate={() => rotate(UNO_ID)}
-                    onReset={sim.resetBoard}
-                  />
-                </PanelCard>
-              ) : selectedPart ? (
-                <PanelCard title="Seçili parça">
-                  <PartInspector
-                    part={selectedPart}
-                    circuit={project.circuit}
-                    inputs={project.inputs[selectedPart.id]}
-                    state={sim.hud?.parts?.[selectedPart.id]}
-                    locked={Boolean(locked[selectedPart.id])}
-                    onToggleLock={() => toggleLock(selectedPart.id)}
-                    onInput={(key, value) => setInput(selectedPart.id, key, value)}
-                    onWire={(part, pin, uno) => wireToUno('circuit', part, pin, uno)}
-                    onStrip={stripToUno}
-                    onRotate={() => rotate(selectedPart.id)}
-                    onDelete={() => {
-                      setSelection(null)
-                      setCircuit('circuit', (circuit) => removePart(circuit, selectedPart.id))
-                    }}
-                    onProp={(key, value) => setCircuit('circuit', (circuit) => ({ ...circuit, parts: circuit.parts.map((part) => (part.id === selectedPart.id ? { ...part, props: { ...part.props, [key]: value } } : part)) }))}
-                  />
-                </PanelCard>
-              ) : selectedWire ? (
-                <PanelCard title="Seçili kablo">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-code text-sm text-slate-700 dark:text-slate-200">
-                      {describeEndpoint(project.circuit, selectedWire.from)} ↔ {describeEndpoint(project.circuit, selectedWire.to)}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelection(null)
-                        setCircuit('circuit', (circuit) => ({ ...circuit, wires: circuit.wires.filter((wire) => wire.id !== selectedWire.id) }))
-                      }}
-                      className="rounded-md border border-rose-300 px-3 py-1.5 text-sm text-rose-700 hover:bg-rose-50 dark:border-rose-400/40 dark:text-rose-200 dark:hover:bg-rose-500/10"
-                    >
-                      Kabloyu sök
-                    </button>
-                  </div>
-                </PanelCard>
-              ) : null}
-              <PanelCard
-                title="Parçalar"
-                actions={
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => lockAll(!allLocked)}
-                      title={allLocked ? 'Bütün parçaların kilidini aç' : 'Bütün parçaları yerinde kilitle'}
-                      className="font-code inline-flex items-center gap-1 rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:border-teal-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300"
-                    >
-                      {allLocked ? <LockOpen size={12} /> : <Lock size={12} />}
-                      {allLocked ? 'Kilitleri aç' : 'Hepsini kilitle'}
-                    </button>
-                    <label className="relative">
-                      <span className="sr-only">Parça ekle</span>
-                      <select
-                        value=""
-                        onChange={(event) => event.target.value && addPart(event.target.value)}
-                        className="font-code appearance-none rounded-md bg-teal-700 py-1 pl-7 pr-3 text-xs font-semibold text-white dark:bg-teal-400 dark:text-teal-950"
-                      >
-                        <option value="">Parça ekle</option>
-                        {[
-                          ['Breadboard ve elemanlar', ([type, definition]) => type === 'breadboard' || definition.bare],
-                          ['Modüller', ([type, definition]) => type !== 'breadboard' && !definition.bare],
-                        ].map(([group, test]) => (
-                          <optgroup key={group} label={group}>
-                            {Object.entries(PART_CATALOG)
-                              .filter((entry) => !entry[1].legacy && test(entry))
-                              .map(([type, definition]) => (
-                                <option key={type} value={type}>
-                                  {definition.name}
-                                </option>
-                              ))}
-                          </optgroup>
-                        ))}
-                      </select>
-                      <Plus size={13} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-white dark:text-teal-950" />
-                    </label>
-                  </div>
-                }
-              >
-                {/* The Uno comes first; it can be moved and turned but not removed. */}
-                <ul className="flex flex-wrap gap-2">
-                  {[{ id: UNO_ID, label: 'Arduino Uno' }, ...project.circuit.parts.map((part) => ({ id: part.id, label: partLabel(part) }))].map(({ id, label }) => {
-                    const chosen = selection?.partId === id
-                    return (
-                      <li key={id}>
-                        <button
-                          type="button"
-                          aria-pressed={chosen}
-                          data-part-chip={id}
-                          onClick={(event) => {
-                            chipAnchor.current = { id, top: event.currentTarget.getBoundingClientRect().top }
-                            setSelection(chosen ? null : { partId: id })
-                          }}
-                          className={`font-code inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-sm transition ${chosen ? 'border-teal-600 bg-teal-50 text-teal-900 dark:border-teal-300/60 dark:bg-teal-400/10 dark:text-teal-100' : 'border-slate-300 text-slate-700 hover:border-teal-600 hover:text-teal-800 dark:border-white/15 dark:text-slate-200'}`}
-                        >
-                          {chosen ? <Check size={13} /> : null}
-                          {label}
-                          {locked[id] ? <Lock size={11} className="text-amber-600 dark:text-amber-300" aria-label="kilitli" /> : null}
-                        </button>
-                      </li>
-                    )
-                  })}
-                </ul>
-                {project.circuit.parts.length ? null : <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Masada başka parça yok. “Parça ekle” ile başlayın.</p>}
-              </PanelCard>
-              <ConnectionsPanel
+          </>
+        ) : compile.state === 'ok' ? (
+          <>
+            <p className="text-emerald-700 dark:text-emerald-300">
+              {compile.source === 'example'
+                ? 'Hazır derlenmiş örnek yüklendi.'
+                : `${compile.source === 'browser' ? 'Tarayıcıda derlendi' : 'Derlendi'} (${compile.seconds.toFixed(1)} s).`}{' '}
+              {compile.size?.split('\n')[0]}
+            </p>
+            <LibraryList
+              libraries={compile.libraries}
+              prefer={project.prefer ?? {}}
+              onPrefer={(header, name) => {
+                const prefer = { ...project.prefer, [header]: name }
+                update({ prefer })
+                run(prefer)
+              }}
+            />
+          </>
+        ) : compile.state === 'compiling' ? (
+          <p className="text-slate-500 dark:text-slate-400">
+            {download && !download.preparing && download.loaded < download.total
+              ? `Derleyici indiriliyor (yalnızca ilk seferde): ${(download.loaded / 1e6).toFixed(1)} / ${(download.total / 1e6).toFixed(1)} MB`
+              : download?.library
+                ? `Kütüphane: ${download.library}… (ilk seferde biraz sürebilir)`
+                : 'GCC ile derleniyor…'}
+          </p>
+        ) : (
+          <p className="text-slate-500 dark:text-slate-400">Hazır. “Derle ve çalıştır” ile başlatın.</p>
+        )}
+        {sim.runtimeError ? <p className="mt-1 text-rose-700 dark:text-rose-300">Simülasyon durdu: {sim.runtimeError}</p> : null}
+      </div>
+      <p className="border-t border-slate-200 px-3 py-1.5 text-[0.7rem] text-slate-500 dark:border-white/10 dark:text-slate-400">
+        Tarayıcıda çalışır. Derleyici: GCC 7.3.0 ve GNU binutils 2.42 (WebAssembly, GPL-3.0); kütüphaneler Arduino Library Manager’dan indirilir.{' '}
+        <button
+          type="button"
+          onClick={() => {
+            licensesRef.current.open = true
+            licensesRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }}
+          className="underline hover:text-teal-700 dark:hover:text-teal-300"
+        >
+          Lisanslar ve kaynaklar
+        </button>
+      </p>
+    </section>
+  )
+  const benchPane = (
+    <section className="relative h-full overflow-hidden rounded-xl border border-slate-300/80 bg-slate-200 dark:border-teal-300/15 dark:bg-[#0d1517]">
+      {project.mode === 'bench' ? (
+        <BenchView
+          circuit={project.circuit}
+          inputs={project.inputs}
+          selection={selection}
+          dark={dark}
+          frameKey={project.exampleId}
+          subscribe={sim.subscribe}
+          onSelect={setSelection}
+          onConnect={(from, to) => setCircuit('circuit', (circuit) => connectEndpoints(circuit, from, to))}
+          onMovePart={(id, position) => setCircuit('circuit', (circuit) => movePart(circuit, id, position))}
+          onPress={(id, pressed) => setInput(id, 'pressed', pressed)}
+          onReset={() => running && sim.resetBoard()}
+          locked={locked}
+          apiRef={benchApi}
+        />
+      ) : (
+        <CarView track={track} view={carView} dark={dark} subscribe={sim.subscribe} resetToken={carResetToken} />
+      )}
+      {running ? (
+        <span className="font-code pointer-events-none absolute right-3 top-3 rounded-md bg-emerald-600/90 px-2 py-1 text-xs text-white">
+          ● çalışıyor{sim.hud?.speed ? ` · gerçek zamanın %${Math.round(Math.min(1, sim.hud.speed) * 100)}’i` : ''}
+        </span>
+      ) : null}
+    </section>
+  )
+  // The panels, by id; null when there is nothing to show.
+  const panels =
+    project.mode === 'bench'
+      ? {
+          selected: selection?.partId === UNO_ID ? (
+            <PanelCard title="Seçili parça">
+              <UnoInspector
+                running={running}
+                board={unoPlacement(project.circuit).board}
+                onBoard={(board) => setCircuit('circuit', (circuit) => ({ ...circuit, uno: { ...unoPlacement(circuit), board } }))}
+                locked={Boolean(locked[UNO_ID])}
+                onToggleLock={() => toggleLock(UNO_ID)}
+                onRotate={() => rotate(UNO_ID)}
+                onReset={sim.resetBoard}
+              />
+            </PanelCard>
+          ) : selectedPart ? (
+            <PanelCard title="Seçili parça">
+              <PartInspector
+                part={selectedPart}
                 circuit={project.circuit}
-                selection={selection}
-                onSelect={setSelection}
+                inputs={project.inputs[selectedPart.id]}
+                state={sim.hud?.parts?.[selectedPart.id]}
+                locked={Boolean(locked[selectedPart.id])}
+                onToggleLock={() => toggleLock(selectedPart.id)}
+                onInput={(key, value) => setInput(selectedPart.id, key, value)}
                 onWire={(part, pin, uno) => wireToUno('circuit', part, pin, uno)}
                 onStrip={stripToUno}
-                onConnect={(from, to) => setCircuit('circuit', (circuit) => connectEndpoints(circuit, from, to))}
+                onRotate={() => rotate(selectedPart.id)}
+                onDelete={() => {
+                  setSelection(null)
+                  setCircuit('circuit', (circuit) => removePart(circuit, selectedPart.id))
+                }}
+                onProp={(key, value) => setCircuit('circuit', (circuit) => ({ ...circuit, parts: circuit.parts.map((part) => (part.id === selectedPart.id ? { ...part, props: { ...part.props, [key]: value } } : part)) }))}
               />
-              {issues.length ? (
-                <PanelCard title="Devre kontrolü">
-                  <IssuesList issues={issues} />
-                </PanelCard>
-              ) : null}
-            </>
-          ) : (
-            <>
-              <PanelCard
-                title="Araba"
-                actions={
+            </PanelCard>
+          ) : selectedWire ? (
+            <PanelCard title="Seçili kablo">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-code text-sm text-slate-700 dark:text-slate-200">
+                  {describeEndpoint(project.circuit, selectedWire.from)} ↔ {describeEndpoint(project.circuit, selectedWire.to)}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelection(null)
+                    setCircuit('circuit', (circuit) => ({ ...circuit, wires: circuit.wires.filter((wire) => wire.id !== selectedWire.id) }))
+                  }}
+                  className="rounded-md border border-rose-300 px-3 py-1.5 text-sm text-rose-700 hover:bg-rose-50 dark:border-rose-400/40 dark:text-rose-200 dark:hover:bg-rose-500/10"
+                >
+                  Kabloyu sök
+                </button>
+              </div>
+            </PanelCard>
+          ) : null,
+          parts: (
+            <PanelCard
+              title="Parçalar"
+              actions={
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => {
-                      sim.resetCar()
-                      setCarResetToken((token) => token + 1)
-                    }}
-                    className="font-code inline-flex items-center gap-1 text-xs text-slate-600 hover:text-teal-700 dark:text-slate-300 dark:hover:text-teal-300"
+                    onClick={() => lockAll(!allLocked)}
+                    title={allLocked ? 'Bütün parçaların kilidini aç' : 'Bütün parçaları yerinde kilitle'}
+                    className="font-code inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:border-teal-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300"
                   >
-                    <RotateCcw size={12} />
-                    Başa al
+                    {allLocked ? <LockOpen size={12} /> : <Lock size={12} />}
+                    {allLocked ? 'Kilitleri aç' : 'Hepsini kilitle'}
                   </button>
-                }
-              >
-                <div className="mb-4 flex flex-wrap gap-2">
-                  <select
-                    aria-label="Parkur"
-                    value={track}
-                    onChange={(event) => {
-                      setTrack(event.target.value)
-                      sim.setTrack(event.target.value)
-                    }}
-                    className="font-code rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100"
-                  >
-                    {Object.entries(TRACKS).map(([id, item]) => (
-                      <option key={id} value={id}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="flex rounded-md border border-slate-300 p-0.5 dark:border-white/15">
-                    {[
-                      ['follow', 'Takip'],
-                      ['top', 'Üstten'],
-                      ['free', 'Serbest'],
-                    ].map(([view, text]) => (
-                      <button
-                        key={view}
-                        type="button"
-                        onClick={() => setCarView(view)}
-                        className={`rounded-sm px-2.5 py-1 text-sm ${carView === view ? 'bg-teal-700 text-white dark:bg-teal-400 dark:text-teal-950' : 'text-slate-600 dark:text-slate-300'}`}
-                      >
-                        {text}
-                      </button>
-                    ))}
-                  </div>
+                  <label className="relative">
+                    <span className="sr-only">Parça ekle</span>
+                    <select
+                      value=""
+                      onChange={(event) => event.target.value && addPart(event.target.value)}
+                      className="font-code w-[7.5rem] appearance-none rounded-md bg-teal-700 py-1 pl-7 pr-2 text-xs font-semibold text-white dark:bg-teal-400 dark:text-teal-950"
+                    >
+                      <option value="">Parça ekle</option>
+                      {[
+                        ['Breadboard ve elemanlar', ([type, definition]) => type === 'breadboard' || definition.bare],
+                        ['Modüller', ([type, definition]) => type !== 'breadboard' && !definition.bare],
+                      ].map(([group, test]) => (
+                        <optgroup key={group} label={group}>
+                          {Object.entries(PART_CATALOG)
+                            .filter((entry) => !entry[1].legacy && test(entry))
+                            .map(([type, definition]) => (
+                              <option key={type} value={type}>
+                                {definition.name}
+                              </option>
+                            ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                    <Plus size={13} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-white dark:text-teal-950" />
+                  </label>
                 </div>
-                <CarHud car={sim.hud?.car} />
-              </PanelCard>
-              <PanelCard title="Araba kabloları">
-                <CarWiring circuit={project.carCircuit} onWire={(part, pin, uno) => wireToUno('carCircuit', part, pin, uno)} />
-                {issues.length ? (
-                  <div className="mt-4">
-                    <IssuesList issues={issues} />
-                  </div>
-                ) : null}
-              </PanelCard>
-            </>
-          )}
-        </div>
-      </div>
+              }
+            >
+              {/* The Uno comes first; it can be moved and turned but not removed. */}
+              <ul className="flex flex-wrap gap-2">
+                {[{ id: UNO_ID, label: 'Arduino Uno' }, ...project.circuit.parts.map((part) => ({ id: part.id, label: partLabel(part) }))].map(({ id, label }) => {
+                  const chosen = selection?.partId === id
+                  return (
+                    <li key={id}>
+                      <button
+                        type="button"
+                        aria-pressed={chosen}
+                        data-part-chip={id}
+                        onClick={(event) => {
+                          chipAnchor.current = { id, top: event.currentTarget.getBoundingClientRect().top }
+                          setSelection(chosen ? null : { partId: id })
+                        }}
+                        className={`font-code inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-sm transition ${chosen ? 'border-teal-600 bg-teal-50 text-teal-900 dark:border-teal-300/60 dark:bg-teal-400/10 dark:text-teal-100' : 'border-slate-300 text-slate-700 hover:border-teal-600 hover:text-teal-800 dark:border-white/15 dark:text-slate-200'}`}
+                      >
+                        {chosen ? <Check size={13} /> : null}
+                        {label}
+                        {locked[id] ? <Lock size={11} className="text-amber-600 dark:text-amber-300" aria-label="kilitli" /> : null}
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+              {project.circuit.parts.length ? null : <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Masada başka parça yok. “Parça ekle” ile başlayın.</p>}
+            </PanelCard>
+          ),
+          connections: (
+            <ConnectionsPanel
+              circuit={project.circuit}
+              selection={selection}
+              onSelect={setSelection}
+              onWire={(part, pin, uno) => wireToUno('circuit', part, pin, uno)}
+              onStrip={stripToUno}
+              onConnect={(from, to) => setCircuit('circuit', (circuit) => connectEndpoints(circuit, from, to))}
+            />
+          ),
+          issues: issues.length ? (
+            <PanelCard title="Devre kontrolü">
+              <IssuesList issues={issues} />
+            </PanelCard>
+          ) : null,
+          serial: serialPanel,
+        }
+      : {
+          car: (
+            <PanelCard
+              title="Araba"
+              actions={
+                <button
+                  type="button"
+                  onClick={() => {
+                    sim.resetCar()
+                    setCarResetToken((token) => token + 1)
+                  }}
+                  className="font-code inline-flex items-center gap-1 text-xs text-slate-600 hover:text-teal-700 dark:text-slate-300 dark:hover:text-teal-300"
+                >
+                  <RotateCcw size={12} />
+                  Başa al
+                </button>
+              }
+            >
+              <div className="mb-4 flex flex-wrap gap-2">
+                <select
+                  aria-label="Parkur"
+                  value={track}
+                  onChange={(event) => {
+                    setTrack(event.target.value)
+                    sim.setTrack(event.target.value)
+                  }}
+                  className="font-code rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100"
+                >
+                  {Object.entries(TRACKS).map(([id, item]) => (
+                    <option key={id} value={id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex rounded-md border border-slate-300 p-0.5 dark:border-white/15">
+                  {[
+                    ['follow', 'Takip'],
+                    ['top', 'Üstten'],
+                    ['free', 'Serbest'],
+                  ].map(([view, text]) => (
+                    <button
+                      key={view}
+                      type="button"
+                      onClick={() => setCarView(view)}
+                      className={`rounded-sm px-2.5 py-1 text-sm ${carView === view ? 'bg-teal-700 text-white dark:bg-teal-400 dark:text-teal-950' : 'text-slate-600 dark:text-slate-300'}`}
+                    >
+                      {text}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <CarHud car={sim.hud?.car} />
+            </PanelCard>
+          ),
+          carWiring: (
+            <PanelCard title="Araba kabloları">
+              <CarWiring circuit={project.carCircuit} onWire={(part, pin, uno) => wireToUno('carCircuit', part, pin, uno)} />
+              {issues.length ? (
+                <div className="mt-4">
+                  <IssuesList issues={issues} />
+                </div>
+              ) : null}
+            </PanelCard>
+          ),
+          serial: serialPanel,
+        }
 
-      <Licenses ref={licensesRef} />
+  const panelIds = new Set(Object.keys(panels).filter((id) => panels[id]))
+  const { layout } = dock
+  const columnCount = layout.columns ?? autoColumns
+  const twoColumns = columnCount === 2
+  const hasDock = (side) => layout.docks[side].some((id) => panelIds.has(id)) || Boolean(dock.dragging)
+  // Column widths stay within the screen; the 3D view keeps at least 380 px
+  // (480 in two columns, where the code column is wider).
+  const room = Math.max(0, workspaceWidth - 32)
+  const widths = (current) => {
+    if ((current.columns ?? autoColumns) === 2) return { left2: Math.max(340, Math.min(current.left2, room - 480)) }
+    const left = Math.max(300, Math.min(current.left, room - 380 - Math.max(280, current.right)))
+    return { left, right: Math.max(280, Math.min(current.right, room - 380 - left)) }
+  }
+  const { left: leftWidth = 0, right: rightWidth = 0, left2: codeWidth = 0 } = widths(layout)
+  // Dragging works from the latest widths, so fast drags keep up.
+  const resize = (side, delta) => dock.update((current) => ({ [side]: widths(current)[side] + delta }))
+  // A column's top pane (code, or the 3D view) against the dock under it.
+  const resizeRow = (key, column, delta) => {
+    const height = column?.getBoundingClientRect().height || 600
+    dock.update((current) => ({ [key]: Math.min(0.85, Math.max(0.25, current[key] + delta / height)) }))
+  }
+  // A column: its pane on top and, when it has panels, the dock under it.
+  const column = (side, pane, key) => (
+    <div className="flex min-h-0 flex-col" data-column={side}>
+      <div className="min-h-[180px]" style={{ flex: hasDock(side) ? `0 0 ${layout[key] * 100}%` : '1 1 auto' }}>
+        {pane}
+      </div>
+      {hasDock(side) ? (
+        <>
+          <Splitter direction="horizontal" label="Üstteki alan ile panellerin yüksekliği" onMove={(dy) => resizeRow(key, workspaceRef.current?.querySelector(`[data-column="${side}"]`), dy)} />
+          <Dock side={side} dock={dock} panels={panels} className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-1" />
+        </>
+      ) : null}
     </div>
+  )
+
+  return (
+    <>
+      {/* On large screens the toolbar and the workspace fill the screen under the site header. */}
+      <div className={wide ? 'flex h-[calc(100dvh-5.75rem)] min-h-[640px] flex-col gap-2' : 'space-y-3'}>
+        <h1 className="sr-only">Arduino Simülatörü</h1>
+        <PanelCard className="[&>div]:px-3 [&>div]:py-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              aria-label="Örnek proje"
+              value={project.exampleId}
+              onChange={(event) => chooseExample(event.target.value)}
+              className="font-code w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 py-2 text-sm dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100 sm:w-auto sm:min-w-[16rem]"
+            >
+              {[1, 2, 3, 4, 5, 0].map((week) => (
+                <optgroup key={week} label={WEEK_LABELS[week]}>
+                  {EXAMPLES.filter((item) => item.week === week).map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.title}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            <div className="flex rounded-md border border-slate-300 p-0.5 dark:border-white/15">
+              {[
+                ['bench', 'Tezgâh', <Cpu key="icon" size={15} />],
+                ['car', 'Robot araba', <Bot key="icon" size={15} />],
+              ].map(([mode, text, icon]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => {
+                    setSelection(null)
+                    update({ mode })
+                  }}
+                  className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm transition ${project.mode === mode ? 'bg-teal-700 text-white dark:bg-teal-400 dark:text-teal-950' : 'text-slate-600 hover:text-teal-800 dark:text-slate-300'}`}
+                >
+                  {icon}
+                  {text}
+                </button>
+              ))}
+            </div>
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+              <button type="button" onClick={() => setSound((value) => !value)} title={sound ? 'Sesi kapat' : 'Sesi aç'} aria-label={sound ? 'Sesi kapat' : 'Sesi aç'} className="rounded-md border border-slate-300 p-2 text-slate-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300">
+                {sound ? <Volume2 size={16} /> : <VolumeX size={16} />}
+              </button>
+              {running ? (
+                <button type="button" onClick={sim.stop} className="inline-flex items-center gap-2 rounded-md bg-rose-600 px-4 py-2 font-semibold text-white hover:bg-rose-700">
+                  <Square size={15} />
+                  Durdur
+                </button>
+              ) : null}
+              <RunButtons
+                compiling={compile.state === 'compiling'}
+                running={running}
+                canRun={built !== null}
+                stale={built !== null && built !== project.code}
+                onBuildAndRun={() => run()}
+                onBuild={() => build()}
+                onRun={runBuilt}
+              />
+            </div>
+          </div>
+          {example ? (
+            <div className="mt-2 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+              <p className="min-w-0 flex-1 basis-80 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{example.summary}</p>
+              <AnswerBar key={example.id} example={example} onShowCode={showCode} onShowWires={showWires} onReset={resetExercise} className="space-y-2" />
+            </div>
+          ) : null}
+        </PanelCard>
+
+        {wide ? (
+          // Editor | 3D view | dock, filling the screen under the site header.
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="mb-1.5 flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+              <span className="hidden xl:inline">Çubukları sürükleyerek alanları büyütün; panelleri tutamaklarından sürükleyip yerlerini değiştirin, başlıklarına tıklayıp katlayın.</span>
+              <div className="flex rounded-md border border-slate-300 p-0.5 dark:border-white/15" role="group" aria-label="Düzen">
+                {[
+                  [3, '3 sütun', <Columns3 key="icon" size={13} />],
+                  [2, '2 sütun', <Columns2 key="icon" size={13} />],
+                ].map(([columns, text, icon]) => (
+                  <button
+                    key={columns}
+                    type="button"
+                    aria-pressed={columnCount === columns}
+                    onClick={() => dock.update({ columns })}
+                    className={`font-code inline-flex items-center gap-1 rounded-sm px-2 py-0.5 ${columnCount === columns ? 'bg-teal-700 text-white dark:bg-teal-400 dark:text-teal-950' : 'hover:text-teal-700 dark:hover:text-teal-300'}`}
+                  >
+                    {icon}
+                    {text}
+                  </button>
+                ))}
+              </div>
+              <button type="button" onClick={dock.reset} className="font-code inline-flex items-center gap-1 hover:text-teal-700 dark:hover:text-teal-300">
+                <LayoutTemplate size={13} />
+                Düzeni sıfırla
+              </button>
+            </div>
+            {twoColumns ? (
+              <div className="grid min-h-0 flex-1" style={{ gridTemplateColumns: `${codeWidth}px auto minmax(0,1fr)` }} ref={workspaceRef}>
+                {column('left', editorPane, 'editor')}
+                <Splitter label="Kod ile 3B görünümün genişliği" onMove={(dx) => resize('left2', dx)} />
+                {column('right', benchPane, 'bench')}
+              </div>
+            ) : (
+              <div className="grid min-h-0 flex-1" style={{ gridTemplateColumns: `${leftWidth}px auto minmax(0,1fr) auto ${rightWidth}px` }} ref={workspaceRef}>
+                {column('left', editorPane, 'editor')}
+                <Splitter label="Kod ile 3B görünümün genişliği" onMove={(dx) => resize('left', dx)} />
+                {benchPane}
+                <Splitter label="3B görünüm ile panellerin genişliği" onMove={(dx) => resize('right', -dx)} />
+                <Dock side="right" dock={dock} panels={panels} className="min-h-0 space-y-3 overflow-y-auto pb-1" />
+              </div>
+            )}
+          </div>
+        ) : (
+          // Phones and tablets: the 3D view first, then the code and the panels.
+          <div className="space-y-4">
+            <div className="h-[380px] sm:h-[520px]">{benchPane}</div>
+            <div className="h-[460px] sm:h-[540px]">{editorPane}</div>
+            {[...layout.docks.left, ...layout.docks.right].map((id) => (panels[id] ? <div key={id}>{panels[id]}</div> : null))}
+          </div>
+        )}
+
+      </div>
+      <div className="mt-4">
+        <Licenses ref={licensesRef} />
+      </div>
+    </>
   )
 }

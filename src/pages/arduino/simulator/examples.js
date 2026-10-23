@@ -399,8 +399,8 @@ void loop() {
     mode: 'bench',
     code: `// Görev: Motorları sırayla ileri, geri, sağa, sola döndür ve durdur; her
 // adımı Serial’e yaz. Sol motor OUT1–OUT2’ye, sağ motor OUT3–OUT4’e; ENA D5,
-// IN1 D8, IN2 D9, ENB D6, IN3 D10, IN4 D11. Motorları 4×AA pil besler: + ucu L298N’in +12V’una, − ucu GND’sine;
-// GND’yi Arduino GND’siyle ortakla.
+// IN1 D8, IN2 D9, ENB D6, IN3 D10, IN4 D11. Motorları 4×AA pil besler: + ucu
+// L298N’in +12V’una, − ucu GND’sine; GND’yi Arduino GND’siyle ortakla.
 
 void setup() {
 

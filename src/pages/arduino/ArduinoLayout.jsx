@@ -66,7 +66,8 @@ export default function ArduinoLayout() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+      {/* The simulator takes the whole width; the other pages read better narrow. */}
+      <main className={pathname === '/arduino/simulator' ? 'w-full flex-1 px-3 py-3 sm:px-4' : 'mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-10 lg:px-8'}>
         <Outlet />
       </main>
 
