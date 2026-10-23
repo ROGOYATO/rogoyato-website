@@ -189,6 +189,77 @@ export function chipTop(lines, width, depth, color = '#1c1c1f', turned = false) 
   return [side, side, chipCache.get(key), side, side, side]
 }
 
+// A stadium outline (straight sides, round ends) along x, as a shape for
+// slab().
+export function racetrack(length, width) {
+  const r = width / 2
+  const half = length / 2 - r
+  const shape = new THREE.Shape()
+  shape.moveTo(-half, -r)
+  shape.lineTo(half, -r)
+  shape.absarc(half, 0, r, -Math.PI / 2, Math.PI / 2, false)
+  shape.lineTo(-half, r)
+  shape.absarc(-half, 0, r, Math.PI / 2, (Math.PI * 3) / 2, false)
+  return shape
+}
+
+// The marking stamped on a crystal's lid: the frequency, the maker's mark
+// and a date code, in dark ink on brushed steel.
+const lidCache = new Map()
+function crystalLid(frequency) {
+  if (lidCache.has(frequency)) return lidCache.get(frequency)
+  const [w, h] = [1105, 465] // 1000 px/cm
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')
+  // Fine brushing along the can, slightly brighter in the middle.
+  const sheen = ctx.createLinearGradient(0, 0, 0, h)
+  sheen.addColorStop(0, '#c9cdd1')
+  sheen.addColorStop(0.5, '#e4e7ea')
+  sheen.addColorStop(1, '#c4c8cc')
+  ctx.fillStyle = sheen
+  ctx.fillRect(0, 0, w, h)
+  for (let y = 0; y < h; y += 3) {
+    ctx.fillStyle = `rgba(${Math.random() < 0.5 ? '255,255,255' : '90,96,104'},${0.03 + Math.random() * 0.05})`
+    ctx.fillRect(0, y, w, 1 + Math.random() * 2)
+  }
+  ctx.fillStyle = 'rgba(38,40,44,0.88)'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.font = '700 132px "JetBrains Mono", ui-monospace, monospace'
+  ctx.fillText(frequency, w / 2, h * 0.42)
+  ctx.font = '600 62px "JetBrains Mono", ui-monospace, monospace'
+  ctx.fillText('JF  2219', w / 2, h * 0.76)
+  const texture = topTexture(canvas, 1.105, 0.465)
+  lidCache.set(frequency, texture)
+  return texture
+}
+
+// An HC-49/S quartz crystal standing on the board, its length along x: a
+// deep-drawn steel can 11.05 × 4.65 mm and 3.5 mm tall with a rolled top
+// edge, sealed onto a slightly wider base flange; the frequency is printed
+// on the lid. The leads go through the board and are not seen.
+export function crystal(group, frequency, top = 0.16) {
+  const steel = new THREE.MeshPhysicalMaterial({ color: '#dde1e5', metalness: 1, roughness: 0.13, anisotropy: 0.5, anisotropyRotation: Math.PI / 2 })
+  const lid = new THREE.MeshPhysicalMaterial({ map: crystalLid(frequency), metalness: 1, roughness: 0.24, anisotropy: 0.7 })
+  // Smooth round ends: more curve segments than slab() uses.
+  const stadium = (length, width, height, materials, bevel = 0) => {
+    const geometry = new THREE.ExtrudeGeometry(racetrack(length - 2 * bevel, width - 2 * bevel), { depth: height - 2 * bevel, bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 5, curveSegments: 28 })
+    geometry.rotateX(-Math.PI / 2)
+    geometry.translate(0, bevel, 0)
+    const mesh = new THREE.Mesh(geometry, materials)
+    mesh.castShadow = true
+    return mesh
+  }
+  const flange = stadium(1.14, 0.5, 0.035, [metal('#b9bec3', 0.35), metal('#aeb3b8', 0.4)])
+  flange.position.y = top
+  const can = stadium(1.105, 0.465, 0.315, [lid, steel], 0.035)
+  can.position.y = top + 0.035
+  group.add(flange, can)
+  return can
+}
+
 // An electrolytic capacitor standing on the board; `print` is the marking
 // on its aluminium top (the Uno's read 71134 / 47 / 25V).
 export function electrolytic(group, x, y, z, radius = 0.3, height = 0.62, print = null) {
