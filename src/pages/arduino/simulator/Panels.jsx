@@ -34,13 +34,16 @@ export function PanelCard({ title, titleLang, actions, children, className = '' 
   return (
     <section className={`rounded-xl border border-slate-300/80 bg-white/95 dark:border-teal-300/15 dark:bg-[#0f1d1f]/95 ${className}`}>
       {title ? (
-        <div className={`flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 px-4 py-2.5 ${folded ? '' : 'border-b border-slate-200 dark:border-white/10'} ${dock ? 'pl-1.5' : ''}`}>
+        <div
+          {...dock?.drag}
+          className={`flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 px-4 py-2.5 ${folded ? '' : 'border-b border-slate-200 dark:border-white/10'} ${dock ? 'cursor-grab pl-1.5 active:cursor-grabbing' : ''}`}
+        >
           <div className="flex shrink-0 items-center gap-1">
             {dock ? (
               <button
                 type="button"
                 {...dock.grip}
-                title="Sürükleyerek taşıyın (ya da ok tuşları)"
+                title="Sürükleyerek taşıyın (ya da ok tuşlarıyla)"
                 aria-label={`${title} panelini taşı`}
                 className="cursor-grab rounded p-0.5 text-slate-400 hover:text-teal-700 active:cursor-grabbing dark:text-slate-500 dark:hover:text-teal-300"
               >
@@ -49,7 +52,7 @@ export function PanelCard({ title, titleLang, actions, children, className = '' 
             ) : null}
             <h3 lang={titleLang} className="font-code text-xs font-semibold uppercase tracking-[0.12em] text-teal-700 dark:text-teal-300">
               {dock ? (
-                <button type="button" onClick={dock.toggle} aria-expanded={!folded} className="uppercase tracking-[0.12em]">
+                <button type="button" onClick={dock.toggle} aria-expanded={!folded} className="cursor-pointer uppercase tracking-[0.12em]">
                   {title}
                 </button>
               ) : (
