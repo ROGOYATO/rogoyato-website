@@ -2,6 +2,7 @@
 // centimetres; the simulation works in metres.
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import SmoothZoom from './smoothZoom'
 import { ARENA, TRACKS, WHEEL_RADIUS } from '../../../utils/avrSim/car'
 import { box, cylinder, mat } from './models'
 
@@ -107,6 +108,10 @@ export class Car3D {
     this.controls.enableDamping = true
     this.controls.dampingFactor = 0.2
     this.controls.maxPolarAngle = Math.PI * 0.48
+    this.controls.minDistance = 20
+    this.controls.maxDistance = 600
+    this.zoom = new SmoothZoom(this.controls, container, () => (this.dirty = true))
+    this.clock = new THREE.Clock()
     this.controls.target.set(ARENA.width * 50, 0, ARENA.height * 50)
 
     this.scene.add(new THREE.HemisphereLight('#ffffff', '#94a3b8', 1.3))
@@ -186,6 +191,7 @@ export class Car3D {
     this.view = view
     this.dirty = true
     this.controls.enabled = view === 'free'
+    this.zoom.cancel()
     if (view === 'top') {
       this.camera.position.set(ARENA.width * 50, 230, ARENA.height * 50 + 1)
       this.controls.target.set(ARENA.width * 50, 0, ARENA.height * 50)
@@ -243,6 +249,7 @@ export class Car3D {
       this.camera.position.lerp(desired, 0.08)
       this.controls.target.lerp(target.add(new THREE.Vector3(Math.cos(heading) * 20, 0, Math.sin(heading) * 20)), 0.15)
     }
+    if (this.zoom.update(Math.min(0.1, this.clock.getDelta()))) moving = true
     if (this.controls.update()) moving = true
     if (!moving && !this.dirty) return
     this.dirty = false
@@ -253,6 +260,7 @@ export class Car3D {
     this.renderer.setAnimationLoop(null)
     this.resizeObserver.disconnect()
     this.visibilityObserver.disconnect()
+    this.zoom.dispose()
     this.controls.dispose()
     this.renderer.dispose()
     this.renderer.domElement.remove()
