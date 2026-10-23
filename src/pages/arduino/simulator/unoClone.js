@@ -41,8 +41,8 @@ const INFO = {
 const PARTS = [
   { name: 'MCU', build: 'TQFP32', x: 43.8, y: 26.3, rot: 0 },
   { name: 'CH340', build: 'SO16', x: 20.0, y: 31.2, rot: 0 },
-  { name: 'Y1', build: 'QS', x: 21.6, y: 39.4, rot: 0 },
-  { name: 'Y2', build: 'QS', x: 55.6, y: 26.6, rot: 90 },
+  { name: 'Y1', build: 'QS', value: '12MHz', x: 21.6, y: 39.4, rot: 0 },
+  { name: 'Y2', build: 'QS', value: '16MHz', x: 55.6, y: 26.6, rot: 90 },
   { name: 'U1', build: 'SOT223', x: 6.4, y: 17.6, rot: 90 },
   { name: 'U2', build: 'SOT-23', x: 15.8, y: 15.2, rot: 0 },
   { name: 'U5', build: 'SO8', x: 27.8, y: 15.6, rot: 90 },
@@ -268,6 +268,18 @@ function drawCloneTop(scale, bump) {
     ctx.translate(mmx(x), mmz(y))
     ctx.rotate(-Math.PI / 2)
     ctx.fillText(name, 0, 0)
+    ctx.restore()
+  }
+  // The crystals' outlines, a little wider than their cans.
+  ctx.lineWidth = 3
+  for (const { x, y, rot } of PARTS.filter((part) => part.build === 'QS')) {
+    const [l, w] = [12.0 * (scale / 10), 5.4 * (scale / 10)]
+    ctx.save()
+    ctx.translate(mmx(x), mmz(y))
+    ctx.rotate((-rot * Math.PI) / 180)
+    ctx.beginPath()
+    ctx.roundRect(-l / 2, -w / 2, l, w, w / 2)
+    ctx.stroke()
     ctx.restore()
   }
   // Names of the spare grid's holes.

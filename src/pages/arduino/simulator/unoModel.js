@@ -5,7 +5,7 @@
 // (A000066). Hovering a part tells what it is.
 import * as THREE from 'three'
 import { PWM_PINS } from '../../../utils/avrSim/catalog'
-import { GOLD, box, chipTop, cylinder, electrolytic, mat, metal, slab, topTexture } from './models'
+import { GOLD, box, chipTop, crystal, cylinder, electrolytic, mat, metal, slab, topTexture } from './models'
 import board from './unoBoard.json'
 
 const HEADER_PITCH = 0.254
@@ -423,14 +423,9 @@ export const BUILD = {
     group.add(box(0.32, 0.06, 0.13, plastic('#d8c7a0', 0.45), 0, 0.19, 0))
     group.add(box(0.3, 0.05, 0.11, metal('#cfd3d7', 0.3), 0, 0.245, 0))
   },
-  QS(group) {
-    // HC-49/S crystal lying along the footprint's x.
-    const can = new THREE.Mesh(new THREE.CapsuleGeometry(0.23, 0.63, 6, 18), metal('#d9dde1', 0.18))
-    can.rotation.z = Math.PI / 2
-    can.scale.set(1, 0.75, 1)
-    can.position.set(0, 0.34, 0)
-    can.castShadow = true
-    group.add(can, box(1.12, 0.02, 0.48, plastic('#111214'), 0, 0.17, 0))
+  QS(group, element) {
+    // HC-49/S crystal, its length along the footprint's x.
+    crystal(group, /12/.test(element.value) ? '12.000' : '16.000')
   },
   TS42(group) {
     // Tactile switch: metal frame, round cap, four tinned legs.
