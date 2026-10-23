@@ -590,7 +590,9 @@ export class Bench3D {
       // A click on a plug pulls it out (the Uno card puts it back).
       this.controls.enabled = false
       this.unplugging = data.which
-    } else if ((data.kind === 'part' || data.kind === 'board' || data.kind === 'uno') && !this.isLocked(data.kind === 'uno' ? UNO_ID : data.partId)) {
+    } else if ((data.kind === 'part' || data.kind === 'board' || data.kind === 'uno') && !this.pending && !this.isLocked(data.kind === 'uno' ? UNO_ID : data.partId)) {
+      // (While a wire is being drawn a drag turns the view wherever it
+      // starts, to bring the other end into sight; parts stay put.)
       const partId = data.kind === 'uno' ? UNO_ID : data.partId
       const position = partId === UNO_ID ? unoPlacement(this.circuit).position : this.parts.get(partId)?.part.position
       const point = this.floorPoint(event)
