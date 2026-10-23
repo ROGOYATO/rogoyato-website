@@ -5,11 +5,18 @@ import { useState } from 'react'
 import { DockContext } from './dockLayout'
 
 // One dock: the panels in `panels` (id → element, null when not shown) in
-// the layout's order, each one a drop target, the dock's end another.
-export function Dock({ side, dock, panels, className = '' }) {
+// the layout's order, each one a drop target, the dock's end another. It
+// shows the layout's docks in `sides` one after another (in two columns the
+// 3D view's holds the centre's and the panel column's); a drop at its end
+// goes into the last. `beside` names the docks the arrow keys move a panel
+// to: { left, right }.
+export function Dock({ sides, beside = {}, dock, panels, className = '' }) {
   const { layout, move, toggle, dragging, setDragging } = dock
   const [over, setOver] = useState(null) // panel id, or 'end'
-  const ids = layout.docks[side].filter((id) => panels[id])
+  const list = sides.flatMap((side) => layout.docks[side] ?? [])
+  const ids = list.filter((id) => panels[id])
+  const sideOf = (id) => sides.find((side) => layout.docks[side]?.includes(id))
+  const last = sides[sides.length - 1]
   const allow = (event) => {
     if (!dragging) return
     event.preventDefault()
@@ -19,18 +26,20 @@ export function Dock({ side, dock, panels, className = '' }) {
     if (!dragging) return
     event.preventDefault()
     event.stopPropagation()
-    if (dragging !== before) move(dragging, side, before)
+    if (dragging !== before) move(dragging, before ? sideOf(before) : last, before)
     setDragging(null)
     setOver(null)
   }
   // Arrow keys on a grip: up/down reorder, left/right change docks.
   const keys = (event, id) => {
-    const list = layout.docks[side]
     const index = list.indexOf(id)
-    if (event.key === 'ArrowUp' && index > 0) move(id, side, list[index - 1])
-    else if (event.key === 'ArrowDown' && index < list.length - 1) move(id, side, list[index + 2] ?? null)
-    else if (event.key === 'ArrowLeft' && side === 'right') move(id, 'left')
-    else if (event.key === 'ArrowRight' && side === 'left') move(id, 'right')
+    if (event.key === 'ArrowUp' && index > 0) move(id, sideOf(list[index - 1]), list[index - 1])
+    else if (event.key === 'ArrowDown' && index < list.length - 1) {
+      const after = list[index + 2]
+      if (after) move(id, sideOf(after), after)
+      else move(id, sideOf(list[index + 1]))
+    } else if (event.key === 'ArrowLeft' && beside.left) move(id, beside.left)
+    else if (event.key === 'ArrowRight' && beside.right) move(id, beside.right)
     else return
     event.preventDefault()
     // Keep the focus on the grip that moved.

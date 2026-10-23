@@ -8,6 +8,9 @@ export const useDockPanel = () => useContext(DockContext)
 
 const STORAGE_KEY = 'rogoyato-sim-layout-v1'
 const PANEL_IDS = ['selected', 'parts', 'connections', 'issues', 'car', 'carWiring', 'serial']
+// The docks: under the code, under the 3D view, and the panel column (in
+// two columns, under the 3D view after the centre's).
+export const SIDES = ['left', 'center', 'right']
 export const DEFAULT_LAYOUT = {
   // 3: code | 3D | panels; 2: code over panels | 3D over panels; null: by
   // the screen (see useAutoColumns).
@@ -19,7 +22,7 @@ export const DEFAULT_LAYOUT = {
   // Height of the 3D view, and the least the code takes (it grows with the
   // code); null fits the screen. Panels under them take what they need.
   top: null,
-  docks: { left: ['serial'], right: ['selected', 'parts', 'connections', 'issues', 'car', 'carWiring'] },
+  docks: { left: ['serial'], center: [], right: ['selected', 'parts', 'connections', 'issues', 'car', 'carWiring'] },
   collapsed: {},
 }
 
@@ -28,9 +31,9 @@ function load() {
     const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY))
     if (!saved?.docks) return DEFAULT_LAYOUT
     // Panels added since the layout was saved go where they go by default.
-    const known = new Set([...saved.docks.left, ...saved.docks.right])
-    const docks = { left: saved.docks.left.filter((id) => PANEL_IDS.includes(id)), right: saved.docks.right.filter((id) => PANEL_IDS.includes(id)) }
-    for (const side of ['left', 'right']) for (const id of DEFAULT_LAYOUT.docks[side]) if (!known.has(id)) docks[side].push(id)
+    const known = new Set(SIDES.flatMap((side) => saved.docks[side] ?? []))
+    const docks = Object.fromEntries(SIDES.map((side) => [side, (saved.docks[side] ?? []).filter((id) => PANEL_IDS.includes(id))]))
+    for (const side of SIDES) for (const id of DEFAULT_LAYOUT.docks[side]) if (!known.has(id)) docks[side].push(id)
     return { ...DEFAULT_LAYOUT, ...saved, docks, collapsed: saved.collapsed ?? {} }
   } catch {
     return DEFAULT_LAYOUT
@@ -52,7 +55,7 @@ export function useDockLayout() {
   const move = useCallback(
     (id, side, before = null) =>
       update((current) => {
-        const docks = { left: current.docks.left.filter((item) => item !== id), right: current.docks.right.filter((item) => item !== id) }
+        const docks = Object.fromEntries(SIDES.map((name) => [name, (current.docks[name] ?? []).filter((item) => item !== id)]))
         const at = before ? docks[side].indexOf(before) : -1
         docks[side].splice(at < 0 ? docks[side].length : at, 0, id)
         return { docks }
