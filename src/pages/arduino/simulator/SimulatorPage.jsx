@@ -129,7 +129,6 @@ export default function SimulatorPage() {
   const hexRef = useRef(null)
   const [download, setDownload] = useState(null)
   const preloaded = useRef(false)
-  const licensesRef = useRef(null)
   useEffect(() => onCompilerProgress(setDownload), [])
   const sim = useSimulator({ sound })
   const dock = useDockLayout()
@@ -401,19 +400,6 @@ export default function SimulatorPage() {
         )}
         {sim.runtimeError ? <p className="mt-1 text-rose-700 dark:text-rose-300">Simülasyon durdu: {sim.runtimeError}</p> : null}
       </div>
-      <p className="border-t border-slate-200 px-3 py-1.5 text-[0.7rem] text-slate-500 dark:border-white/10 dark:text-slate-400">
-        Tarayıcıda çalışır. Derleyici: GCC 7.3.0 ve GNU binutils 2.42 (WebAssembly, GPL-3.0); kütüphaneler Arduino Library Manager’dan indirilir.{' '}
-        <button
-          type="button"
-          onClick={() => {
-            licensesRef.current.open = true
-            licensesRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          }}
-          className="underline hover:text-teal-700 dark:hover:text-teal-300"
-        >
-          Lisanslar ve kaynaklar
-        </button>
-      </p>
     </section>
   )
   const benchPane = (
@@ -805,7 +791,7 @@ export default function SimulatorPage() {
 
       </div>
       <div className="mt-4">
-        <Licenses ref={licensesRef} />
+        <Licenses />
       </div>
     </>
   )
