@@ -157,7 +157,9 @@ export class Bench3D {
     this.camera.position.set(0, 26, 26)
     this.controls = new OrbitControls(this.camera, this.renderer.domElement)
     this.controls.target.set(0, 0, 3)
+    // A short glide after letting go (about 0.3 s), not three.js's 1.5 s.
     this.controls.enableDamping = true
+    this.controls.dampingFactor = 0.2
     this.controls.maxPolarAngle = Math.PI * 0.47
     this.controls.minDistance = 6
     this.controls.maxDistance = 80
