@@ -43,8 +43,11 @@ export function PanelCard({ title, titleLang, actions, children, className = '' 
               <button
                 type="button"
                 {...dock.grip}
-                title="Sürükleyerek taşıyın (ya da ok tuşlarıyla)"
-                aria-label={`${title} panelini taşı`}
+                // A click folds or opens the panel, like one on its title.
+                onClick={dock.toggle}
+                aria-expanded={!folded}
+                title={`Tıklayınca ${folded ? 'açılır' : 'katlanır'}; sürükleyerek taşıyın (ya da ok tuşlarıyla)`}
+                aria-label={`${title} paneli: ${folded ? 'aç' : 'katla'} ya da taşı`}
                 className="cursor-grab rounded p-0.5 text-slate-400 hover:text-teal-700 active:cursor-grabbing dark:text-slate-500 dark:hover:text-teal-300"
               >
                 <GripVertical size={14} />
