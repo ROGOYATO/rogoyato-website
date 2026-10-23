@@ -833,7 +833,10 @@ export function IssuesList({ issues }) {
 }
 
 // offline: the USB cable is out, so the computer hears nothing.
-export function SerialMonitor({ text, running, baud, offline = false, onSend, onClear }) {
+// source: what it is talking to, when not the simulated board; idle: what
+// it says while nothing is connected; connect: { open, onToggle } for a
+// monitor that is opened and closed by hand (the real board's).
+export function SerialMonitor({ text, running, baud, offline = false, source = null, idle = null, connect = null, onSend, onClear }) {
   const outputRef = useRef(null)
   const [line, setLine] = useState('')
   const [follow, setFollow] = useState(true)
@@ -848,10 +851,19 @@ export function SerialMonitor({ text, running, baud, offline = false, onSend, on
   }
   return (
     <PanelCard
-      title={baud ? `Serial Monitor · ${baud} baud` : 'Serial Monitor'}
+      title={['Serial Monitor', source, baud && `${baud} baud`].filter(Boolean).join(' · ')}
       titleLang="en"
       actions={
         <div className="flex items-center gap-3">
+          {connect ? (
+            <button
+              type="button"
+              onClick={connect.onToggle}
+              className="font-code rounded-md border border-slate-300 px-2 py-0.5 text-xs text-slate-600 hover:border-teal-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300"
+            >
+              {connect.open ? 'Bağlantıyı kes' : 'Bağlan'}
+            </button>
+          ) : null}
           <label className="font-code flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
             <input type="checkbox" checked={follow} onChange={(event) => setFollow(event.target.checked)} className="accent-teal-600" />
             kaydır
@@ -863,14 +875,14 @@ export function SerialMonitor({ text, running, baud, offline = false, onSend, on
       }
     >
       <pre ref={outputRef} className="font-code h-40 overflow-auto whitespace-pre-wrap rounded-md bg-slate-950 p-3 text-xs leading-relaxed text-emerald-300">
-        {offline ? 'USB kablosu takılı değil: Serial Monitor bilgisayarla karta USB üzerinden konuşur.' : text || (running ? '' : 'Program çalışınca Serial.print çıktıları burada görünür.')}
+        {offline ? 'USB kablosu takılı değil: Serial Monitor bilgisayarla karta USB üzerinden konuşur.' : text || (running ? '' : (idle ?? 'Program çalışınca Serial.print çıktıları burada görünür.'))}
       </pre>
       <form onSubmit={send} className="mt-2 flex gap-2">
         <input
           value={line}
           onChange={(event) => setLine(event.target.value)}
           disabled={!running || offline}
-          placeholder={offline ? 'USB kablosu takılı değil' : running ? 'Arduino’ya gönder…' : 'Önce kodu karta yükleyin'}
+          placeholder={offline ? 'USB kablosu takılı değil' : running ? 'Arduino’ya gönder…' : connect ? 'Bağlı değil' : 'Önce kodu karta yükleyin'}
           className="font-code min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100"
         />
         <button type="submit" disabled={!running || offline} className="inline-flex items-center gap-1 rounded-md bg-teal-700 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-40 dark:bg-teal-400 dark:text-teal-950">

@@ -1,4 +1,4 @@
-import { Bot, Check, Columns2, Columns3, Cpu, LayoutTemplate, Loader2, Lock, LockOpen, Pause, Play, Plus, RotateCcw, Usb, Volume2, VolumeX } from 'lucide-react'
+import { Bot, Check, Columns2, Columns3, Cpu, LayoutTemplate, Lock, LockOpen, Pause, Play, Plus, RotateCcw, Usb, Volume2, VolumeX } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
@@ -32,10 +32,13 @@ import { compileSketch, rememberCompiled } from './compile'
 import { onCompilerProgress, preloadCompiler } from './compiler/browserCompiler'
 import { EXAMPLES } from './examples'
 import { CarHud, CarWiring, ConnectionsPanel, IssuesList, PanelCard, PartInspector, SerialMonitor, UnoInspector } from './Panels'
+import { describePort, sketchBaud } from './realBoard'
+import useRealBoard from './useRealBoard'
 import useSimulator from './useSimulator'
 
 // Older saved projects held the examples' answers; they are dropped.
 const STORAGE_KEY = 'rogoyato-sim-project-v3'
+const TARGET_KEY = 'rogoyato-sim-hedef'
 const OLD_STORAGE_KEYS = ['rogoyato-sim-project-v1', 'rogoyato-sim-project-v2']
 const WEEK_LABELS = { 1: '1. hafta', 2: '2. hafta', 3: '3. hafta', 4: '4. hafta', 5: 'Yarışma', 0: 'Serbest' }
 const clone = (value) => (value === undefined ? undefined : JSON.parse(JSON.stringify(value)))
@@ -72,6 +75,27 @@ function loadSaved() {
     // Storage can be unavailable (private mode); start from an example.
   }
   return null
+}
+
+// Where "Derle ve yükle" sends the program: the Uno on the simulated bench
+// or a real one on this computer's USB.
+function useTarget(supported) {
+  const [target, setTarget] = useState(() => {
+    try {
+      return supported && window.localStorage.getItem(TARGET_KEY) === 'real' ? 'real' : 'sim'
+    } catch {
+      return 'sim'
+    }
+  })
+  const choose = (value) => {
+    setTarget(value)
+    try {
+      window.localStorage.setItem(TARGET_KEY, value)
+    } catch {
+      // The choice lasts for this visit only.
+    }
+  }
+  return [target, choose]
 }
 
 function useDarkMode() {
@@ -131,6 +155,8 @@ export default function SimulatorPage() {
   const preloaded = useRef(false)
   useEffect(() => onCompilerProgress(setDownload), [])
   const sim = useSimulator({ sound })
+  const real = useRealBoard()
+  const [target, setTarget] = useTarget(real.supported)
   const dock = useDockLayout()
   const wide = useWideScreen()
   const autoColumns = useAutoColumns()
@@ -210,7 +236,7 @@ export default function SimulatorPage() {
     if (poweredRef.current && flashRef.current) launchRef.current(flashRef.current)
   }, [])
 
-  // The code the last good build came from (the "Çalıştır" piece runs it).
+  // The code the last good build came from (the "Yükle" piece uploads it).
   const [built, setBuilt] = useState(null)
   const build = async (prefer = project.prefer ?? {}) => {
     setCompile({ state: 'compiling' })
@@ -226,7 +252,7 @@ export default function SimulatorPage() {
     setCompile({ state: 'ok', source: result.source, size: result.size, libraries: result.libraries, seconds: (performance.now() - started) / 1000 })
     return result.hex
   }
-  // "Çalıştır" uploads over USB; without the cable nothing reaches the chip.
+  // Uploading goes over USB; without the cable nothing reaches the chip.
   const runBuilt = () => {
     if (!hexRef.current) return
     if (!power.usb) {
@@ -239,7 +265,20 @@ export default function SimulatorPage() {
     setCarResetToken((token) => token + 1)
     launch(hexRef.current)
   }
+  // To a real board: the port is asked for first, while the click that
+  // asked for the upload still lets the browser open its port picker.
+  const realPort = async () => real.port ?? (await real.askPort())
+  const uploadBuilt = async () => {
+    if (target === 'sim') return runBuilt()
+    if (hexRef.current && (await realPort())) real.uploadHex(hexRef.current, sketchBaud(built ?? project.code))
+  }
   const run = async (prefer) => {
+    if (target === 'real') {
+      if (!(await realPort())) return
+      const hex = await build(prefer)
+      if (hex) real.uploadHex(hex, sketchBaud(project.code))
+      return
+    }
     if (await build(prefer)) runBuilt()
   }
 
@@ -356,7 +395,21 @@ export default function SimulatorPage() {
   const selectedWire = selection?.wireId ? project.circuit.wires.find((wire) => wire.id === selection.wireId) : null
   const diagnostics = useMemo(() => (compile.state === 'error' ? (compile.diagnostics ?? []) : []), [compile])
 
-  const serialPanel = <SerialMonitor text={sim.serial} running={running} baud={sim.hud?.baud} offline={!power.usb} onSend={sim.sendSerial} onClear={sim.clearSerial} />
+  const serialPanel =
+    target === 'real' ? (
+      <SerialMonitor
+        text={real.serial}
+        running={Boolean(real.monitor)}
+        baud={real.monitor?.baud}
+        source="gerçek kart"
+        idle={real.port ? 'Bağlı değil. Kod yüklenince kendiliğinden bağlanır; “Bağlan” ile de açılır (kart yeniden başlar).' : 'Önce kartın USB portunu seçin.'}
+        connect={real.port ? { open: Boolean(real.monitor), onToggle: () => (real.monitor ? real.closeMonitor() : real.openMonitor(sketchBaud(built ?? project.code))) } : null}
+        onSend={real.sendSerial}
+        onClear={real.clearSerial}
+      />
+    ) : (
+      <SerialMonitor text={sim.serial} running={running} baud={sim.hud?.baud} offline={!power.usb} onSend={sim.sendSerial} onClear={sim.clearSerial} />
+    )
   const editorPane = (
     <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-300/80 bg-white dark:border-teal-300/15 dark:bg-[#0b1517]">
       <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-[#0f1d1f]">
@@ -430,8 +483,24 @@ export default function SimulatorPage() {
                 : 'GCC ile derleniyor…'}
           </p>
         ) : (
-          <p className="text-slate-500 dark:text-slate-400">Hazır. “Derle ve yükle” ile kodu karta yükleyin; kart enerji aldığı sürece çalışır.</p>
+          <p className="text-slate-500 dark:text-slate-400">
+            {target === 'real' ? 'Hazır. “Derle ve yükle” kodu USB’deki gerçek Arduino’ya yükler.' : 'Hazır. “Derle ve yükle” ile kodu karta yükleyin; kart enerji aldığı sürece çalışır.'}
+          </p>
         )}
+        {target === 'real' && real.upload.state === 'uploading' ? (
+          <div className="mt-1 flex items-center gap-2 text-slate-600 dark:text-slate-300">
+            <span>Karta yükleniyor… %{Math.round(real.upload.progress * 100)}</span>
+            <span className="h-1.5 w-32 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
+              <span className="block h-full bg-emerald-500 transition-[width]" style={{ width: `${real.upload.progress * 100}%` }} />
+            </span>
+          </div>
+        ) : target === 'real' && real.upload.state === 'done' ? (
+          <p className="mt-1 text-emerald-700 dark:text-emerald-300">
+            Gerçek karta yüklendi ve doğrulandı: {real.upload.bytes} bayt ({real.upload.seconds.toFixed(1)} s).
+          </p>
+        ) : target === 'real' && real.upload.state === 'error' ? (
+          <p className="mt-1 text-rose-700 dark:text-rose-300">{real.upload.message}</p>
+        ) : null}
         {sim.runtimeError ? <p className="mt-1 text-rose-700 dark:text-rose-300">Simülasyon durdu: {sim.runtimeError}</p> : null}
       </div>
     </section>
@@ -763,13 +832,42 @@ export default function SimulatorPage() {
                   {sim.paused ? 'Sürdür' : 'Duraklat'}
                 </button>
               ) : null}
+              {/* The board and port, as in the IDE: the simulated Uno or a real one. */}
+              <div className="flex items-center rounded-md border border-slate-300 dark:border-white/15">
+                <select
+                  aria-label="Yükleme hedefi"
+                  value={target}
+                  onChange={(event) => {
+                    setTarget(event.target.value)
+                    real.forget()
+                  }}
+                  title={real.supported ? 'Kodun yükleneceği kart' : 'Gerçek karta yüklemek için bilgisayarda Chrome veya Edge kullanın.'}
+                  className="font-code max-w-[13rem] rounded-md bg-transparent px-2 py-2 text-sm text-slate-700 dark:bg-[#0b1517] dark:text-slate-100"
+                >
+                  <option value="sim">Simülatördeki Uno</option>
+                  <option value="real" disabled={!real.supported}>
+                    {real.supported ? 'Gerçek Uno (USB)' : 'Gerçek Uno (Chrome/Edge gerekir)'}
+                  </option>
+                </select>
+                {target === 'real' ? (
+                  <button
+                    type="button"
+                    onClick={real.askPort}
+                    title={real.port ? 'Başka bir port seç' : 'Kartın takılı olduğu USB portunu seç'}
+                    className="font-code inline-flex items-center gap-1 whitespace-nowrap border-l border-slate-300 px-2 py-2 text-sm text-slate-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300 dark:hover:text-teal-300"
+                  >
+                    <Usb size={14} />
+                    {real.port ? describePort(real.port) : 'Port seç'}
+                  </button>
+                ) : null}
+              </div>
               <RunButtons
                 compiling={compile.state === 'compiling'}
-                canRun={built !== null}
-                stale={built !== null && built !== project.code}
+                uploading={real.uploading}
+                needsBuild={built !== project.code}
                 onBuildAndRun={() => run()}
                 onBuild={() => build()}
-                onRun={runBuilt}
+                onRun={() => (built === project.code && hexRef.current ? uploadBuilt() : run())}
               />
             </div>
           </div>
