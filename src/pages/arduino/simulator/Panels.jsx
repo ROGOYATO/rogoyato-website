@@ -1,4 +1,4 @@
-import { AlertTriangle, CircleX, Eraser, Lock, LockOpen, Plus, RotateCcw, RotateCw, Send, Trash2 } from 'lucide-react'
+import { AlertTriangle, ChevronDown, CircleX, Eraser, GripVertical, Lock, LockOpen, Plus, RotateCcw, RotateCw, Send, Trash2 } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 import {
   PART_CATALOG,
@@ -23,21 +23,51 @@ import {
   partLabel,
   pluggedParts,
 } from '../../../utils/avrSim/catalog'
+import { useDockPanel } from './dockLayout'
 
 // titleLang: an English title ("Serial Monitor") is upper-cased with an
 // English I, not the Turkish İ.
+// In a dock (Dock.jsx) the card gets a grip to move it and folds shut.
 export function PanelCard({ title, titleLang, actions, children, className = '' }) {
+  const dock = useDockPanel()
+  const folded = Boolean(dock?.collapsed)
   return (
     <section className={`rounded-xl border border-slate-300/80 bg-white/95 dark:border-teal-300/15 dark:bg-[#0f1d1f]/95 ${className}`}>
       {title ? (
-        <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-2.5 dark:border-white/10">
-          <h3 lang={titleLang} className="font-code text-xs font-semibold uppercase tracking-[0.12em] text-teal-700 dark:text-teal-300">
-            {title}
-          </h3>
-          {actions}
+        <div className={`flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 px-4 py-2.5 ${folded ? '' : 'border-b border-slate-200 dark:border-white/10'} ${dock ? 'pl-1.5' : ''}`}>
+          <div className="flex shrink-0 items-center gap-1">
+            {dock ? (
+              <button
+                type="button"
+                {...dock.grip}
+                title="Sürükleyerek taşıyın (ya da ok tuşları)"
+                aria-label={`${title} panelini taşı`}
+                className="cursor-grab rounded p-0.5 text-slate-400 hover:text-teal-700 active:cursor-grabbing dark:text-slate-500 dark:hover:text-teal-300"
+              >
+                <GripVertical size={14} />
+              </button>
+            ) : null}
+            <h3 lang={titleLang} className="font-code text-xs font-semibold uppercase tracking-[0.12em] text-teal-700 dark:text-teal-300">
+              {dock ? (
+                <button type="button" onClick={dock.toggle} aria-expanded={!folded} className="uppercase tracking-[0.12em]">
+                  {title}
+                </button>
+              ) : (
+                title
+              )}
+            </h3>
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            {folded ? null : actions}
+            {dock ? (
+              <button type="button" onClick={dock.toggle} aria-label={folded ? 'Aç' : 'Katla'} title={folded ? 'Aç' : 'Katla'} className="rounded p-0.5 text-slate-500 hover:text-teal-700 dark:text-slate-400 dark:hover:text-teal-300">
+                <ChevronDown size={15} className={`transition ${folded ? '-rotate-90' : ''}`} />
+              </button>
+            ) : null}
+          </div>
         </div>
       ) : null}
-      <div className="p-4">{children}</div>
+      {folded ? null : <div className="p-4">{children}</div>}
     </section>
   )
 }

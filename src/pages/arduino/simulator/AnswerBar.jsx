@@ -7,7 +7,7 @@ const button =
 
 // "Show the code" / "show the wiring" for the current exercise. A locked
 // week asks for its code first.
-export default function AnswerBar({ example, onShowCode, onShowWires, onReset }) {
+export default function AnswerBar({ example, onShowCode, onShowWires, onReset, className = 'mt-3 space-y-2' }) {
   const [asking, setAsking] = useState(null) // the action waiting for a code
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
@@ -55,7 +55,7 @@ export default function AnswerBar({ example, onShowCode, onShowWires, onReset })
 
   const icon = (shown) => (busy ? <Loader2 size={15} className="animate-spin" /> : open ? shown : <Lock size={14} />)
   return (
-    <div className="mt-3 space-y-2">
+    <div className={className}>
       <div className="flex flex-wrap gap-2">
         {hasAnswer(example, state) ? (
           <>
