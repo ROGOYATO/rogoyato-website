@@ -23,7 +23,7 @@ import BenchView from './BenchView'
 import CarView from './CarView'
 import CodeEditor from './CodeEditor'
 import { Dock, Splitter } from './Dock'
-import { useAutoColumns, useDockLayout, useViewportHeight, useWideScreen } from './dockLayout'
+import { useAutoColumns, useDockLayout, useDragScroll, useViewportHeight, useWideScreen } from './dockLayout'
 import Licenses from './Licenses'
 import AnswerBar from './AnswerBar'
 import LibraryList from './LibraryList'
@@ -158,6 +158,7 @@ export default function SimulatorPage() {
   const real = useRealBoard()
   const [target, setTarget] = useTarget(real.supported)
   const dock = useDockLayout()
+  useDragScroll(Boolean(dock.dragging || dock.paneDragging))
   const wide = useWideScreen()
   const autoColumns = useAutoColumns()
   const viewportHeight = useViewportHeight()

@@ -101,6 +101,39 @@ export function useAutoColumns() {
   return columns
 }
 
+// While a panel or pane is dragged the page scrolls when the pointer nears
+// the window's top (under the sticky header) or bottom edge, faster the
+// closer it is: browsers (Chrome and Edge on Windows above all) do not
+// scroll with the mouse wheel during a drag.
+const EDGE = 110 // px from the edge where scrolling starts
+const MAX_SPEED = 28 // px per frame at the very edge
+export function useDragScroll(active) {
+  useEffect(() => {
+    if (!active) return undefined
+    let pointerY = null
+    let frame = 0
+    const track = (event) => {
+      pointerY = event.clientY
+    }
+    const step = () => {
+      if (pointerY !== null) {
+        const top = document.querySelector('header')?.getBoundingClientRect().bottom ?? 0
+        const fromTop = pointerY - top
+        const fromBottom = window.innerHeight - pointerY
+        if (fromTop < EDGE) window.scrollBy(0, -MAX_SPEED * Math.min(1, (EDGE - fromTop) / EDGE))
+        else if (fromBottom < EDGE) window.scrollBy(0, MAX_SPEED * Math.min(1, (EDGE - fromBottom) / EDGE))
+      }
+      frame = requestAnimationFrame(step)
+    }
+    document.addEventListener('dragover', track)
+    frame = requestAnimationFrame(step)
+    return () => {
+      document.removeEventListener('dragover', track)
+      cancelAnimationFrame(frame)
+    }
+  }, [active])
+}
+
 // The window's height, kept current.
 export function useViewportHeight() {
   const [height, setHeight] = useState(() => window.innerHeight)
