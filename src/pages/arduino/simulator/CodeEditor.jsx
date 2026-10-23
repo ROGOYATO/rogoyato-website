@@ -7,7 +7,7 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirro
 import { cpp, cppLanguage } from '@codemirror/lang-cpp'
 import { HighlightStyle, bracketMatching, indentOnInput, indentUnit, syntaxHighlighting } from '@codemirror/language'
 import { lintGutter, setDiagnostics } from '@codemirror/lint'
-import { Compartment, EditorState } from '@codemirror/state'
+import { Compartment, EditorState, Prec } from '@codemirror/state'
 import {
   Decoration,
   EditorView,
@@ -117,6 +117,13 @@ function themeFor(dark) {
 }
 
 // gcc's line:column -> a range in the document, underlining the word there.
+// A growing editor has no height of its own: the content and the line
+// numbers are at least `grow` px tall and stretch with the code.
+function sizeFor(grow) {
+  if (!grow) return []
+  return Prec.highest(EditorView.theme({ '&': { height: 'auto' }, '.cm-content, .cm-gutter': { minHeight: `${grow}px` } }))
+}
+
 function toDiagnostics(doc, items) {
   return items
     .filter((item) => item.line >= 1 && item.line <= doc.lines)
@@ -128,13 +135,15 @@ function toDiagnostics(doc, items) {
     })
 }
 
-export default function CodeEditor({ value, onChange, diagnostics = [], dark = false, readOnly = false }) {
+// grow: the editor is as tall as its code, and at least `grow` px.
+export default function CodeEditor({ value, onChange, diagnostics = [], dark = false, readOnly = false, grow = null }) {
   const hostRef = useRef(null)
   const viewRef = useRef(null)
   const onChangeRef = useRef(onChange)
   const theme = useRef(new Compartment())
   const editable = useRef(new Compartment())
   const wrapping = useRef(new Compartment())
+  const sizing = useRef(new Compartment())
 
   useEffect(() => {
     onChangeRef.current = onChange
@@ -167,6 +176,7 @@ export default function CodeEditor({ value, onChange, diagnostics = [], dark = f
           theme.current.of(themeFor(dark)),
           editable.current.of(EditorState.readOnly.of(readOnly)),
           wrapping.current.of([]),
+          sizing.current.of(sizeFor(grow)),
           EditorView.contentAttributes.of({ 'aria-label': 'Arduino kodu', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false' }),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) onChangeRef.current?.(update.state.doc.toString())
@@ -208,9 +218,13 @@ export default function CodeEditor({ value, onChange, diagnostics = [], dark = f
   }, [readOnly])
 
   useEffect(() => {
+    viewRef.current?.dispatch({ effects: sizing.current.reconfigure(sizeFor(grow)) })
+  }, [grow])
+
+  useEffect(() => {
     const view = viewRef.current
     if (view) view.dispatch(setDiagnostics(view.state, toDiagnostics(view.state.doc, diagnostics)))
   }, [diagnostics])
 
-  return <div ref={hostRef} className="h-full overflow-hidden" />
+  return <div ref={hostRef} className={grow ? 'overflow-hidden' : 'h-full overflow-hidden'} />
 }

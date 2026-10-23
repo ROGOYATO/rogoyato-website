@@ -16,8 +16,9 @@ export const DEFAULT_LAYOUT = {
   left: 700, // px, in three columns
   left2: 700, // px, in two columns
   right: 360, // px
-  editor: 0.6, // share of the left column's height
-  bench: 0.62, // in two columns: share of the right column's height
+  // Height of the 3D view, and the least the code takes (it grows with the
+  // code); null fits the screen. Panels under them take what they need.
+  top: null,
   docks: { left: ['serial'], right: ['selected', 'parts', 'connections', 'issues', 'car', 'carWiring'] },
   collapsed: {},
 }
@@ -86,4 +87,15 @@ export function useAutoColumns() {
     return () => window.removeEventListener('resize', change)
   }, [])
   return columns
+}
+
+// The window's height, kept current.
+export function useViewportHeight() {
+  const [height, setHeight] = useState(() => window.innerHeight)
+  useEffect(() => {
+    const change = () => setHeight(window.innerHeight)
+    window.addEventListener('resize', change)
+    return () => window.removeEventListener('resize', change)
+  }, [])
+  return height
 }

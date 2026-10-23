@@ -23,7 +23,7 @@ import BenchView from './BenchView'
 import CarView from './CarView'
 import CodeEditor from './CodeEditor'
 import { Dock, Splitter } from './Dock'
-import { useAutoColumns, useDockLayout, useWideScreen } from './dockLayout'
+import { useAutoColumns, useDockLayout, useViewportHeight, useWideScreen } from './dockLayout'
 import Licenses from './Licenses'
 import AnswerBar from './AnswerBar'
 import LibraryList from './LibraryList'
@@ -115,8 +115,7 @@ export default function SimulatorPage() {
     const chip = anchor && document.querySelector(`[data-part-chip="${CSS.escape(anchor.id)}"]`)
     if (!chip) return
     const moved = chip.getBoundingClientRect().top - anchor.top
-    // In the wide layout the dock scrolls, not the page.
-    if (Math.abs(moved) > 1) (chip.closest('[data-dock-scroll]') ?? window).scrollBy({ top: moved, behavior: 'instant' })
+    if (Math.abs(moved) > 1) window.scrollBy({ top: moved, behavior: 'instant' })
   }, [selection])
   // The Uno always starts locked (on every visit and every exercise), so a
   // drag meant for the camera does not knock it aside; unlocking it lasts
@@ -136,6 +135,11 @@ export default function SimulatorPage() {
   const dock = useDockLayout()
   const wide = useWideScreen()
   const autoColumns = useAutoColumns()
+  const viewportHeight = useViewportHeight()
+  // The 3D view (and the code beside it) fill the screen under the bar by
+  // default; the panels below take the height they need and the page
+  // scrolls, nothing scrolls inside.
+  const topHeight = Math.max(320, dock.layout.top ?? viewportHeight - 270)
   const workspaceRef = useRef(null)
   const [workspaceWidth, setWorkspaceWidth] = useState(1200)
   useEffect(() => {
@@ -321,7 +325,7 @@ export default function SimulatorPage() {
 
   const serialPanel = <SerialMonitor text={sim.serial} running={running} baud={sim.hud?.baud} onSend={sim.sendSerial} onClear={sim.clearSerial} />
   const editorPane = (
-    <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-slate-300/80 bg-white dark:border-teal-300/15 dark:bg-[#0b1517]">
+    <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-300/80 bg-white dark:border-teal-300/15 dark:bg-[#0b1517]">
       <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-[#0f1d1f]">
         <span className="font-code text-xs text-slate-600 dark:text-slate-300">sketch.ino</span>
         <button
@@ -346,6 +350,7 @@ export default function SimulatorPage() {
           }}
           diagnostics={diagnostics}
           dark={dark}
+          grow={wide ? topHeight - 120 : null}
         />
       </div>
       <div className="font-code border-t border-slate-200 bg-slate-50 px-3 py-2 text-xs dark:border-white/10 dark:bg-[#0f1d1f]">
@@ -663,30 +668,22 @@ export default function SimulatorPage() {
   const { left: leftWidth = 0, right: rightWidth = 0, left2: codeWidth = 0 } = widths(layout)
   // Dragging works from the latest widths, so fast drags keep up.
   const resize = (side, delta) => dock.update((current) => ({ [side]: widths(current)[side] + delta }))
-  // A column's top pane (code, or the 3D view) against the dock under it.
-  const resizeRow = (key, column, delta) => {
-    const height = column?.getBoundingClientRect().height || 600
-    dock.update((current) => ({ [key]: Math.min(0.85, Math.max(0.25, current[key] + delta / height)) }))
-  }
-  // A column: its pane on top and, when it has panels, the dock under it.
-  const column = (side, pane, key) => (
-    <div className="flex min-h-0 flex-col" data-column={side}>
-      <div className="min-h-[180px]" style={{ flex: hasDock(side) ? `0 0 ${layout[key] * 100}%` : '1 1 auto' }}>
+  const resizeTop = (delta) => dock.update((current) => ({ top: Math.max(320, (current.top ?? viewportHeight - 270) + delta) }))
+  // A column: its pane on top (the code grows with its text) and the dock
+  // under it.
+  const column = (side, pane, code = false) => (
+    <div className="flex min-w-0 flex-col">
+      <div className="flex flex-col" style={code ? { minHeight: topHeight } : { height: topHeight }}>
         {pane}
       </div>
-      {hasDock(side) ? (
-        <>
-          <Splitter direction="horizontal" label="Üstteki alan ile panellerin yüksekliği" onMove={(dy) => resizeRow(key, workspaceRef.current?.querySelector(`[data-column="${side}"]`), dy)} />
-          <Dock side={side} dock={dock} panels={panels} className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-1" />
-        </>
-      ) : null}
+      <Splitter direction="horizontal" label="3B görünüm ile kodun yüksekliği" onMove={resizeTop} />
+      {side && hasDock(side) ? <Dock side={side} dock={dock} panels={panels} className="space-y-3" /> : null}
     </div>
   )
 
   return (
     <>
-      {/* On large screens the toolbar and the workspace fill the screen under the site header. */}
-      <div className={wide ? 'flex h-[calc(100dvh-5.75rem)] min-h-[640px] flex-col gap-2' : 'space-y-3'}>
+      <div className={wide ? 'space-y-2' : 'space-y-3'}>
         <h1 className="sr-only">Arduino Simülatörü</h1>
         <PanelCard className="[&>div]:px-3 [&>div]:py-2.5">
           <div className="flex flex-wrap items-center gap-2">
@@ -755,8 +752,8 @@ export default function SimulatorPage() {
         </PanelCard>
 
         {wide ? (
-          // Editor | 3D view | dock, filling the screen under the site header.
-          <div className="flex min-h-0 flex-1 flex-col">
+          // Code | 3D view | panels, or code and 3D view with panels under each.
+          <div>
             <div className="mb-1.5 flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
               <span className="hidden xl:inline">Çubukları sürükleyerek alanları büyütün; panelleri tutamaklarından sürükleyip yerlerini değiştirin, başlıklarına tıklayıp katlayın.</span>
               <div className="flex rounded-md border border-slate-300 p-0.5 dark:border-white/15" role="group" aria-label="Düzen">
@@ -782,18 +779,18 @@ export default function SimulatorPage() {
               </button>
             </div>
             {twoColumns ? (
-              <div className="grid min-h-0 flex-1" style={{ gridTemplateColumns: `${codeWidth}px auto minmax(0,1fr)` }} ref={workspaceRef}>
-                {column('left', editorPane, 'editor')}
+              <div className="grid items-start" style={{ gridTemplateColumns: `${codeWidth}px auto minmax(0,1fr)` }} ref={workspaceRef}>
+                {column('left', editorPane, true)}
                 <Splitter label="Kod ile 3B görünümün genişliği" onMove={(dx) => resize('left2', dx)} />
-                {column('right', benchPane, 'bench')}
+                {column('right', benchPane)}
               </div>
             ) : (
-              <div className="grid min-h-0 flex-1" style={{ gridTemplateColumns: `${leftWidth}px auto minmax(0,1fr) auto ${rightWidth}px` }} ref={workspaceRef}>
-                {column('left', editorPane, 'editor')}
+              <div className="grid items-start" style={{ gridTemplateColumns: `${leftWidth}px auto minmax(0,1fr) auto ${rightWidth}px` }} ref={workspaceRef}>
+                {column('left', editorPane, true)}
                 <Splitter label="Kod ile 3B görünümün genişliği" onMove={(dx) => resize('left', dx)} />
-                {benchPane}
+                {column(null, benchPane)}
                 <Splitter label="3B görünüm ile panellerin genişliği" onMove={(dx) => resize('right', -dx)} />
-                <Dock side="right" dock={dock} panels={panels} className="min-h-0 space-y-3 overflow-y-auto pb-1" />
+                <Dock side="right" dock={dock} panels={panels} className="space-y-3" />
               </div>
             )}
           </div>

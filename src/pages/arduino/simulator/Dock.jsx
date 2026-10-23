@@ -38,7 +38,6 @@ export function Dock({ side, dock, panels, className = '' }) {
   }
   return (
     <div
-      data-dock-scroll
       className={`${className} ${dragging ? 'rounded-xl outline-2 outline-dashed outline-teal-500/40' : ''}`}
       onDragOver={(event) => {
         allow(event)
@@ -136,7 +135,7 @@ export function Splitter({ direction = 'vertical', onMove, label }) {
         event.preventDefault()
         onMove(delta)
       }}
-      className={`group flex touch-none items-center justify-center rounded-full outline-none focus-visible:bg-teal-500/30 ${vertical ? 'w-2 cursor-col-resize' : 'h-2 cursor-row-resize'}`}
+      className={`group flex touch-none items-center justify-center rounded-full outline-none focus-visible:bg-teal-500/30 ${vertical ? 'w-2 cursor-col-resize self-stretch' : 'h-2 cursor-row-resize'}`}
     >
       <span className={`rounded-full bg-slate-300 transition group-hover:bg-teal-500 group-focus-visible:bg-teal-500 dark:bg-white/15 ${vertical ? 'h-10 w-1' : 'h-1 w-10'}`} />
     </div>
