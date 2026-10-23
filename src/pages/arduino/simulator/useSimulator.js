@@ -13,6 +13,9 @@ export default function useSimulator({ sound }) {
   const audio = useRef({ context: null, voices: new Map() })
   const soundRef = useRef(sound)
   const [running, setRunning] = useState(false)
+  // Paused by the user: the board keeps its state, simulated time stands.
+  const [paused, setPaused] = useState(false)
+  const pausedRef = useRef(false)
   const [hud, setHud] = useState(null)
   const [serial, setSerial] = useState('')
   const [issues, setIssues] = useState([])
@@ -58,6 +61,8 @@ export default function useSimulator({ sound }) {
     workerRef.current?.terminate()
     workerRef.current = null
     setRunning(false)
+    pausedRef.current = false
+    setPaused(false)
     playBuzzers({})
     latest.current = null
     for (const listener of listeners.current) listener(null)
@@ -99,6 +104,8 @@ export default function useSimulator({ sound }) {
       worker.postMessage({ type: 'start', hex, circuit, carCircuit, track, inputs })
       workerRef.current = worker
       setRunning(true)
+      pausedRef.current = false
+      setPaused(false)
     },
     [playBuzzers, stop],
   )
@@ -108,7 +115,8 @@ export default function useSimulator({ sound }) {
   useEffect(() => {
     const onVisibility = () => {
       const hidden = document.visibilityState === 'hidden'
-      workerRef.current?.postMessage({ type: hidden ? 'pause' : 'resume' })
+      // Coming back does not undo a pause the user chose.
+      if (hidden || !pausedRef.current) workerRef.current?.postMessage({ type: hidden ? 'pause' : 'resume' })
       if (hidden) playBuzzers({})
     }
     document.addEventListener('visibilitychange', onVisibility)
@@ -125,6 +133,14 @@ export default function useSimulator({ sound }) {
 
   return {
     running,
+    paused,
+    // Freezes the simulation (or lets it go on) without touching the board.
+    setPaused: (value) => {
+      pausedRef.current = value
+      setPaused(value)
+      workerRef.current?.postMessage({ type: value ? 'pause' : 'resume' })
+      if (value) playBuzzers({})
+    },
     hud,
     serial,
     issues,
