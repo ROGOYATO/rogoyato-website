@@ -4,6 +4,7 @@
 // the breadboard is pressed into its holes.
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import SmoothZoom from './smoothZoom'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
 import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js'
@@ -163,6 +164,7 @@ export class Bench3D {
     this.controls.maxPolarAngle = Math.PI * 0.47
     this.controls.minDistance = 6
     this.controls.maxDistance = 80
+    this.zoom = new SmoothZoom(this.controls, container, () => this.invalidate())
 
     // A soft room reflected in metal and glossy parts, plus a warm key light
     // for shadows.
@@ -829,7 +831,8 @@ export class Bench3D {
       this.drewLast = false
       return
     }
-    const moved = this.controls.update()
+    const zooming = this.zoom.update(dt)
+    const moved = this.controls.update() || zooming
     if (!moved && !this.dirty && !this.pending) {
       this.drewLast = false
       return
@@ -872,6 +875,7 @@ export class Bench3D {
     const fov = (this.camera.fov * Math.PI) / 180
     const fit = Math.max(size.x / this.camera.aspect, size.z, 8) / (2 * Math.tan(fov / 2))
     const distance = fit * 1.1 + 2
+    this.zoom.cancel()
     this.controls.target.copy(center).setY(0)
     this.camera.position.copy(center).add(new THREE.Vector3(0, 0.78, 0.63).multiplyScalar(distance))
     this.controls.update()
@@ -891,6 +895,7 @@ export class Bench3D {
     el.removeEventListener('pointermove', this.onPointerMove)
     window.removeEventListener('pointerup', this.onPointerUp)
     window.removeEventListener('keydown', this.onKeyDown)
+    this.zoom.dispose()
     this.controls.dispose()
     this.environment.dispose()
     this.composer.dispose()
