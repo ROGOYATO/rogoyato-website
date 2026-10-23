@@ -103,7 +103,9 @@ export class Car3D {
     this.scene = new THREE.Scene()
     this.camera = new THREE.PerspectiveCamera(45, 1, 1, 2000)
     this.controls = new OrbitControls(this.camera, this.renderer.domElement)
+    // A short glide after letting go (about 0.3 s), not three.js's 1.5 s.
     this.controls.enableDamping = true
+    this.controls.dampingFactor = 0.2
     this.controls.maxPolarAngle = Math.PI * 0.48
     this.controls.target.set(ARENA.width * 50, 0, ARENA.height * 50)
 

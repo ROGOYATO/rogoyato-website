@@ -1,7 +1,7 @@
 // The simulator's workspace on large screens: the editor, the 3D view and
 // docks of panels side by side, their sizes dragged to taste. Panels fold
 // shut and move between docks by their grip (drag, or arrow keys on it).
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { DockContext } from './dockLayout'
 
 // One dock: the panels in `panels` (id → element, null when not shown) in
@@ -13,6 +13,7 @@ import { DockContext } from './dockLayout'
 export function Dock({ sides, beside = {}, dock, panels, className = '' }) {
   const { layout, move, toggle, dragging, setDragging } = dock
   const [over, setOver] = useState(null) // panel id, or 'end'
+  const pressedOn = useRef(null) // where the pointer went down in a title bar
   const list = sides.flatMap((side) => layout.docks[side] ?? [])
   const ids = list.filter((id) => panels[id])
   const sideOf = (id) => sides.find((side) => layout.docks[side]?.includes(id))
@@ -84,10 +85,23 @@ export function Dock({ sides, beside = {}, dock, panels, className = '' }) {
               id,
               collapsed: Boolean(layout.collapsed[id]),
               toggle: () => toggle(id),
+              // The grip button: focus and arrow keys.
               grip: {
-                draggable: true,
                 'data-dock-grip': id,
+                onKeyDown: (event) => keys(event, id),
+              },
+              // The whole title bar drags the panel, except from a control
+              // in it (a menu or a checkbox would not work otherwise).
+              drag: {
+                draggable: true,
+                onPointerDown: (event) => {
+                  pressedOn.current = event.target
+                },
                 onDragStart: (event) => {
+                  if (pressedOn.current?.closest?.('select, input, textarea, label')) {
+                    event.preventDefault()
+                    return
+                  }
                   event.dataTransfer.effectAllowed = 'move'
                   event.dataTransfer.setData('text/plain', id)
                   const panel = event.currentTarget.closest('[data-dock-panel]')
@@ -98,7 +112,6 @@ export function Dock({ sides, beside = {}, dock, panels, className = '' }) {
                   setDragging(null)
                   setOver(null)
                 },
-                onKeyDown: (event) => keys(event, id),
               },
             }}
           >

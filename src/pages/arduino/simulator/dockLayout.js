@@ -22,6 +22,9 @@ export const DEFAULT_LAYOUT = {
   // Height of the 3D view, and the least the code takes (it grows with the
   // code); null fits the screen. Panels under them take what they need.
   top: null,
+  // The two panes that are always open, first column first: the code and
+  // the 3D view swap places by dragging either one's bar.
+  panes: ['code', 'bench'],
   docks: { left: ['serial'], center: [], right: ['selected', 'parts', 'connections', 'issues', 'car', 'carWiring'] },
   collapsed: {},
 }
@@ -34,7 +37,8 @@ function load() {
     const known = new Set(SIDES.flatMap((side) => saved.docks[side] ?? []))
     const docks = Object.fromEntries(SIDES.map((side) => [side, (saved.docks[side] ?? []).filter((id) => PANEL_IDS.includes(id))]))
     for (const side of SIDES) for (const id of DEFAULT_LAYOUT.docks[side]) if (!known.has(id)) docks[side].push(id)
-    return { ...DEFAULT_LAYOUT, ...saved, docks, collapsed: saved.collapsed ?? {} }
+    const panes = [...(saved.panes ?? [])].sort().join() === 'bench,code' ? saved.panes : DEFAULT_LAYOUT.panes
+    return { ...DEFAULT_LAYOUT, ...saved, panes, docks, collapsed: saved.collapsed ?? {} }
   } catch {
     return DEFAULT_LAYOUT
   }
@@ -43,6 +47,7 @@ function load() {
 export function useDockLayout() {
   const [layout, setLayout] = useState(load)
   const [dragging, setDragging] = useState(null)
+  const [paneDragging, setPaneDragging] = useState(null) // 'code' | 'bench'
   useEffect(() => {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(layout))
@@ -63,8 +68,9 @@ export function useDockLayout() {
     [update],
   )
   const toggle = useCallback((id) => update((current) => ({ collapsed: { ...current.collapsed, [id]: !current.collapsed[id] } })), [update])
+  const swapPanes = useCallback(() => update((current) => ({ panes: [...current.panes].reverse() })), [update])
   const reset = useCallback(() => setLayout(DEFAULT_LAYOUT), [])
-  return { layout, update, move, toggle, reset, dragging, setDragging }
+  return { layout, update, move, toggle, reset, dragging, setDragging, swapPanes, paneDragging, setPaneDragging }
 }
 
 export function useWideScreen() {
@@ -79,10 +85,13 @@ export function useWideScreen() {
   return wide
 }
 
-// Three columns on a very wide screen (21:9 and wider, or a large monitor),
-// two on an ordinary 16:9 or 16:10 one.
+// Three columns on an ultrawide screen (21:9 and wider) when the window is
+// wide enough for them, two on an ordinary 16:9 or 16:10 one, however large.
+// It goes by the screen's shape: the window's is wider than its screen's
+// (the browser's bars and the taskbar take height), so a maximised window
+// on a 16:9 laptop is about 2:1.
 export function useAutoColumns() {
-  const pick = () => (window.innerWidth / window.innerHeight >= 2 || window.innerWidth >= 2400 ? 3 : 2)
+  const pick = () => (window.screen.width / window.screen.height >= 2.1 && window.innerWidth >= 1800 ? 3 : 2)
   const [columns, setColumns] = useState(pick)
   useEffect(() => {
     const change = () => setColumns(pick())
