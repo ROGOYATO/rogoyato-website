@@ -32,7 +32,7 @@ import { compileSketch, rememberCompiled } from './compile'
 import { onCompilerProgress, preloadCompiler } from './compiler/browserCompiler'
 import { EXAMPLES } from './examples'
 import { CarHud, CarWiring, ConnectionsPanel, IssuesList, PanelCard, PartInspector, SerialMonitor, UnoInspector } from './Panels'
-import { describePort, sketchBaud } from './realBoard'
+import { describePort, portIds, sketchBaud } from './realBoard'
 import useRealBoard from './useRealBoard'
 import useSimulator from './useSimulator'
 
@@ -853,7 +853,7 @@ export default function SimulatorPage() {
                   <button
                     type="button"
                     onClick={real.askPort}
-                    title={real.port ? 'Başka bir port seç' : 'Kartın takılı olduğu USB portunu seç'}
+                    title={real.port ? `Seçili port: ${describePort(real.port)} (USB ${portIds(real.port)}). Başka bir port seçmek için tıklayın.` : 'Kartın takılı olduğu USB portunu seç'}
                     className="font-code inline-flex items-center gap-1 whitespace-nowrap border-l border-slate-300 px-2 py-2 text-sm text-slate-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300 dark:hover:text-teal-300"
                   >
                     <Usb size={14} />
