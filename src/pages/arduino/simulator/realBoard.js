@@ -6,29 +6,47 @@
 
 export const realBoardSupported = () => typeof navigator !== 'undefined' && 'serial' in navigator
 
-// USB-serial chips found on Unos and their clones.
+// USB-serial chips found on Unos and their clones, by product as well as
+// maker: WCH and Silicon Labs also make the chips in some wireless mouse
+// and keyboard receivers, which must not pass for the board.
 const FILTERS = [
-  { usbVendorId: 0x2341 }, // Arduino (ATmega16U2)
-  { usbVendorId: 0x2a03 }, // Arduino.org
-  { usbVendorId: 0x1a86 }, // WCH CH340 (the kit's board)
-  { usbVendorId: 0x0403 }, // FTDI
-  { usbVendorId: 0x10c4 }, // Silicon Labs CP210x
+  { usbVendorId: 0x2341, name: 'Arduino' }, // Arduino (ATmega16U2)
+  { usbVendorId: 0x2a03, name: 'Arduino' }, // Arduino.org
+  { usbVendorId: 0x1a86, usbProductId: 0x7523, name: 'CH340' }, // the kit's board
+  { usbVendorId: 0x1a86, usbProductId: 0x5523, name: 'CH341' },
+  { usbVendorId: 0x1a86, usbProductId: 0x55d4, name: 'CH9102' },
+  { usbVendorId: 0x0403, usbProductId: 0x6001, name: 'FTDI' }, // FT232R
+  { usbVendorId: 0x0403, usbProductId: 0x6015, name: 'FTDI' }, // FT231X
+  { usbVendorId: 0x10c4, usbProductId: 0xea60, name: 'CP210x' },
 ]
 
-const CHIP_NAMES = { 0x1a86: 'CH340', 0x2341: 'Arduino', 0x2a03: 'Arduino', 0x0403: 'FTDI', 0x10c4: 'CP210x' }
-export function describePort(port) {
+const chipOf = (port) => {
   const info = port?.getInfo?.() ?? {}
-  return CHIP_NAMES[info.usbVendorId] ? `USB · ${CHIP_NAMES[info.usbVendorId]}` : 'USB seri port'
+  return FILTERS.find((filter) => filter.usbVendorId === info.usbVendorId && (filter.usbProductId === undefined || filter.usbProductId === info.usbProductId))
+}
+export const isBoardPort = (port) => Boolean(chipOf(port))
+
+export function describePort(port) {
+  const chip = chipOf(port)
+  return chip ? `USB · ${chip.name}` : 'USB seri port'
 }
 
-// The port this site was allowed before, or the browser's port picker
-// (which needs a click to open).
+// The USB ids, to tell two ports apart.
+export function portIds(port) {
+  const info = port?.getInfo?.() ?? {}
+  const hex = (value) => (value ?? 0).toString(16).padStart(4, '0')
+  return `${hex(info.usbVendorId)}:${hex(info.usbProductId)}`
+}
+
+// The board this site was allowed before, if exactly one such port is
+// plugged in (two or more and the choice is the user's); or, with `ask`, the
+// browser's port picker (which needs a click to open).
 export async function pickPort(ask = false) {
   if (!ask) {
-    const [known] = await navigator.serial.getPorts()
-    if (known) return known
+    const boards = (await navigator.serial.getPorts()).filter(isBoardPort)
+    return boards.length === 1 ? boards[0] : null
   }
-  return navigator.serial.requestPort({ filters: FILTERS })
+  return navigator.serial.requestPort({ filters: FILTERS.map(({ usbVendorId, usbProductId }) => (usbProductId === undefined ? { usbVendorId } : { usbVendorId, usbProductId })) })
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))

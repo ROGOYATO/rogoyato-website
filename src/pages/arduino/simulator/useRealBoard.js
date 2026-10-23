@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { UploadError, openSerial, pickPort, realBoardSupported, uploadToBoard } from './realBoard'
+import { UploadError, isBoardPort, openSerial, pickPort, realBoardSupported, uploadToBoard } from './realBoard'
 
 const MAX_SERIAL_CHARS = 20_000
 
@@ -29,18 +29,19 @@ export default function useRealBoard() {
     await open?.close()
   }, [])
 
-  // The port this site was allowed before, if the board is plugged in; and
-  // the board coming out of (or back into) the USB socket.
+  // The board this site was allowed before, if it is plugged in; and the
+  // board coming out of (or back into) the USB socket. Other devices coming
+  // and going (a wireless mouse's receiver, say) are left alone.
   useEffect(() => {
     if (!supported) return undefined
-    navigator.serial.getPorts().then(([known]) => known && !portRef.current && choose(known))
+    pickPort().then((known) => known && !portRef.current && choose(known))
     const lost = (event) => {
       if (event.target !== portRef.current) return
       closeMonitor()
       choose(null)
     }
     const found = (event) => {
-      if (!portRef.current) choose(event.target)
+      if (!portRef.current && isBoardPort(event.target)) choose(event.target)
     }
     navigator.serial.addEventListener('disconnect', lost)
     navigator.serial.addEventListener('connect', found)
