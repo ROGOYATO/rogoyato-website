@@ -43,11 +43,11 @@ export const events = [
     status: 'closed',
     requiresApplication: false,
     summary:
-      '“Building Fun Learning Tools for Students” temasıyla üç gün boyunca fikir geliştirdiğimiz, tasarladığımız ve kod yazdığımız CS Girlies November Hackathon 2025’e TM107’de bir araya gelerek katıldık.',
+      'CS Girlies’in düzenlediği, “Building Fun Learning Tools for Students” temalı November Hackathon 2025’e TOBB ETÜ’de ev sahipliği yaptık; katılımcılar üç gün boyunca TM107’de fikir geliştirdi, tasarladı ve kod yazdı.',
     body: [
-      'TOBB ETÜ ROGOYATO olarak 14–16 Kasım 2025 tarihlerinde CS Girlies November Hackathon 2025’e katıldık. Etkinliğin teması “Building Fun Learning Tools for Students” idi; üç gün boyunca öğrenciler için eğlenceli öğrenme araçları üzerine fikir geliştirdik, tasarladık ve kod yazdık.',
+      'CS Girlies’in düzenlediği November Hackathon 2025’in TOBB ETÜ’deki buluşmasına TOBB ETÜ ROGOYATO olarak ev sahipliği yaptık: organizatörlerle görüşerek etkinliği okulumuza getirdik, salonu ve çalışma ortamını sağladık. 14–16 Kasım 2025 tarihlerinde TM107’de gerçekleşen etkinliğin teması “Building Fun Learning Tools for Students” idi; katılımcılar üç gün boyunca öğrenciler için eğlenceli öğrenme araçları üzerine fikir geliştirdi, tasarladı ve kod yazdı.',
       'Kendi takımıyla gelenlerin yanı sıra bireysel başvuranları da uygun ekiplerle eşleştirdik; yazılımcı, tasarımcı ve fikir üreticisi farklı profilleri aynı masada buluşturduk.',
-      'Hackathon boyunca bolca eğlenirken kod da yazdık. Katılan herkese teşekkür ederiz; sonraki hackathonlarda görüşmek üzere!',
+      'Hackathon boyunca hem bolca eğlenildi hem de kod yazıldı. Katılan herkese teşekkür ederiz; sonraki hackathonlarda görüşmek üzere!',
     ],
     coverImage: 'events/2025-11-14-cs-girlies-hackathon/cover.webp',
     galleryImages: [
@@ -64,7 +64,7 @@ export const events = [
       'Kodlama ve prototip geliştirme',
     ],
     notes: [
-      'Etkinlik, CS Girlies November Hackathon 2025 kapsamında TM107’de gerçekleştirildi.',
+      'Hackathon CS Girlies tarafından düzenlendi; TOBB ETÜ’deki buluşmaya ROGOYATO TM107’de ev sahipliği yaptı.',
       'Takımlar farklı profillerden katılımcıların eşleştirilmesiyle oluşturuldu.',
     ],
     applicationDeadline: null,
