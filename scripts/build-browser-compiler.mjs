@@ -5,11 +5,14 @@
 //   AVR_GCC=/path/to/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7 \
 //   ARDUINO_AVR=/path/to/hardware/avr/1.8.8 \
 //   ARDUINO_LIBRARIES=/path/to/Arduino/libraries \
+//   GCC_TOOLS=scripts/out \
 //   node scripts/build-browser-compiler.mjs
 //
-// The WebAssembly tools come from github.com/jeffrey-braam/arduino-ide
-// (toolchain/build.sh) at a pinned commit and are checked against their
-// SHA-256 sums. Set WASM_TOOLS=/path/to/toolchain/out to use a local copy.
+// cc1plus is built by scripts/build-wasm-gcc.sh (GCC_TOOLS); avr-as, avr-ld
+// and avr-objcopy come from github.com/jeffrey-braam/arduino-ide
+// (toolchain/build.sh) at a pinned commit. All are checked against their
+// SHA-256 sums. Set WASM_TOOLS=/path/to/toolchain/out to use a local copy of
+// the latter.
 // The output is a single gzip file the simulator downloads on first use.
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -19,9 +22,13 @@ import { basename, join, relative } from 'node:path'
 import { gzipSync } from 'node:zlib'
 
 const TOOLS_COMMIT = '8c563b189cacc9953ee20fa51fad1a80da75673d'
-const TOOLS = {
-  'cc1plus.wasm': 'a87f8b925bf8dc03b5248b5711329719599dbbeacf059f69deeec7fce5f1560d',
+// With scripts/wasm-patches/gcc/avr-builtin-no-operands.patch, which the
+// upstream build lacks (it traps on __builtin_avr_cli and friends).
+const GCC_TOOLS = {
+  'cc1plus.wasm': '2158a87ba6554eb97c0602c2ab27e81e300a40ba45333109a511acf7e254fa08',
   'cc1plus.mjs': 'f4f3981506c3ec73c988c2c9f93430d0ae4e877fadad21c85e4043a6c5e33324',
+}
+const TOOLS = {
   'avr-as.wasm': 'fb0bab6b7f6eb01472d0c52d8ec3bd8f5e6a477df2b04162e1482827071be3db',
   'avr-as.mjs': 'd7bb2d5d21b41263e61690ee7c052bf0bda674149e3037890788862a52e41c28',
   'avr-ld.wasm': '8a22a25a18c344842d710319531fb7f53fcd314b7e6284e1cee02233a291770c',
@@ -50,6 +57,11 @@ async function tool(name, sum) {
   return data
 }
 
+for (const [name, sum] of Object.entries(GCC_TOOLS)) {
+  const data = readFileSync(join(env('GCC_TOOLS'), name))
+  if (sha256(data) !== sum) throw new Error(`${name}: SHA-256 does not match the pinned build`)
+  files.set(`/tools/${name}`, data)
+}
 for (const [name, sum] of Object.entries(TOOLS)) files.set(`/tools/${name}`, await tool(name, sum))
 for (const name of LDSCRIPTS) files.set(`/ldscripts/${name}`, await tool(`ldscripts/${name}`))
 

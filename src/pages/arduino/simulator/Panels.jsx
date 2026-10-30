@@ -1,17 +1,79 @@
-import { AlertTriangle, CircleX, Eraser, RotateCw, Send, Trash2 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
-import { PART_CATALOG, PWM_PINS, UNO_ANALOG, UNO_DIGITAL, breadboardHoles, buildNets, describeHole, describeNet, directUnoPin, partLabel } from '../../../utils/avrSim/catalog'
+import { AlertTriangle, ChevronDown, CircleX, Eraser, GripVertical, Lock, LockOpen, Plus, RotateCcw, RotateCw, Send, Trash2 } from 'lucide-react'
+import { useEffect, useId, useRef, useState } from 'react'
+import {
+  PART_CATALOG,
+  PWM_PINS,
+  UNO_ANALOG,
+  UNO_DIGITAL,
+  UNO_PINS,
+  UNO_ID,
+  UNO_OTHER,
+  UNO_POWER,
+  breadboardHoles,
+  buildNets,
+  describeEndpoint,
+  describeHole,
+  describeNet,
+  directUnoPin,
+  endpointKey,
+  directStripUno,
+  freeHole,
+  normalizeWire,
+  lightLux,
+  partLabel,
+  pluggedParts,
+} from '../../../utils/avrSim/catalog'
+import { useDockPanel } from './dockLayout'
 
-export function PanelCard({ title, actions, children, className = '' }) {
+// titleLang: an English title ("Serial Monitor") is upper-cased with an
+// English I, not the Turkish İ.
+// In a dock (Dock.jsx) the card gets a grip to move it and folds shut.
+export function PanelCard({ title, titleLang, actions, children, className = '' }) {
+  const dock = useDockPanel()
+  const folded = Boolean(dock?.collapsed)
   return (
     <section className={`rounded-xl border border-slate-300/80 bg-white/95 dark:border-teal-300/15 dark:bg-[#0f1d1f]/95 ${className}`}>
       {title ? (
-        <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-2.5 dark:border-white/10">
-          <h3 className="font-code text-xs font-semibold uppercase tracking-[0.12em] text-teal-700 dark:text-teal-300">{title}</h3>
-          {actions}
+        <div
+          {...dock?.drag}
+          className={`flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 px-4 py-2.5 ${folded ? '' : 'border-b border-slate-200 dark:border-white/10'} ${dock ? 'cursor-grab pl-1.5 active:cursor-grabbing' : ''}`}
+        >
+          <div className="flex shrink-0 items-center gap-1">
+            {dock ? (
+              <button
+                type="button"
+                {...dock.grip}
+                // A click folds or opens the panel, like one on its title.
+                onClick={dock.toggle}
+                aria-expanded={!folded}
+                title={`Tıklayınca ${folded ? 'açılır' : 'katlanır'}; sürükleyerek taşıyın (ya da ok tuşlarıyla)`}
+                aria-label={`${title} paneli: ${folded ? 'aç' : 'katla'} ya da taşı`}
+                className="cursor-grab rounded p-0.5 text-slate-400 hover:text-teal-700 active:cursor-grabbing dark:text-slate-500 dark:hover:text-teal-300"
+              >
+                <GripVertical size={14} />
+              </button>
+            ) : null}
+            <h3 lang={titleLang} className="font-code text-xs font-semibold uppercase tracking-[0.12em] text-teal-700 dark:text-teal-300">
+              {dock ? (
+                <button type="button" onClick={dock.toggle} aria-expanded={!folded} className="cursor-pointer uppercase tracking-[0.12em]">
+                  {title}
+                </button>
+              ) : (
+                title
+              )}
+            </h3>
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            {folded ? null : actions}
+            {dock ? (
+              <button type="button" onClick={dock.toggle} aria-label={folded ? 'Aç' : 'Katla'} title={folded ? 'Aç' : 'Katla'} className="rounded p-0.5 text-slate-500 hover:text-teal-700 dark:text-slate-400 dark:hover:text-teal-300">
+                <ChevronDown size={15} className={`transition ${folded ? '-rotate-90' : ''}`} />
+              </button>
+            ) : null}
+          </div>
         </div>
       ) : null}
-      <div className="p-4">{children}</div>
+      {folded ? null : <div className="p-4">{children}</div>}
     </section>
   )
 }
@@ -19,44 +81,338 @@ export function PanelCard({ title, actions, children, className = '' }) {
 const selectClass =
   'font-code w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-800 focus:border-teal-600 focus:outline-hidden dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100'
 
-export function PinSelect({ value, onChange, label }) {
+const PIN_OPTIONS = [
+  ...UNO_DIGITAL.map((pin) => ({ value: pin, label: pin, note: PWM_PINS.has(pin) ? '~PWM' : pin === 'D0' ? 'Serial RX' : pin === 'D1' ? 'Serial TX' : 'dijital' })),
+  ...UNO_ANALOG.map((pin) => ({ value: pin, label: pin, note: pin === 'A4' ? 'analog · SDA' : pin === 'A5' ? 'analog · SCL' : 'analog' })),
+  ...UNO_POWER.map((pin) => ({ value: pin, label: pin, note: 'güç' })),
+  ...UNO_OTHER.map((pin) => ({ value: pin, label: pin, note: { RESET: 'LOW’da reset', AREF: 'analog referans', NC: 'bağlı değil' }[pin] })),
+]
+// Turkish lower case, with ı read as i: "IN2" and "in2" match.
+const lower = (text) => text.trim().toLocaleLowerCase('tr').replace(/ı/g, 'i').replace(/−/g, '-')
+
+// What students type: "d9", "9", "a0", "gnd", "5v", "3.3v".
+const cleanPin = (text) => text.toUpperCase().replace(/\s+/g, '').replace(/^PIN/, '').replace(',', '.')
+function parsePin(text) {
+  const typed = cleanPin(text)
+  if (UNO_PINS.includes(typed)) return typed
+  if (/^\d+$/.test(typed) && UNO_DIGITAL.includes(`D${Number(typed)}`)) return `D${Number(typed)}`
+  return { '3.3': '3V3', '3.3V': '3V3', TOPRAK: 'GND', GROUND: 'GND', SDA: 'A4', SCL: 'A5', IOREF: '5V' }[typed] ?? null
+}
+// Pins whose name starts with the text come first, then ones whose note
+// matches ("pwm", "analog", "güç").
+function suggestPins(text) {
+  const typed = cleanPin(text)
+  if (!typed) return PIN_OPTIONS
+  const byName = PIN_OPTIONS.filter(({ value }) => value.startsWith(typed) || (/^\d/.test(typed) && value.startsWith(`D${typed}`)) || value === parsePin(text))
+  const byNote = lower(text).length > 1 ? PIN_OPTIONS.filter((option) => !byName.includes(option) && lower(option.note).includes(lower(text))) : []
+  return [...byName, ...byNote]
+}
+
+// A text box that suggests while typing; focusing it lists every option.
+// noneLabel adds an option that clears it (an empty box clears it too).
+function SuggestBox({ label, value, display, suggest, parse, onChange, placeholder, placeholderClass = '', noneLabel, unknown }) {
+  const [draft, setDraft] = useState(null) // the text being typed, null when not editing
+  const [open, setOpen] = useState(false)
+  const [active, setActive] = useState(-1) // the option picked with the arrow keys
+  const [error, setError] = useState('')
+  const id = useId()
+  const options = draft ? suggest(draft) : [...(noneLabel && value ? [{ value: null, label: noneLabel, note: 'kabloyu sök' }] : []), ...suggest('')]
+  // Enter takes the first suggestion when the text does not name one yet.
+  const highlighted = active >= 0 ? active : draft && !parse(draft) ? 0 : -1
+
+  const close = () => {
+    setDraft(null)
+    setOpen(false)
+    setActive(-1)
+  }
+  const choose = (next) => {
+    setError('')
+    if (next !== value) onChange(next)
+    close()
+  }
+  const commit = () => {
+    if (draft === null) return close()
+    if (!draft.trim()) return noneLabel ? choose(null) : close()
+    const next = parse(draft)
+    if (next) return choose(next)
+    setError(unknown(draft.trim()))
+    close()
+  }
+  const onKeyDown = (event) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault()
+      setOpen(true)
+      setActive((current) => (Math.max(current, -1) + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length)
+    } else if (event.key === 'Enter') {
+      event.preventDefault()
+      if (open && options[highlighted]) choose(options[highlighted].value)
+      else commit()
+    } else if (event.key === 'Escape') {
+      close()
+    }
+  }
+
   return (
-    <select aria-label={label} value={value ?? ''} onChange={(event) => onChange(event.target.value || null)} className={selectClass}>
-      <option value="">— boşta —</option>
-      <optgroup label="Dijital">
-        {UNO_DIGITAL.map((pin) => (
-          <option key={pin} value={pin}>
-            {pin}
-            {PWM_PINS.has(pin) ? ' ~PWM' : ''}
-            {pin === 'D0' || pin === 'D1' ? ' (Serial)' : ''}
-          </option>
-        ))}
-      </optgroup>
-      <optgroup label="Analog">
-        {UNO_ANALOG.map((pin) => (
-          <option key={pin} value={pin}>
-            {pin}
-          </option>
-        ))}
-      </optgroup>
-      <optgroup label="Güç">
-        {['5V', '3V3', 'GND', 'VIN'].map((pin) => (
-          <option key={pin} value={pin}>
-            {pin}
-          </option>
-        ))}
-      </optgroup>
-    </select>
+    <div className="relative min-w-0">
+      <input
+        role="combobox"
+        aria-label={label}
+        aria-expanded={open}
+        aria-controls={`${id}-list`}
+        aria-autocomplete="list"
+        aria-activedescendant={open && options[highlighted] ? `${id}-${highlighted}` : undefined}
+        value={draft ?? (value ? display(value) : '')}
+        placeholder={placeholder}
+        autoComplete="off"
+        spellCheck={false}
+        onFocus={(event) => {
+          setOpen(true)
+          event.target.select()
+        }}
+        onClick={() => setOpen(true)}
+        onChange={(event) => {
+          setDraft(event.target.value)
+          setError('')
+          setOpen(true)
+          setActive(-1)
+        }}
+        onKeyDown={onKeyDown}
+        onBlur={commit}
+        className={`${selectClass} ${placeholderClass}`}
+      />
+      {open && options.length ? (
+        <ul
+          id={`${id}-list`}
+          role="listbox"
+          className="font-code absolute left-0 right-0 z-20 mt-1 max-h-56 overflow-auto rounded-md border border-slate-300 bg-white py-1 text-sm shadow-lg dark:border-white/15 dark:bg-[#0b1517]"
+        >
+          {options.map((option, index) => (
+            <li
+              key={option.value ?? 'none'}
+              id={`${id}-${index}`}
+              role="option"
+              aria-selected={option.value === value}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => choose(option.value)}
+              onMouseEnter={() => setActive(index)}
+              className={`flex cursor-pointer justify-between gap-3 px-2 py-1 ${index === highlighted ? 'bg-teal-50 text-teal-900 dark:bg-teal-400/10 dark:text-teal-100' : 'text-slate-800 dark:text-slate-100'}`}
+            >
+              <span className={`shrink-0 ${option.value === value ? 'font-semibold' : ''}`}>{option.title ?? option.label}</span>
+              <span className="min-w-0 truncate text-right text-xs text-slate-500 dark:text-slate-400">{option.note}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {error ? <p className="mt-1 text-xs text-rose-700 dark:text-rose-300">{error}</p> : null}
+    </div>
   )
 }
 
-function Slider({ label, min, max, step = 1, value, unit = '', onChange }) {
+// The Uno pin a part pin is wired to directly. Without such a wire the box
+// says what the pin is connected to anyway: { text, uno } from
+// reachedWithout(), coloured when that reaches the Uno.
+export function PinSelect({ value, onChange, label, reached = null }) {
+  return (
+    <SuggestBox
+      label={label}
+      value={value}
+      display={(pin) => pin}
+      suggest={suggestPins}
+      parse={parsePin}
+      onChange={onChange}
+      placeholder={reached?.text ?? 'bağlı değil'}
+      placeholderClass={reached?.uno ? 'placeholder:text-teal-700 dark:placeholder:text-teal-300' : ''}
+      noneLabel="kablo yok"
+      unknown={(text) => `“${text}” diye bir pin yok.`}
+    />
+  )
+}
+
+// The other parts' pins on the same connection ("Yeşil LED +"); a part's
+// own legs (a button's always-joined pair) are left out.
+function peers(nets, circuit, key) {
+  const root = nets.find(key)
+  const own = key.split(':')[1]
+  const found = []
+  for (const part of circuit.parts) {
+    if (part.type === 'breadboard' || part.id === own) continue
+    for (const pin of PART_CATALOG[part.type].pins) {
+      const other = `P:${part.id}:${pin.id}`
+      if (other !== key && nets.find(other) === root) found.push(`${partLabel(part)} ${pin.label}`)
+    }
+  }
+  return found.length > 2 ? [...found.slice(0, 2), `+${found.length - 2}`] : found
+}
+
+// What a pin with no direct wire to the Uno is connected to anyway, through
+// its breadboard hole and jumpers: Uno pins ("h17 deliği → D13"), else other
+// parts' pins ("h21 deliği → Yeşil LED +"), else nothing.
+function reachedWithout(nets, plugged, circuit, part, pinId) {
+  const key = `P:${part.id}:${pinId}`
+  const uno = describeNet(nets, key)
+  const hole = plugged.get(part.id)?.holes?.[pinId]
+  const at = hole ? `${hole} deliği ` : ''
+  if (uno.length) return { text: `${at}→ ${uno.join(', ')}`, uno: true }
+  const others = peers(nets, circuit, key)
+  if (others.length) return { text: `${at}→ ${others.join(', ')}`, uno: false }
+  return hole ? { text: `${at}· bağlı değil`, uno: false } : null
+}
+
+// Wire ends as text: "P:<part>:<pin>" or "U:<pin>".
+const endFromKey = (key) => (key.startsWith('U:') ? { uno: key.slice(2) } : { part: key.slice(2, key.indexOf(':', 2)), pin: key.slice(key.indexOf(':', 2) + 1) })
+const HOLE = /^([a-j]\d{1,2}|[TB][+-]\d{1,2})$/i
+// "pot s" finds "Potansiyometre · S": every typed word starts a word of the label.
+const wordsMatch = (label, text) => {
+  const words = lower(label).split(/[\s·]+/)
+  return lower(text)
+    .split(/\s+/)
+    .every((typed) => words.some((word) => word.startsWith(typed)))
+}
+
+const RAILS = [
+  ['T+', 'üst + hattı'],
+  ['T-', 'üst − hattı'],
+  ['B+', 'alt + hattı'],
+  ['B-', 'alt − hattı'],
+]
+
+// The breadboard's four rails, then the column halves holding a leg or a
+// wire end: { strip, name, rail, legs: ["Kırmızı LED +", …] }.
+function usedStrips(circuit, boardId) {
+  const byId = breadboardHoles().byId
+  const columns = new Map()
+  const column = (hole) => {
+    if (!columns.has(hole.strip)) columns.set(hole.strip, { strip: hole.strip, name: `${hole.col} ${hole.strip.endsWith('t') ? 'a–e' : 'f–j'}`, col: hole.col, legs: [] })
+    return columns.get(hole.strip)
+  }
+  const rails = RAILS.map(([strip, name]) => ({ strip, name, rail: true, legs: [] }))
+  for (const [partId, info] of pluggedParts(circuit)) {
+    if (info.board !== boardId) continue
+    const part = circuit.parts.find((p) => p.id === partId)
+    for (const [pinId, holeId] of Object.entries(info.holes)) {
+      const hole = byId.get(holeId)
+      const leg = `${partLabel(part)} ${PART_CATALOG[part.type].pins.find((p) => p.id === pinId)?.label ?? pinId}`
+      ;(hole.rail ? rails.find((rail) => rail.strip === hole.strip) : column(hole)).legs.push(leg)
+    }
+  }
+  for (const wire of circuit.wires.map(normalizeWire)) {
+    for (const end of [wire.from, wire.to]) {
+      const hole = end.part === boardId ? byId.get(end.pin) : null
+      if (hole && !hole.rail) column(hole)
+    }
+  }
+  return [...rails, ...[...columns.values()].sort((a, b) => a.col - b.col || Number(a.strip.endsWith('b')) - Number(b.strip.endsWith('b')))]
+}
+
+// The breadboard's rails and used columns, each with an Uno pin box: typing
+// a pin runs a jumper to it from a free hole of that strip.
+function BreadboardPins({ circuit, board, nets, onStrip }) {
+  const strips = usedStrips(circuit, board.id)
+  const row = (strip) => {
+    const direct = directStripUno(circuit, board.id, strip.strip)
+    const uno = describeNet(nets, `S:${board.id}:${strip.strip}`)
+    return (
+      <div key={strip.strip} className="grid grid-cols-[3rem_minmax(0,1fr)] items-center gap-x-2 gap-y-0.5">
+        <span className="font-code text-xs text-slate-700 dark:text-slate-200">{strip.rail ? strip.name.replace(' hattı', '') : strip.name}</span>
+        <div className="min-w-0">
+          {strip.legs.length ? <p className="mb-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{strip.legs.join(', ')}</p> : null}
+          <PinSelect
+            label={`Breadboard ${strip.rail ? strip.name : `${strip.name} sütunu`}`}
+            value={direct}
+            reached={uno.length ? { text: `→ ${uno.join(', ')}`, uno: true } : { text: 'Uno’ya doğrudan bağlı değil', uno: false }}
+            onChange={(next) => onStrip(board.id, strip.strip, next)}
+          />
+        </div>
+      </div>
+    )
+  }
+  const columns = strips.filter((strip) => !strip.rail)
+  return (
+    <div className="space-y-3">
+      <div className="space-y-1">
+        <p className="font-code text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Hatlar</p>
+        {strips.filter((strip) => strip.rail).map(row)}
+      </div>
+      <div className="space-y-1.5">
+        <p className="font-code text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Sütunlar</p>
+        {columns.length ? columns.map(row) : <p className="text-xs text-slate-500 dark:text-slate-400">Henüz parça takılı değil. Parçayı sürükleyip breadboard’un üstüne bırakın.</p>}
+      </div>
+    </div>
+  )
+}
+
+// One end of a new wire: a part pin, an Uno pin or (typed) a breadboard hole;
+// "hat" (or "üst +", "t-" …) offers the power rails.
+function EndSelect({ circuit, label, value, onChange }) {
+  const board = circuit.parts.find((part) => part.type === 'breadboard')
+  const holes = board ? breadboardHoles().byId : null
+  const partPins = circuit.parts
+    .filter((part) => part.type !== 'breadboard')
+    .flatMap((part) => PART_CATALOG[part.type].pins.map((pin) => ({ value: `P:${part.id}:${pin.id}`, label: `${partLabel(part)} · ${pin.label}`, title: pin.label, note: partLabel(part) })))
+  // Listed as "D9" with "Uno · ~PWM" beside it; typed as "uno d9" or "d9".
+  const asUno = (option) => ({ value: `U:${option.value}`, label: `Uno ${option.label}`, title: option.label, note: `Uno · ${option.note}` })
+  const unoPins = PIN_OPTIONS.map(asUno)
+  const hole = (text) => {
+    const typed = text.trim().replace(/^([tb])/i, (letter) => letter.toUpperCase())
+    const id = HOLE.test(typed) ? (/^[a-j]/i.test(typed) ? typed.toLowerCase() : typed) : null
+    return holes && id && holes.has(id) ? { value: `P:${board.id}:${id}`, label: `Breadboard · ${describeHole(id)}`, title: id, note: `Breadboard · ${describeHole(id).replace(id, '').trim()}` } : null
+  }
+  // Each rail at its free hole nearest the Uno, so the wire stays short.
+  const rails = board
+    ? RAILS.map(([strip, name]) => ({ strip, name, id: freeHole(circuit, board.id, strip) }))
+        .filter(({ id }) => id)
+        .map(({ strip, name, id }) => ({ value: `P:${board.id}:${id}`, label: `hat hattı ${name} ${strip}`, title: id, note: `Breadboard · ${name}` }))
+    : []
+  // For each leg plugged into the board, a free hole in its column (the
+  // outermost one), the usual place for a jumper to it.
+  const columns = []
+  for (const strip of board ? usedStrips(circuit, board.id) : []) {
+    const id = !strip.rail && strip.legs.length ? freeHole(circuit, board.id, strip.strip) : null
+    if (!id) continue
+    const legs = strip.legs.join(', ')
+    columns.push({ value: `P:${board.id}:${id}`, label: `${legs} sütunu ${id}`, title: id, note: `${legs} ile aynı sütun` })
+  }
+  const suggest = (text) => {
+    if (!text.trim()) return [...partPins, ...columns, ...rails, ...unoPins]
+    const found = hole(text)
+    const pins = suggestPins(text).map(asUno)
+    const extra = [...columns, ...rails].filter((option) => option.value !== found?.value && wordsMatch(option.label, text))
+    // "d13" is both an Uno pin and a hole: the pin comes first.
+    return [...partPins.filter((option) => wordsMatch(option.label, text)), ...(cleanPin(text) ? pins : []), ...(found ? [found] : []), ...extra]
+  }
+  const parse = (text) => {
+    const exact = [...partPins, ...unoPins].find((option) => lower(option.label) === lower(text))
+    const pin = parsePin(text.replace(/^uno\s*/i, ''))
+    const only = suggest(text)
+    return exact?.value ?? (pin ? `U:${pin}` : null) ?? hole(text)?.value ?? (only.length === 1 ? only[0].value : null)
+  }
+  return (
+    <SuggestBox
+      label={label}
+      value={value}
+      display={(key) => describeEndpoint(circuit, endFromKey(key))}
+      suggest={suggest}
+      parse={parse}
+      onChange={onChange}
+      placeholder="parça pini, Uno pini ya da a12"
+      unknown={(text) => `“${text}” bulunamadı.`}
+    />
+  )
+}
+
+// Lux on the LDR's log-scale slider: 0.1 (moonlight) to 10 000.
+const formatLux = (light) => {
+  const lux = lightLux(light)
+  return lux >= 100 ? Math.round(lux / 10) * 10 : lux >= 10 ? Math.round(lux) : lux.toFixed(1)
+}
+
+function Slider({ label, min, max, step = 1, value, unit = '', format = (v) => v, onChange }) {
   return (
     <label className="block">
       <span className="flex justify-between text-sm text-slate-700 dark:text-slate-200">
         <span>{label}</span>
         <span className="font-code text-teal-700 dark:text-teal-300">
-          {value}
+          {format(value)}
           {unit}
         </span>
       </span>
@@ -105,9 +461,10 @@ export function PartControls({ part, inputs, onInput }) {
         </button>
       )
     case 'potentiometer':
-      return <Slider label="Konum (analogRead)" min={0} max={1023} value={value.value ?? 512} onChange={(v) => onInput('value', v)} />
+      // The shaft turns through 300°.
+      return <Slider label="Mil açısı" min={0} max={1023} value={value.value ?? 512} format={(v) => Math.round((v / 1023) * 300)} unit="°" onChange={(v) => onInput('value', v)} />
     case 'ldr':
-      return <Slider label="Ortam ışığı" min={0} max={100} unit="%" value={value.light ?? 50} onChange={(v) => onInput('light', v)} />
+      return <Slider label="Ortam ışığı" min={0} max={100} value={value.light ?? 50} format={formatLux} unit=" lux" onChange={(v) => onInput('light', v)} />
     case 'ultrasonic':
       return <Slider label="Engel mesafesi" min={2} max={450} unit=" cm" value={value.distance ?? 50} onChange={(v) => onInput('distance', v)} />
     case 'dht11':
@@ -142,25 +499,155 @@ export function PartControls({ part, inputs, onInput }) {
 
 const OPTION_LABELS = { color: 'Renk', ohms: 'Değer' }
 
-export function PartInspector({ part, circuit, inputs, state, onInput, onWire, onRotate, onDelete, onProp }) {
+// The Uno in the parts list: it can be moved and turned, and its reset
+// button restarts the running program.
+// Locks a part where it is: dragging it then turns the camera instead.
+export function LockButton({ locked, onToggle }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={locked}
+      title={locked ? 'Konumu kilitli: kilidi aç' : 'Konumu kilitle'}
+      aria-label={locked ? 'Kilidi aç' : 'Konumu kilitle'}
+      className={`rounded-md border p-1.5 ${locked ? 'border-amber-500 bg-amber-50 text-amber-700 dark:border-amber-400/60 dark:bg-amber-400/10 dark:text-amber-200' : 'border-slate-300 text-slate-600 hover:border-teal-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300'}`}
+    >
+      {locked ? <Lock size={15} /> : <LockOpen size={15} />}
+    </button>
+  )
+}
+
+const lockedNote = 'Konumu kilitli: üstünden sürükleyince kamera döner. Taşımak için kilidi açın.'
+
+export function UnoInspector({ running, locked, board, power, onBoard, onPower, onToggleLock, onRotate, onReset }) {
+  const [noRoom, setNoRoom] = useState(false)
+  return (
+    <div className="space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-semibold text-slate-900 dark:text-white">Arduino Uno</p>
+          <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+            Sürükleyerek taşıyın; kablolar pinlerinde kalır. Kartın köşesindeki RESET butonu çalışan programı baştan başlatır: setup() yeniden
+            çalışır, kod yeniden derlenmez. ~ işaretli pinler (3, 5, 6, 9, 10, 11) analogWrite ile PWM verebilir. Parçaların üstüne gelince ne
+            oldukları yazar.
+          </p>
+          {locked ? <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">{lockedNote}</p> : null}
+          {noRoom ? <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">Döndürmek için yer yok: önce kartı boş bir yere taşıyın.</p> : null}
+        </div>
+        <div className="flex shrink-0 gap-1">
+          <LockButton locked={locked} onToggle={onToggleLock} />
+          <button
+            type="button"
+            disabled={locked}
+            onClick={() => {
+              if (onRotate()) return
+              setNoRoom(true)
+              setTimeout(() => setNoRoom(false), 2500)
+            }}
+            title={locked ? 'Kilitliyken döndürülemez' : 'Döndür'}
+            aria-label="Döndür"
+            className="rounded-md border border-slate-300 p-1.5 text-slate-600 hover:border-teal-600 hover:text-teal-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:text-slate-300"
+          >
+            <RotateCw size={15} />
+          </button>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onReset}
+        disabled={!running}
+        title={running ? 'Programı baştan başlat' : 'Program çalışırken kullanılabilir'}
+        className="inline-flex items-center gap-1.5 rounded-md border border-rose-300 px-3 py-1.5 text-sm text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-400/40 dark:text-rose-200 dark:hover:bg-rose-500/10"
+      >
+        <RotateCcw size={14} />
+        Reset
+      </button>
+      {/* The kit's A-to-B USB cable and its 9 V battery on the barrel jack cable. */}
+      <fieldset>
+        <legend className="mb-1.5 text-sm text-slate-600 dark:text-slate-300">Güç ve yükleme</legend>
+        <div className="space-y-2">
+          {[
+            ['usb', 'USB kablosu', 'Bilgisayara bağlar: kartı 5 V ile besler, kodu yükler, Serial Monitor bunun üzerinden çalışır.'],
+            ['battery', '9V pil (DC jak)', 'Bilgisayarsız çalıştırır: VIN ≈ 9 V, kart kendi 5 V’unu üretir. Karta en son yüklenen program çalışır.'],
+          ].map(([which, title, note]) => (
+            <div key={which} className="flex items-start justify-between gap-3 rounded-md border border-slate-200 px-2.5 py-2 dark:border-white/10">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{title}</p>
+                <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">{note}</p>
+              </div>
+              <button
+                type="button"
+                aria-pressed={power[which]}
+                onClick={() => onPower(which)}
+                className={`shrink-0 rounded-md border px-2.5 py-1 text-sm font-semibold transition ${power[which] ? 'border-teal-700 bg-teal-700 text-white dark:border-teal-400 dark:bg-teal-400 dark:text-teal-950' : 'border-slate-300 text-slate-700 hover:border-teal-600 dark:border-white/15 dark:text-slate-200'}`}
+              >
+                {power[which] ? 'Takılı' : 'Tak'}
+              </button>
+            </div>
+          ))}
+          <p className="text-xs text-slate-600 dark:text-slate-300">
+            {power.usb
+              ? 'Kart USB’den besleniyor; kod yüklenebilir.'
+              : power.battery
+                ? 'Kart 9V pilden besleniyor. Kod yüklemek ve Serial Monitor için USB kablosunu takın.'
+                : 'Kartta güç yok: ON LED’i sönük, program çalışmaz.'}{' '}
+            Takılı olanı 3B görünümde fişine tıklayarak da çıkarabilirsiniz.
+          </p>
+        </div>
+      </fieldset>
+      {/* Both boards have their headers in the same places. */}
+      <fieldset>
+        <legend className="mb-1.5 text-sm text-slate-600 dark:text-slate-300">Kart</legend>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            ['ch340', 'Kitteki kart', 'Uno R3 klon · CH340, SMD'],
+            ['r3', 'Resmî Uno R3', 'Arduino A000066'],
+          ].map(([kind, title, note]) => (
+            <button
+              key={kind}
+              type="button"
+              aria-pressed={board === kind}
+              onClick={() => onBoard(kind)}
+              className={`rounded-md border px-2 py-1.5 text-left text-sm transition ${board === kind ? 'border-teal-700 bg-teal-50 text-teal-900 dark:border-teal-300/60 dark:bg-teal-400/10 dark:text-teal-100' : 'border-slate-300 text-slate-700 hover:border-teal-600 dark:border-white/15 dark:text-slate-200'}`}
+            >
+              <span className="block font-semibold">{title}</span>
+              <span className="block text-xs text-slate-500 dark:text-slate-400">{note}</span>
+            </button>
+          ))}
+        </div>
+      </fieldset>
+    </div>
+  )
+}
+
+export function PartInspector({ part, circuit, inputs, state, locked, onToggleLock, onInput, onWire, onStrip, onRotate, onDelete, onProp }) {
+  const [noRoom, setNoRoom] = useState(false)
   const definition = PART_CATALOG[part.type]
   const { nets, plugged } = buildNets(circuit)
   const holes = plugged.get(part.id)?.holes
-  // What each pin reaches through the breadboard and other jumpers.
-  const reach = (pin) => {
-    const uno = describeNet(nets, `P:${part.id}:${pin}`)
-    const via = holes?.[pin] ? `${holes[pin]} deliği` : null
-    return [via, uno.length ? `→ ${uno.join(', ')}` : null].filter(Boolean).join(' ')
-  }
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-semibold text-slate-900 dark:text-white">{partLabel(part)}</p>
           <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{definition.help}</p>
+          {locked ? <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">{lockedNote}</p> : null}
+          {noRoom ? <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">Döndürmek için yer yok: önce parçayı boş bir yere taşıyın.</p> : null}
         </div>
         <div className="flex shrink-0 gap-1">
-          <button type="button" onClick={onRotate} title="Döndür" aria-label="Döndür" className="rounded-md border border-slate-300 p-1.5 text-slate-600 hover:border-teal-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300">
+          <LockButton locked={locked} onToggle={onToggleLock} />
+          <button
+            type="button"
+            disabled={locked}
+            onClick={() => {
+              if (onRotate()) return
+              setNoRoom(true)
+              setTimeout(() => setNoRoom(false), 2500)
+            }}
+            title={locked ? 'Kilitliyken döndürülemez' : 'Döndür'}
+            aria-label="Döndür"
+            className="rounded-md border border-slate-300 p-1.5 text-slate-600 hover:border-teal-600 hover:text-teal-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:text-slate-300"
+          >
             <RotateCw size={15} />
           </button>
           <button type="button" onClick={onDelete} title="Parçayı kaldır" aria-label="Parçayı kaldır" className="rounded-md border border-slate-300 p-1.5 text-rose-600 hover:border-rose-500 dark:border-white/15 dark:text-rose-300">
@@ -190,19 +677,21 @@ export function PartInspector({ part, circuit, inputs, state, onInput, onWire, o
       <Readout part={part} state={state} />
 
       {part.type === 'breadboard' ? (
-        <BreadboardSummary part={part} circuit={circuit} nets={nets} plugged={plugged} />
+        <BreadboardPins circuit={circuit} board={part} nets={nets} onStrip={onStrip} />
       ) : (
         <div>
-          <p className="font-code mb-2 text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Bağlantılar</p>
+          <p className="font-code mb-2 text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Pinler</p>
           {holes ? <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">Breadboard’a takılı. Uno’ya doğrudan kablo da çekebilirsiniz.</p> : null}
           <div className="space-y-1.5">
             {definition.pins.map((pin) => (
-              <div key={pin.id} className="grid grid-cols-[5.5rem_1fr] items-center gap-2">
-                <span className="font-code text-sm text-slate-700 dark:text-slate-200">
-                  {pin.label}
-                  {reach(pin.id) ? <span className="block text-[0.7rem] leading-tight text-slate-500 dark:text-slate-400">{reach(pin.id)}</span> : null}
-                </span>
-                <PinSelect label={`${partLabel(part)} ${pin.label}`} value={directUnoPin(circuit, part.id, pin.id)} onChange={(uno) => onWire(part.id, pin.id, uno)} />
+              <div key={pin.id} className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-2">
+                <span className="font-code text-sm text-slate-700 dark:text-slate-200">{pin.label}</span>
+                <PinSelect
+                  label={`${partLabel(part)} ${pin.label}`}
+                  value={directUnoPin(circuit, part.id, pin.id)}
+                  reached={reachedWithout(nets, plugged, circuit, part, pin.id)}
+                  onChange={(uno) => onWire(part.id, pin.id, uno)}
+                />
               </div>
             ))}
           </div>
@@ -212,34 +701,123 @@ export function PartInspector({ part, circuit, inputs, state, onInput, onWire, o
   )
 }
 
-// Which strips of the board carry which Uno pins, and what is plugged in.
-function BreadboardSummary({ part, circuit, nets, plugged }) {
-  const strips = new Map()
-  for (const wire of circuit.wires) {
-    for (const end of [wire.from, wire.to]) {
-      if (end?.part !== part.id) continue
-      const uno = describeNet(nets, `P:${part.id}:${end.pin}`)
-      const hole = breadboardHoles().byId.get(end.pin)
-      if (!uno.length || !hole) continue
-      const strip = hole.rail ? describeHole(end.pin).replace(/ \(\d+\)$/, '') : `${hole.col}. sütun (${hole.strip.endsWith('t') ? 'a–e' : 'f–j'})`
-      strips.set(strip, uno.join(', '))
-    }
+// The circuit's connections, under the parts: the wires as built (with a
+// form to add one), or every part pin with the Uno pin it is wired to. The
+// order stays put; whatever touches the selection is highlighted.
+export function ConnectionsPanel({ circuit, selection, onSelect, onWire, onStrip, onConnect }) {
+  const [view, setView] = useState('wires')
+  const [adding, setAdding] = useState(null) // { from, to } while adding a wire
+  const { nets, plugged } = buildNets(circuit)
+  const selectedPart = circuit.parts.find((part) => part.id === selection?.partId)
+  const selectedNets = new Set((selectedPart ? PART_CATALOG[selectedPart.type].pins : []).map((pin) => nets.find(`P:${selectedPart.id}:${pin.id}`)))
+  const touches = (wire) =>
+    wire.id === selection?.wireId ||
+    (selection?.partId === UNO_ID && [wire.from, wire.to].some((end) => end.uno)) ||
+    (selectedPart && [wire.from, wire.to].some((end) => end.part === selectedPart.id || selectedNets.has(nets.find(endpointKey(end)))))
+  const wires = circuit.wires.map(normalizeWire)
+  const { parts } = circuit
+  const row = (active) => `rounded-md px-2 py-1 ${active ? 'bg-teal-50 dark:bg-teal-400/10' : ''}`
+  const tab = (active) =>
+    `rounded px-2 py-0.5 text-xs transition ${active ? 'bg-teal-700 text-white dark:bg-teal-400 dark:text-teal-950' : 'text-slate-600 hover:text-teal-700 dark:text-slate-300 dark:hover:text-teal-300'}`
+  const add = () => {
+    onConnect(endFromKey(adding.from), endFromKey(adding.to))
+    setAdding(null)
   }
-  const riders = circuit.parts.filter((p) => plugged.get(p.id)?.board === part.id)
   return (
-    <div className="space-y-2 text-sm text-slate-700 dark:text-slate-200">
-      <p className="font-code text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Üstündekiler</p>
-      <p>{riders.length ? riders.map(partLabel).join(', ') : 'Henüz parça takılı değil. Parçayı sürükleyip breadboard’un üstüne bırakın.'}</p>
-      {strips.size ? (
-        <ul className="font-code space-y-0.5 text-xs">
-          {[...strips].map(([strip, uno]) => (
-            <li key={strip}>
-              {strip} → {uno}
+    <PanelCard
+      title="Bağlantılar"
+      actions={
+        <div className="font-code flex gap-1 rounded-md border border-slate-300 p-0.5 dark:border-white/15" role="group" aria-label="Bağlantı görünümü">
+          <button type="button" aria-pressed={view === 'wires'} onClick={() => setView('wires')} className={tab(view === 'wires')}>
+            Kablolar
+          </button>
+          <button type="button" aria-pressed={view === 'pins'} onClick={() => setView('pins')} className={tab(view === 'pins')}>
+            Pin haritası
+          </button>
+        </div>
+      }
+    >
+      {view === 'wires' ? (
+        <div className="space-y-3">
+          {wires.length ? (
+            <ul className="font-code space-y-0.5 text-sm">
+              {wires.map((wire) => (
+                <li key={wire.id}>
+                  <button
+                    type="button"
+                    onClick={() => onSelect({ wireId: wire.id })}
+                    className={`${row(touches(wire))} block w-full text-left text-slate-700 hover:text-teal-700 dark:text-slate-200 dark:hover:text-teal-300 ${wire.id === selection?.wireId ? 'font-semibold' : ''}`}
+                  >
+                    {describeEndpoint(circuit, wire.from)} ↔ {describeEndpoint(circuit, wire.to)}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-slate-500 dark:text-slate-400">Henüz bağlantı yok.</p>
+          )}
+          {adding ? (
+            <div className="space-y-2 rounded-md border border-slate-200 p-2 dark:border-white/10">
+              <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-start">
+                <EndSelect circuit={circuit} label="Kablonun bir ucu" value={adding.from} onChange={(from) => setAdding((current) => ({ ...current, from }))} />
+                <span className="font-code text-center text-slate-500 sm:pt-1.5">↔</span>
+                <EndSelect circuit={circuit} label="Kablonun öbür ucu" value={adding.to} onChange={(to) => setAdding((current) => ({ ...current, to }))} />
+              </div>
+              {circuit.parts.some((part) => part.type === 'breadboard') ? (
+                <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                  Breadboard: listede, takılı parçaların bacaklarıyla aynı sütundaki boş delikler ve güç hatları hazır. Başka bir delik için satır harfini ve sütun numarasını
+                  yazın (ör. a12): harfler (a–j) breadboard’un kenarlarında, numaralar sütunların yanında yazar; 3B görünümde deliğin üstüne gelince adı da çıkar.
+                </p>
+              ) : null}
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={add} disabled={!adding.from || !adding.to || adding.from === adding.to} className="rounded-md bg-teal-700 px-3 py-1 text-sm font-semibold text-white disabled:opacity-50 dark:bg-teal-400 dark:text-teal-950">
+                  Ekle
+                </button>
+                <button type="button" onClick={() => setAdding(null)} className="text-sm text-slate-500 underline dark:text-slate-400">
+                  vazgeç
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button type="button" onClick={() => setAdding({ from: null, to: null })} className="font-code inline-flex items-center gap-1 rounded-md border border-slate-300 px-2.5 py-1 text-sm text-slate-700 hover:border-teal-600 hover:text-teal-800 dark:border-white/15 dark:text-slate-200">
+              <Plus size={13} />
+              Kablo ekle
+            </button>
+          )}
+        </div>
+      ) : parts.length ? (
+        <ul className="space-y-2 text-sm">
+          {parts.map((part) => (
+            <li key={part.id} className={row(part.id === selectedPart?.id)}>
+              <button type="button" onClick={() => onSelect({ partId: part.id })} className="text-left font-semibold text-slate-800 hover:text-teal-700 dark:text-slate-100 dark:hover:text-teal-300">
+                {partLabel(part)}
+              </button>
+              {part.type === 'breadboard' ? (
+                <div className="mt-1">
+                  <BreadboardPins circuit={circuit} board={part} nets={nets} onStrip={onStrip} />
+                </div>
+              ) : (
+                <div className="mt-1 space-y-1">
+                  {PART_CATALOG[part.type].pins.map((pin) => (
+                    <div key={pin.id} className="grid grid-cols-[3rem_minmax(0,1fr)] items-center gap-2">
+                      <span className="font-code text-xs text-slate-700 dark:text-slate-200">{pin.label}</span>
+                      <PinSelect
+                        label={`${partLabel(part)} ${pin.label}`}
+                        value={directUnoPin(circuit, part.id, pin.id)}
+                        reached={reachedWithout(nets, plugged, circuit, part, pin.id)}
+                        onChange={(next) => onWire(part.id, pin.id, next)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </li>
           ))}
         </ul>
-      ) : null}
-    </div>
+      ) : (
+        <p className="text-sm text-slate-500 dark:text-slate-400">Masada parça yok.</p>
+      )}
+    </PanelCard>
   )
 }
 
@@ -260,7 +838,11 @@ export function IssuesList({ issues }) {
   )
 }
 
-export function SerialMonitor({ text, running, onSend, onClear }) {
+// offline: the USB cable is out, so the computer hears nothing.
+// source: what it is talking to, when not the simulated board; idle: what
+// it says while nothing is connected; connect: { open, onToggle } for a
+// monitor that is opened and closed by hand (the real board's).
+export function SerialMonitor({ text, running, baud, offline = false, source = null, idle = null, connect = null, onSend, onClear }) {
   const outputRef = useRef(null)
   const [line, setLine] = useState('')
   const [follow, setFollow] = useState(true)
@@ -275,9 +857,19 @@ export function SerialMonitor({ text, running, onSend, onClear }) {
   }
   return (
     <PanelCard
-      title="Serial Monitor · 9600 baud"
+      title={['Serial Monitor', source, baud && `${baud} baud`].filter(Boolean).join(' · ')}
+      titleLang="en"
       actions={
         <div className="flex items-center gap-3">
+          {connect ? (
+            <button
+              type="button"
+              onClick={connect.onToggle}
+              className="font-code rounded-md border border-slate-300 px-2 py-0.5 text-xs text-slate-600 hover:border-teal-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300"
+            >
+              {connect.open ? 'Bağlantıyı kes' : 'Bağlan'}
+            </button>
+          ) : null}
           <label className="font-code flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
             <input type="checkbox" checked={follow} onChange={(event) => setFollow(event.target.checked)} className="accent-teal-600" />
             kaydır
@@ -289,17 +881,17 @@ export function SerialMonitor({ text, running, onSend, onClear }) {
       }
     >
       <pre ref={outputRef} className="font-code h-40 overflow-auto whitespace-pre-wrap rounded-md bg-slate-950 p-3 text-xs leading-relaxed text-emerald-300">
-        {text || (running ? '' : 'Program çalışınca Serial.print çıktıları burada görünür.')}
+        {offline ? 'USB kablosu takılı değil: Serial Monitor bilgisayarla karta USB üzerinden konuşur.' : text || (running ? '' : (idle ?? 'Program çalışınca Serial.print çıktıları burada görünür.'))}
       </pre>
       <form onSubmit={send} className="mt-2 flex gap-2">
         <input
           value={line}
           onChange={(event) => setLine(event.target.value)}
-          disabled={!running}
-          placeholder={running ? 'Arduino’ya gönder…' : 'Önce programı çalıştırın'}
+          disabled={!running || offline}
+          placeholder={offline ? 'USB kablosu takılı değil' : running ? 'Arduino’ya gönder…' : connect ? 'Bağlı değil' : 'Önce kodu karta yükleyin'}
           className="font-code min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100"
         />
-        <button type="submit" disabled={!running} className="inline-flex items-center gap-1 rounded-md bg-teal-700 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-40 dark:bg-teal-400 dark:text-teal-950">
+        <button type="submit" disabled={!running || offline} className="inline-flex items-center gap-1 rounded-md bg-teal-700 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-40 dark:bg-teal-400 dark:text-teal-950">
           <Send size={14} />
           Gönder
         </button>
@@ -320,7 +912,7 @@ function Bar({ value }) {
 
 export function CarHud({ car }) {
   if (!car) {
-    return <p className="text-sm text-slate-600 dark:text-slate-300">Programı çalıştırınca araba hareket eder; turlar ve sensörler burada görünür.</p>
+    return <p className="text-sm text-slate-600 dark:text-slate-300">Kodu karta yükleyince araba hareket eder; turlar ve sensörler burada görünür.</p>
   }
   const best = car.lapTimes.length ? Math.min(...car.lapTimes) : null
   return (
@@ -365,7 +957,8 @@ export function CarHud({ car }) {
 export function CarWiring({ circuit, onWire }) {
   const wireFor = (part, pin) => directUnoPin(circuit, part, pin)
   const groups = [
-    { part: 'driver', title: 'L298N motor sürücü', pins: PART_CATALOG.motorDriver.pins },
+    // The motors and the battery pack are wired with the chassis.
+    { part: 'driver', title: 'L298N motor sürücü', pins: PART_CATALOG.motorDriver.pins.filter((pin) => pin.kind === 'signal' || pin.kind === 'gnd'), note: 'Motorlar OUT1–OUT4’e, 4×AA pil +12V ve GND’ye takılı. GND’yi Arduino GND’sine de bağlayın.' },
     ...['left', 'center', 'right'].map((side) => ({ part: `ir-${side}`, title: `KH-09 ${{ left: 'sol', center: 'orta', right: 'sağ' }[side]} sensör`, pins: PART_CATALOG.irSensor.pins })),
   ]
   return (
@@ -373,6 +966,7 @@ export function CarWiring({ circuit, onWire }) {
       {groups.map((group) => (
         <div key={group.part}>
           <p className="mb-1.5 text-sm font-semibold text-slate-800 dark:text-slate-100">{group.title}</p>
+          {group.note ? <p className="mb-1.5 text-xs text-slate-600 dark:text-slate-300">{group.note}</p> : null}
           <div className="space-y-1.5">
             {group.pins.map((pin) => (
               <div key={pin.id} className="grid grid-cols-[3.5rem_1fr] items-center gap-2">

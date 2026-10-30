@@ -2,6 +2,7 @@
 // centimetres; the simulation works in metres.
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import SmoothZoom from './smoothZoom'
 import { ARENA, TRACKS, WHEEL_RADIUS } from '../../../utils/avrSim/car'
 import { box, cylinder, mat } from './models'
 
@@ -103,8 +104,14 @@ export class Car3D {
     this.scene = new THREE.Scene()
     this.camera = new THREE.PerspectiveCamera(45, 1, 1, 2000)
     this.controls = new OrbitControls(this.camera, this.renderer.domElement)
+    // A short glide after letting go (about 0.3 s), not three.js's 1.5 s.
     this.controls.enableDamping = true
+    this.controls.dampingFactor = 0.2
     this.controls.maxPolarAngle = Math.PI * 0.48
+    this.controls.minDistance = 20
+    this.controls.maxDistance = 600
+    this.zoom = new SmoothZoom(this.controls, container, () => (this.dirty = true))
+    this.clock = new THREE.Clock()
     this.controls.target.set(ARENA.width * 50, 0, ARENA.height * 50)
 
     this.scene.add(new THREE.HemisphereLight('#ffffff', '#94a3b8', 1.3))
@@ -153,12 +160,20 @@ export class Car3D {
     this.setTheme(false)
     this.resizeObserver = new ResizeObserver(() => this.resize())
     this.resizeObserver.observe(container)
+    // Nothing is drawn while the view is scrolled out of sight.
+    this.visible = true
+    this.visibilityObserver = new IntersectionObserver(([entry]) => {
+      this.visible = entry.isIntersecting
+      this.dirty = true
+    })
+    this.visibilityObserver.observe(container)
     this.resize()
     this.renderer.setAnimationLoop(() => this.render())
   }
 
   setTheme(dark) {
     this.scene.background = new THREE.Color(dark ? '#0d1517' : '#dfe8ec')
+    this.dirty = true
   }
 
   setTrack(trackId) {
@@ -174,7 +189,9 @@ export class Car3D {
 
   setView(view) {
     this.view = view
+    this.dirty = true
     this.controls.enabled = view === 'free'
+    this.zoom.cancel()
     if (view === 'top') {
       this.camera.position.set(ARENA.width * 50, 230, ARENA.height * 50 + 1)
       this.controls.target.set(ARENA.width * 50, 0, ARENA.height * 50)
@@ -190,14 +207,17 @@ export class Car3D {
     this.renderer.setSize(clientWidth, clientHeight)
     this.camera.aspect = clientWidth / clientHeight
     this.camera.updateProjectionMatrix()
+    this.dirty = true
   }
 
   clearTrail() {
     this.trailPoints = []
+    this.dirty = true
   }
 
   setState(state) {
     this.state = state
+    this.dirty = true
     if (!state?.pose) return
     const { x, y, heading } = state.pose
     this.car.position.set(x * CM, 0, y * CM)
@@ -216,21 +236,31 @@ export class Car3D {
     }
   }
 
+  // Draws a frame only when the car, the camera or the view changed.
   render() {
+    if (!this.visible) return
+    let moving = false
     if (this.view === 'follow' && this.state?.pose) {
       const { heading } = this.state.pose
       const target = this.car.position.clone()
       const desired = target.clone().add(new THREE.Vector3(-Math.cos(heading) * 55, 38, -Math.sin(heading) * 55))
+      // The chase camera eases in; it counts as moving until it arrives.
+      moving = this.camera.position.distanceTo(desired) > 0.05
       this.camera.position.lerp(desired, 0.08)
       this.controls.target.lerp(target.add(new THREE.Vector3(Math.cos(heading) * 20, 0, Math.sin(heading) * 20)), 0.15)
     }
-    this.controls.update()
+    if (this.zoom.update(Math.min(0.1, this.clock.getDelta()))) moving = true
+    if (this.controls.update()) moving = true
+    if (!moving && !this.dirty) return
+    this.dirty = false
     this.renderer.render(this.scene, this.camera)
   }
 
   dispose() {
     this.renderer.setAnimationLoop(null)
     this.resizeObserver.disconnect()
+    this.visibilityObserver.disconnect()
+    this.zoom.dispose()
     this.controls.dispose()
     this.renderer.dispose()
     this.renderer.domElement.remove()

@@ -1,9 +1,18 @@
 // Compiler worker: downloads the toolchain pack once (the browser caches it),
-// then compiles sketches off the main thread.
+// then compiles sketches off the main thread. The library pack (cc1 and the
+// AVR platform's libraries) and Library Manager libraries come only when a
+// sketch needs them.
+import { LibraryStore } from './libraries.js'
 import { Toolchain, unpack } from './toolchain.js'
 
 const TOOLS = ['cc1plus', 'avr-as', 'avr-ld', 'avr-objcopy']
 let ready = null
+let store = null
+
+async function factory(files, tool) {
+  const script = URL.createObjectURL(new Blob([files.get(`/tools/${tool}.mjs`)], { type: 'text/javascript' }))
+  return (await import(/* @vite-ignore */ script)).default
+}
 
 async function download(url) {
   const response = await fetch(url)
@@ -28,10 +37,7 @@ async function download(url) {
 async function load(url) {
   const files = unpack(await download(url))
   const factories = {}
-  for (const tool of TOOLS) {
-    const script = URL.createObjectURL(new Blob([files.get(`/tools/${tool}.mjs`)], { type: 'text/javascript' }))
-    factories[tool] = (await import(/* @vite-ignore */ script)).default
-  }
+  for (const tool of TOOLS) factories[tool] = await factory(files, tool)
   self.postMessage({ type: 'progress', preparing: true })
   const toolchain = new Toolchain(files, factories)
   await toolchain.init()
@@ -42,9 +48,25 @@ self.onmessage = async ({ data }) => {
   try {
     ready ??= load(data.packUrl)
     const toolchain = await ready
-    if (data.type === 'build') {
+    store ??= new LibraryStore({
+      indexUrl: data.indexUrl,
+      onProgress: ({ library, version }) => self.postMessage({ type: 'progress', library: `${library} ${version} indiriliyor` }),
+      loadPack: async () => {
+        self.postMessage({ type: 'progress', library: 'C derleyicisi ve Arduino kütüphaneleri indiriliyor' })
+        const files = unpack(await download(data.libraryPackUrl))
+        await toolchain.useTool('cc1', await factory(files, 'cc1'), files.get('/tools/cc1.wasm'))
+        return files
+      },
+    })
+    if (data.type === 'alternatives') {
+      self.postMessage({ type: 'result', id: data.id, result: await store.alternatives(data.header) })
+    } else if (data.type === 'build') {
       const started = performance.now()
-      const result = await toolchain.build(data.code)
+      const result = await toolchain.build(data.code, {
+        store,
+        prefer: data.prefer ?? {},
+        onStep: ({ library, done, total }) => self.postMessage({ type: 'progress', library: `${library} derleniyor (${done + 1}/${total})` }),
+      })
       self.postMessage({ type: 'result', id: data.id, result: { ...result, seconds: (performance.now() - started) / 1000 } })
     } else {
       self.postMessage({ type: 'result', id: data.id, result: { ok: true } })

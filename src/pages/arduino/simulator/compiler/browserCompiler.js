@@ -1,5 +1,6 @@
 // Main-thread side of the in-browser compiler: one long-lived worker, so the
 // toolchain is downloaded and compiled to machine code only once per visit.
+import libraryPackUrl from './libraries.pack.gz?url'
 import packUrl from './toolchain.pack.gz?url'
 
 let worker = null
@@ -34,11 +35,20 @@ function send(message) {
   const id = nextId++
   return new Promise((resolve) => {
     pending.set(id, resolve)
-    getWorker().postMessage({ ...message, id, packUrl: new URL(packUrl, window.location.href).href })
+    const at = (path) => new URL(path, window.location.href).href
+    getWorker().postMessage({
+      ...message,
+      id,
+      packUrl: at(packUrl),
+      libraryPackUrl: at(libraryPackUrl),
+      // The Library Manager index, cut down at deploy (scripts/build-library-index.mjs).
+      indexUrl: at(`${import.meta.env.BASE_URL}arduino-libraries.json`),
+    })
   })
 }
 
-// progress: { loaded, total } while downloading, { preparing: true } after.
+// progress: { loaded, total } while downloading, { preparing: true } after,
+// { library: "Name 1.2.3" } while a library is fetched.
 export function onCompilerProgress(listener) {
   progressListeners.add(listener)
   return () => progressListeners.delete(listener)
@@ -47,4 +57,8 @@ export function onCompilerProgress(listener) {
 // Starts the download early (when the student begins editing).
 export const preloadCompiler = () => (browserCompilerSupported() ? send({ type: 'load' }) : Promise.resolve({ ok: false }))
 
-export const compileInBrowser = (code) => send({ type: 'build', code })
+// prefer: { header: library name } when the user picked another library.
+export const compileInBrowser = (code, prefer = {}) => send({ type: 'build', code, prefer })
+
+// Other Library Manager libraries that provide a header: [{ name, version }].
+export const libraryAlternatives = (header) => send({ type: 'alternatives', header })

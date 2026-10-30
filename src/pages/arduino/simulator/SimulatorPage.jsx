@@ -1,8 +1,9 @@
-import { Bot, Cpu, Loader2, Play, Plus, RotateCcw, Square, Volume2, VolumeX } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Bot, Check, Columns2, Columns3, Cpu, GripVertical, LayoutTemplate, Lock, LockOpen, Pause, Play, Plus, RotateCcw, Usb, Volume2, VolumeX } from 'lucide-react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   PART_CATALOG,
+  UNO_ID,
   connectEndpoints,
   describeEndpoint,
   movePart,
@@ -14,22 +15,30 @@ import {
   resolveCircuit,
   rotatePart,
   setDirectUnoPin,
+  setStripUno,
+  unoPlacement,
 } from '../../../utils/avrSim/catalog'
 import { TRACKS } from '../../../utils/avrSim/car'
-import { Breadcrumb, Label } from '../ArduinoParts'
 import BenchView from './BenchView'
 import CarView from './CarView'
 import CodeEditor from './CodeEditor'
+import { Dock, Splitter } from './Dock'
+import { useAutoColumns, useDockLayout, useDragScroll, useViewportHeight, useWideScreen } from './dockLayout'
 import Licenses from './Licenses'
 import AnswerBar from './AnswerBar'
+import LibraryList from './LibraryList'
+import RunButtons from './RunButtons'
 import { compileSketch, rememberCompiled } from './compile'
 import { onCompilerProgress, preloadCompiler } from './compiler/browserCompiler'
 import { EXAMPLES } from './examples'
-import { CarHud, CarWiring, IssuesList, PanelCard, PartInspector, SerialMonitor } from './Panels'
+import { CarHud, CarWiring, ConnectionsPanel, IssuesList, PanelCard, PartInspector, SerialMonitor, UnoInspector } from './Panels'
+import { describePort, portIds, sketchBaud } from './realBoard'
+import useRealBoard from './useRealBoard'
 import useSimulator from './useSimulator'
 
 // Older saved projects held the examples' answers; they are dropped.
 const STORAGE_KEY = 'rogoyato-sim-project-v3'
+const TARGET_KEY = 'rogoyato-sim-hedef'
 const OLD_STORAGE_KEYS = ['rogoyato-sim-project-v1', 'rogoyato-sim-project-v2']
 const WEEK_LABELS = { 1: '1. hafta', 2: '2. hafta', 3: '3. hafta', 4: '4. hafta', 5: 'Yarışma', 0: 'Serbest' }
 const clone = (value) => (value === undefined ? undefined : JSON.parse(JSON.stringify(value)))
@@ -46,16 +55,47 @@ function projectFromExample(example) {
   }
 }
 
+// Cars saved before the battery pack and the motors were parts of their own
+// get them, wired as the chassis comes.
+function withChassis(carCircuit) {
+  const chassis = CAR_EXAMPLE.carCircuit
+  const missing = chassis.parts.filter((part) => !carCircuit.parts.some((p) => p.id === part.id))
+  if (!missing.length) return carCircuit
+  const added = new Set(missing.map((part) => part.id))
+  return { ...carCircuit, parts: [...carCircuit.parts, ...missing], wires: [...carCircuit.wires, ...chassis.wires.filter((wire) => added.has(wire.from.part))] }
+}
+
 function loadSaved() {
   try {
     for (const key of OLD_STORAGE_KEYS) window.localStorage.removeItem(key)
     const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY))
     // Projects saved before the breadboard used { part, pin, uno } wires.
-    if (saved?.code && saved?.circuit) return { ...saved, circuit: normalizeCircuit(saved.circuit), carCircuit: saved.carCircuit && normalizeCircuit(saved.carCircuit) }
+    if (saved?.code && saved?.circuit) return { ...saved, circuit: normalizeCircuit(saved.circuit), carCircuit: saved.carCircuit ? withChassis(normalizeCircuit(saved.carCircuit)) : clone(CAR_EXAMPLE.carCircuit) }
   } catch {
     // Storage can be unavailable (private mode); start from an example.
   }
   return null
+}
+
+// Where "Derle ve yükle" sends the program: the Uno on the simulated bench
+// or a real one on this computer's USB.
+function useTarget(supported) {
+  const [target, setTarget] = useState(() => {
+    try {
+      return supported && window.localStorage.getItem(TARGET_KEY) === 'real' ? 'real' : 'sim'
+    } catch {
+      return 'sim'
+    }
+  })
+  const choose = (value) => {
+    setTarget(value)
+    try {
+      window.localStorage.setItem(TARGET_KEY, value)
+    } catch {
+      // The choice lasts for this visit only.
+    }
+  }
+  return [target, choose]
 }
 
 function useDarkMode() {
@@ -69,15 +109,16 @@ function useDarkMode() {
 }
 
 // Rough footprint radius of each part on the mat, in cm.
-const FOOTPRINT = { breadboard: 9, motorDriver: 8, ultrasonic: 3.2, servo: 2.6, sevenSegment: 2.4, irSensor: 2 }
+const FOOTPRINT = { breadboard: 9, motorDriver: 2.6, ttMotor: 4.5, battery: 4.3, ultrasonic: 3.2, servo: 2.6, sevenSegment: 2.4, irSensor: 2 }
 const footprint = (type) => FOOTPRINT[type] ?? 1.6
 
-function nextPosition(parts, type) {
+function nextPosition(circuit, type) {
   const spots = []
   for (const z of [8, -8, 13, -13, 18]) for (const x of [0, -5, 5, -10, 10, -15, 15, -20, 20]) spots.push([x, z])
+  const [ux, uz] = unoPlacement(circuit).position
   const free = ([x, z]) =>
-    Math.hypot(x, z) > 4.4 + footprint(type) && // the Uno sits at the origin
-    parts.every((part) => Math.hypot(part.position[0] - x, part.position[1] - z) > footprint(part.type) + footprint(type) + 0.6)
+    Math.hypot(x - ux, z - uz) > 4.4 + footprint(type) &&
+    circuit.parts.every((part) => Math.hypot(part.position[0] - x, part.position[1] - z) > footprint(part.type) + footprint(type) + 0.6)
   return spots.find(free) ?? [0, 22]
 }
 
@@ -89,6 +130,21 @@ export default function SimulatorPage() {
     return requested ? projectFromExample(requested) : (loadSaved() ?? projectFromExample(EXAMPLES[0]))
   })
   const [selection, setSelection] = useState(null)
+  // A chip clicked in the parts list stays under the pointer while the
+  // inspector above it opens, closes or changes height.
+  const chipAnchor = useRef(null)
+  useLayoutEffect(() => {
+    const anchor = chipAnchor.current
+    chipAnchor.current = null
+    const chip = anchor && document.querySelector(`[data-part-chip="${CSS.escape(anchor.id)}"]`)
+    if (!chip) return
+    const moved = chip.getBoundingClientRect().top - anchor.top
+    if (Math.abs(moved) > 1) window.scrollBy({ top: moved, behavior: 'instant' })
+  }, [selection])
+  // The Uno always starts locked (on every visit and every exercise), so a
+  // drag meant for the camera does not knock it aside; unlocking it lasts
+  // for this visit only.
+  const [unoUnlocked, setUnoUnlocked] = useState(false)
   const [compile, setCompile] = useState({ state: 'idle' })
   const [sound, setSound] = useState(true)
   const [track, setTrack] = useState('oval')
@@ -97,9 +153,28 @@ export default function SimulatorPage() {
   const hexRef = useRef(null)
   const [download, setDownload] = useState(null)
   const preloaded = useRef(false)
-  const licensesRef = useRef(null)
   useEffect(() => onCompilerProgress(setDownload), [])
   const sim = useSimulator({ sound })
+  const real = useRealBoard()
+  const [target, setTarget] = useTarget(real.supported)
+  const dock = useDockLayout()
+  useDragScroll(Boolean(dock.dragging || dock.paneDragging))
+  const wide = useWideScreen()
+  const autoColumns = useAutoColumns()
+  const viewportHeight = useViewportHeight()
+  // The 3D view (and the code beside it) fill the screen under the bar by
+  // default; the panels below take the height they need and the page
+  // scrolls, nothing scrolls inside.
+  const topHeight = Math.max(320, dock.layout.top ?? viewportHeight - 270)
+  const workspaceRef = useRef(null)
+  const [workspaceWidth, setWorkspaceWidth] = useState(1200)
+  useEffect(() => {
+    const element = workspaceRef.current
+    if (!element) return undefined
+    const observer = new ResizeObserver(() => setWorkspaceWidth(element.parentElement.getBoundingClientRect().width))
+    observer.observe(element.parentElement)
+    return () => observer.disconnect()
+  }, [wide, dock.layout.columns, autoColumns])
   const { running, start } = sim
 
   useEffect(() => {
@@ -128,41 +203,131 @@ export default function SimulatorPage() {
     [start, project.mode, project.circuit, project.carCircuit, project.inputs, track],
   )
 
-  // Rewiring a running board restarts it, like unplugging and powering it again.
+  // What powers the bench's Uno: the USB cable (power, uploads, Serial
+  // Monitor) and/or the 9 V battery. The car carries its own.
+  const power = project.mode === 'bench' ? unoPlacement(project.circuit) : { usb: true, battery: true }
+  const powered = power.usb || power.battery
+  const togglePower = (which) => setCircuit('circuit', (circuit) => ({ ...circuit, uno: { ...unoPlacement(circuit), [which]: !unoPlacement(circuit)[which] } }))
+  // The program on the chip: the last one uploaded over USB. It stays there
+  // (saved with the project) when the cable comes out or the page closes,
+  // and runs whenever the board has power.
+  const flashRef = useRef(project.flash ?? null)
+  const [uploadBlocked, setUploadBlocked] = useState(false)
+
+  // Rewiring a running board restarts it, like unplugging and powering it
+  // again; taking its power away stops it, giving it back starts the
+  // program on the chip.
   const launchRef = useRef(launch)
   useEffect(() => {
     launchRef.current = launch
   })
+  const poweredRef = useRef(powered)
   useEffect(() => {
-    if (running && hexRef.current) launchRef.current(hexRef.current)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project.circuit, project.carCircuit, project.mode])
-
-  const run = async () => {
-    setCompile({ state: 'compiling' })
-    const started = performance.now()
-    const result = await compileSketch(project.code)
-    if (!result.ok) {
-      setCompile({ state: 'error', ...result })
+    const was = poweredRef.current
+    poweredRef.current = powered
+    if (!powered) {
+      if (running) sim.stop()
       return
     }
+    if (flashRef.current && (running || !was)) launchRef.current(flashRef.current)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project.circuit, project.carCircuit, project.mode])
+  // A board that already has a program starts it as soon as the page opens.
+  useEffect(() => {
+    if (poweredRef.current && flashRef.current) launchRef.current(flashRef.current)
+  }, [])
+
+  // The code the last good build came from (the "Yükle" piece uploads it).
+  const [built, setBuilt] = useState(null)
+  const build = async (prefer = project.prefer ?? {}) => {
+    setCompile({ state: 'compiling' })
+    setDownload(null)
+    const started = performance.now()
+    const result = await compileSketch(project.code, prefer)
+    if (!result.ok) {
+      setCompile({ state: 'error', ...result })
+      return null
+    }
     hexRef.current = result.hex
-    setCompile({ state: 'ok', source: result.source, size: result.size, seconds: (performance.now() - started) / 1000 })
+    setBuilt(project.code)
+    setCompile({ state: 'ok', source: result.source, size: result.size, libraries: result.libraries, seconds: (performance.now() - started) / 1000 })
+    return result.hex
+  }
+  // Uploading goes over USB; without the cable nothing reaches the chip.
+  const runBuilt = () => {
+    if (!hexRef.current) return
+    if (!power.usb) {
+      setUploadBlocked(true)
+      return
+    }
+    setUploadBlocked(false)
+    flashRef.current = hexRef.current
+    update({ flash: hexRef.current })
     setCarResetToken((token) => token + 1)
-    launch(result.hex)
+    launch(hexRef.current)
+  }
+  // To a real board: the port is asked for first, while the click that
+  // asked for the upload still lets the browser open its port picker.
+  const realPort = async () => real.port ?? (await real.askPort())
+  const uploadBuilt = async () => {
+    if (target === 'sim') return runBuilt()
+    if (hexRef.current && (await realPort())) real.uploadHex(hexRef.current, sketchBaud(built ?? project.code))
+  }
+  const run = async (prefer) => {
+    if (target === 'real') {
+      if (!(await realPort())) return
+      const hex = await build(prefer)
+      if (hex) real.uploadHex(hex, sketchBaud(project.code))
+      return
+    }
+    if (await build(prefer)) runBuilt()
   }
 
   const update = (changes) => setProject((current) => ({ ...current, ...changes }))
+  // Parts locked where they are ({ id: true }), saved with the project but
+  // kept out of the circuit so locking does not restart a running sketch.
+  // The Uno's lock is not saved (see unoUnlocked).
+  const locked = { [UNO_ID]: !unoUnlocked, ...Object.fromEntries(project.circuit.parts.map((part) => [part.id, Boolean(project.locked?.[part.id])])) }
+  const toggleLock = (id) => {
+    if (id === UNO_ID) setUnoUnlocked((value) => !value)
+    else setProject((current) => ({ ...current, locked: { ...current.locked, [id]: !current.locked?.[id] } }))
+  }
+  const allLocked = Object.values(locked).every(Boolean)
+  const lockAll = (value) => {
+    setUnoUnlocked(!value)
+    update({ locked: Object.fromEntries(project.circuit.parts.map((part) => [part.id, value])) })
+  }
   const setCircuit = (key, fn) => setProject((current) => ({ ...current, [key]: fn(current[key]) }))
 
+  // Turns a part a quarter; if it would then run into another part or the
+  // Uno it moves to the nearest spot where it fits. False when there is none.
+  const benchApi = useRef(null)
+  const rotate = (id) => {
+    const before = project.circuit
+    const turned = rotatePart(before, id)
+    const fits = (circuit) => !benchApi.current || benchApi.current.fits(before, circuit, id)
+    let next = fits(turned) ? turned : null
+    const [x, z] = id === UNO_ID ? unoPlacement(turned).position : turned.parts.find((item) => item.id === id).position
+    for (let radius = 0.4; !next && radius <= 6; radius += 0.4) {
+      for (let step = 0; step < 16 && !next; step += 1) {
+        const angle = (step / 16) * 2 * Math.PI
+        const moved = movePart(turned, id, [x + radius * Math.cos(angle), z + radius * Math.sin(angle)])
+        if (fits(moved)) next = moved
+      }
+    }
+    if (next) setCircuit('circuit', () => next)
+    return Boolean(next)
+  }
+
   const wireToUno = (key, part, pin, uno) => setCircuit(key, (circuit) => setDirectUnoPin(circuit, part, pin, uno))
+  const stripToUno = (board, strip, uno) => setCircuit('circuit', (circuit) => setStripUno(circuit, board, strip, uno))
 
   const addPart = (type) => {
     const { parts } = project.circuit
     let index = 1
     while (parts.some((part) => part.id === `${type}-${index}`)) index += 1
     const defaults = PART_CATALOG[type].props
-    const part = { id: `${type}-${index}`, type, position: nextPosition(parts, type), rotation: 0, ...(defaults ? { props: { ...defaults } } : {}) }
+    const part = { id: `${type}-${index}`, type, position: nextPosition(project.circuit, type), rotation: 0, ...(defaults ? { props: { ...defaults } } : {}) }
     // A breadboard goes beside the digital header; parts go into its holes.
     if (type === 'breadboard' && !parts.some((p) => p.type === 'breadboard')) part.position = [0, -9]
     else if (PART_CATALOG[type].bare) part.position = placeOnBreadboard(project.circuit, part) ?? part.position
@@ -181,8 +346,10 @@ export default function SimulatorPage() {
     const dirty = example && (project.code !== example.code || JSON.stringify(project.circuit) !== JSON.stringify(example.circuit))
     if (dirty && !window.confirm('Kodunuz ve devreniz bu örnekle değiştirilecek. Devam edilsin mi?')) return
     sim.stop()
+    flashRef.current = null // a fresh exercise starts with an empty board
     setSelection(null)
     setCompile({ state: 'idle' })
+    setUnoUnlocked(false)
     setProject(projectFromExample(next))
   }
 
@@ -218,8 +385,10 @@ export default function SimulatorPage() {
     const changed = project.code !== example.code || JSON.stringify(project.circuit) !== JSON.stringify(example.circuit) || JSON.stringify(project.carCircuit) !== JSON.stringify(example.carCircuit ?? CAR_EXAMPLE.carCircuit)
     if (changed && !window.confirm('Kodunuz ve devreniz alıştırmanın başlangıç hâline dönecek. Devam edilsin mi?')) return
     sim.stop()
+    flashRef.current = null
     setSelection(null)
     setCompile({ state: 'idle' })
+    setUnoUnlocked(false)
     setProject(projectFromExample(example))
   }
 
@@ -227,190 +396,276 @@ export default function SimulatorPage() {
   const selectedWire = selection?.wireId ? project.circuit.wires.find((wire) => wire.id === selection.wireId) : null
   const diagnostics = useMemo(() => (compile.state === 'error' ? (compile.diagnostics ?? []) : []), [compile])
 
-  return (
-    <div className="space-y-5">
-      <Breadcrumb current="Simülatör" />
-      <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <Label>Tarayıcıda gerçek Arduino</Label>
-          <h1 className="mt-1 font-hero text-3xl font-extrabold leading-tight text-slate-900 dark:text-white sm:text-4xl sm:leading-10">Arduino Simülatörü</h1>
-          <p className="mt-2 max-w-3xl leading-relaxed text-slate-600 dark:text-slate-300">
-            Kodunuz gerçek Arduino derleyicisiyle (GCC) kendi tarayıcınızda derlenir ve 16 MHz’lik ATmega328P işlemcisi komut komut çalıştırılır; sunucu
-            gerekmez. Parçaları masaya ve breadboard’a koyun, kablolarla Uno’ya bağlayın; laptopu ya da malzemesi olmayan da derse katılabilsin.
-          </p>
-        </div>
-      </header>
+  // The code and the 3D view, always open, swap places by dragging one's
+  // bar onto the other (or ←/→ on its grip). Not from a control in the bar:
+  // where the pointer went down is noted on the bar.
+  const paneBar = (pane) =>
+    wide
+      ? {
+          draggable: true,
+          onPointerDown: (event) => {
+            event.currentTarget.dataset.onControl = Boolean(event.target.closest?.('select, input, textarea, label'))
+          },
+          onDragStart: (event) => {
+            if (event.currentTarget.dataset.onControl === 'true') {
+              event.preventDefault()
+              return
+            }
+            event.dataTransfer.effectAllowed = 'move'
+            event.dataTransfer.setData('text/plain', pane)
+            dock.setPaneDragging(pane)
+          },
+          onDragEnd: () => dock.setPaneDragging(null),
+        }
+      : {}
+  const paneGrip = (pane, label) =>
+    wide ? (
+      <button
+        type="button"
+        data-pane-grip={pane}
+        aria-label={`${label}: yerini değiştir (← →)`}
+        title="Sürükleyerek yerini değiştirin (ya da ← → tuşlarıyla)"
+        onKeyDown={(event) => {
+          const first = dock.layout.panes[0] === pane
+          if ((event.key === 'ArrowRight' && first) || (event.key === 'ArrowLeft' && !first)) {
+            event.preventDefault()
+            dock.swapPanes()
+            requestAnimationFrame(() => document.querySelector(`[data-pane-grip="${pane}"]`)?.focus())
+          }
+        }}
+        className="cursor-grab rounded p-0.5 text-slate-400 hover:text-teal-700 active:cursor-grabbing dark:text-slate-500 dark:hover:text-teal-300"
+      >
+        <GripVertical size={14} />
+      </button>
+    ) : null
 
-      <PanelCard>
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            aria-label="Örnek proje"
-            value={project.exampleId}
-            onChange={(event) => chooseExample(event.target.value)}
-            className="font-code w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 py-2 text-sm dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100 sm:w-auto sm:min-w-[16rem]"
-          >
-            {[1, 2, 3, 4, 5, 0].map((week) => (
-              <optgroup key={week} label={WEEK_LABELS[week]}>
-                {EXAMPLES.filter((item) => item.week === week).map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.title}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-          <div className="flex rounded-md border border-slate-300 p-0.5 dark:border-white/15">
-            {[
-              ['bench', 'Tezgâh', <Cpu key="icon" size={15} />],
-              ['car', 'Robot araba', <Bot key="icon" size={15} />],
-            ].map(([mode, text, icon]) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => {
-                  setSelection(null)
-                  update({ mode })
-                }}
-                className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm transition ${project.mode === mode ? 'bg-teal-700 text-white dark:bg-teal-400 dark:text-teal-950' : 'text-slate-600 hover:text-teal-800 dark:text-slate-300'}`}
-              >
-                {icon}
-                {text}
-              </button>
-            ))}
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <button type="button" onClick={() => setSound((value) => !value)} title={sound ? 'Sesi kapat' : 'Sesi aç'} aria-label={sound ? 'Sesi kapat' : 'Sesi aç'} className="rounded-md border border-slate-300 p-2 text-slate-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300">
-              {sound ? <Volume2 size={16} /> : <VolumeX size={16} />}
-            </button>
-            {running ? (
-              <button type="button" onClick={sim.stop} className="inline-flex items-center gap-2 rounded-md bg-rose-600 px-4 py-2 font-semibold text-white hover:bg-rose-700">
-                <Square size={15} />
-                Durdur
-              </button>
-            ) : null}
-            <button
-              type="button"
-              onClick={run}
-              disabled={compile.state === 'compiling'}
-              className="inline-flex items-center gap-2 rounded-md bg-teal-700 px-4 py-2 font-semibold text-white hover:bg-teal-800 disabled:opacity-60 dark:bg-teal-400 dark:text-teal-950 dark:hover:bg-teal-300"
-            >
-              {compile.state === 'compiling' ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
-              {compile.state === 'compiling' ? 'Derleniyor…' : running ? 'Yeniden derle' : 'Derle ve çalıştır'}
-            </button>
-          </div>
-        </div>
-        {example ? (
+  const serialPanel =
+    target === 'real' ? (
+      <SerialMonitor
+        text={real.serial}
+        running={Boolean(real.monitor)}
+        baud={real.monitor?.baud}
+        source="gerçek kart"
+        idle={real.port ? 'Bağlı değil. Kod yüklenince kendiliğinden bağlanır; “Bağlan” ile de açılır (kart yeniden başlar).' : 'Önce kartın USB portunu seçin.'}
+        connect={real.port ? { open: Boolean(real.monitor), onToggle: () => (real.monitor ? real.closeMonitor() : real.openMonitor(sketchBaud(built ?? project.code))) } : null}
+        onSend={real.sendSerial}
+        onClear={real.clearSerial}
+      />
+    ) : (
+      <SerialMonitor text={sim.serial} running={running} baud={sim.hud?.baud} offline={!power.usb} onSend={sim.sendSerial} onClear={sim.clearSerial} />
+    )
+  const editorPane = (
+    <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-300/80 bg-white dark:border-teal-300/15 dark:bg-[#0b1517]">
+      <div {...paneBar('code')} className={`flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-[#0f1d1f] ${wide ? 'cursor-grab pl-1.5 active:cursor-grabbing' : ''}`}>
+        <span className="font-code flex items-center gap-1 text-xs text-slate-600 dark:text-slate-300">
+          {paneGrip('code', 'Kod')}
+          sketch.ino
+        </span>
+        <button
+          type="button"
+          onClick={() => example && update({ code: example.code })}
+          className="font-code inline-flex items-center gap-1 text-xs text-slate-500 hover:text-teal-700 dark:text-slate-400 dark:hover:text-teal-300"
+        >
+          <RotateCcw size={12} />
+          başlangıç koduna dön
+        </button>
+      </div>
+      <div className="min-h-0 flex-1">
+        <CodeEditor
+          value={project.code}
+          onChange={(code) => {
+            // The compiler (about 5 MB, once) starts downloading as soon as the code is edited.
+            if (!preloaded.current) {
+              preloaded.current = true
+              preloadCompiler()
+            }
+            update({ code })
+          }}
+          diagnostics={diagnostics}
+          dark={dark}
+          grow={wide ? topHeight - 120 : null}
+        />
+      </div>
+      <div className="font-code border-t border-slate-200 bg-slate-50 px-3 py-2 text-xs dark:border-white/10 dark:bg-[#0f1d1f]">
+        {compile.state === 'error' ? (
           <>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{example.summary}</p>
-            <AnswerBar key={example.id} example={example} onShowCode={showCode} onShowWires={showWires} onReset={resetExercise} />
-          </>
-        ) : null}
-      </PanelCard>
-
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-        <div className="order-2 min-w-0 space-y-4 lg:order-0">
-          <section className="overflow-hidden rounded-xl border border-slate-300/80 dark:border-teal-300/15">
-            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-[#0f1d1f]">
-              <span className="font-code text-xs text-slate-600 dark:text-slate-300">sketch.ino</span>
-              <button
-                type="button"
-                onClick={() => example && update({ code: example.code })}
-                className="font-code inline-flex items-center gap-1 text-xs text-slate-500 hover:text-teal-700 dark:text-slate-400 dark:hover:text-teal-300"
-              >
-                <RotateCcw size={12} />
-                başlangıç koduna dön
-              </button>
-            </div>
-            <div className="h-[420px] sm:h-[480px]">
-              <CodeEditor
-                value={project.code}
-                onChange={(code) => {
-                  // The compiler (about 5 MB, once) starts downloading as soon as the code is edited.
-                  if (!preloaded.current) {
-                    preloaded.current = true
-                    preloadCompiler()
-                  }
-                  update({ code })
-                }}
-                diagnostics={diagnostics}
-                dark={dark}
-              />
-            </div>
-            <div className="font-code border-t border-slate-200 bg-slate-50 px-3 py-2 text-xs dark:border-white/10 dark:bg-[#0f1d1f]">
-              {compile.state === 'error' ? (
-                <pre className="max-h-40 overflow-auto whitespace-pre-wrap text-rose-700 dark:text-rose-300">{compile.errors}</pre>
-              ) : compile.state === 'ok' ? (
-                <p className="text-emerald-700 dark:text-emerald-300">
-                  {compile.source === 'example'
-                    ? 'Hazır derlenmiş örnek yüklendi.'
-                    : `${compile.source === 'browser' ? 'Tarayıcıda derlendi' : 'Derlendi'} (${compile.seconds.toFixed(1)} s).`}{' '}
-                  {compile.size?.split('\n')[0]}
-                </p>
-              ) : compile.state === 'compiling' ? (
-                <p className="text-slate-500 dark:text-slate-400">
-                  {download && !download.preparing && download.loaded < download.total
-                    ? `Derleyici indiriliyor (yalnızca ilk seferde): ${(download.loaded / 1e6).toFixed(1)} / ${(download.total / 1e6).toFixed(1)} MB`
-                    : 'GCC ile derleniyor…'}
-                </p>
-              ) : (
-                <p className="text-slate-500 dark:text-slate-400">Hazır. “Derle ve çalıştır” ile başlatın.</p>
-              )}
-              {sim.runtimeError ? <p className="mt-1 text-rose-700 dark:text-rose-300">Simülasyon durdu: {sim.runtimeError}</p> : null}
-            </div>
-            <p className="border-t border-slate-200 px-3 py-1.5 text-[0.7rem] text-slate-500 dark:border-white/10 dark:text-slate-400">
-              Tarayıcıda çalışır. Derleyici: GCC 7.3.0 ve GNU binutils 2.42 (WebAssembly, GPL-3.0).{' '}
+            <pre className="max-h-40 overflow-auto whitespace-pre-wrap text-rose-700 dark:text-rose-300">{compile.errors}</pre>
+            {Object.keys(project.prefer ?? {}).length ? (
               <button
                 type="button"
                 onClick={() => {
-                  licensesRef.current.open = true
-                  licensesRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  update({ prefer: {} })
+                  run({})
                 }}
-                className="underline hover:text-teal-700 dark:hover:text-teal-300"
+                className="mt-1 text-slate-600 underline hover:text-teal-700 dark:text-slate-300 dark:hover:text-teal-300"
               >
-                Lisanslar ve kaynaklar
+                kütüphane seçimlerini sıfırla
               </button>
-            </p>
-          </section>
-          <SerialMonitor text={sim.serial} running={running} onSend={sim.sendSerial} onClear={sim.clearSerial} />
-        </div>
-
-        {/* On phones the 3D view comes first; on large screens it sits on the right. */}
-        <div className="order-1 min-w-0 space-y-4 lg:order-0">
-          <section className="relative h-[380px] overflow-hidden rounded-xl border border-slate-300/80 bg-slate-200 dark:border-teal-300/15 dark:bg-[#0d1517] sm:h-[520px]">
-            {project.mode === 'bench' ? (
-              <BenchView
-                circuit={project.circuit}
-                inputs={project.inputs}
-                selection={selection}
-                dark={dark}
-                frameKey={project.exampleId}
-                subscribe={sim.subscribe}
-                onSelect={setSelection}
-                onConnect={(from, to) => setCircuit('circuit', (circuit) => connectEndpoints(circuit, from, to))}
-                onMovePart={(id, position) => setCircuit('circuit', (circuit) => movePart(circuit, id, position))}
-                onPress={(id, pressed) => setInput(id, 'pressed', pressed)}
-              />
-            ) : (
-              <CarView track={track} view={carView} dark={dark} subscribe={sim.subscribe} resetToken={carResetToken} />
-            )}
-            {running ? (
-              <span className="font-code pointer-events-none absolute right-3 top-3 rounded-md bg-emerald-600/90 px-2 py-1 text-xs text-white">
-                ● çalışıyor{sim.hud?.speed ? ` · gerçek zamanın %${Math.round(Math.min(1, sim.hud.speed) * 100)}’i` : ''}
-              </span>
             ) : null}
-          </section>
-
-          {project.mode === 'bench' ? (
-            <>
-              <PanelCard
-                title={selectedPart ? 'Seçili parça' : selectedWire ? 'Seçili kablo' : 'Parçalar'}
-                actions={
+          </>
+        ) : compile.state === 'ok' ? (
+          <>
+            <p className="text-emerald-700 dark:text-emerald-300">
+              {compile.source === 'example'
+                ? 'Hazır derlenmiş örnek yüklendi.'
+                : `${compile.source === 'browser' ? 'Tarayıcıda derlendi' : 'Derlendi'} (${compile.seconds.toFixed(1)} s).`}{' '}
+              {compile.size?.split('\n')[0]}
+            </p>
+            <LibraryList
+              libraries={compile.libraries}
+              prefer={project.prefer ?? {}}
+              onPrefer={(header, name) => {
+                const prefer = { ...project.prefer, [header]: name }
+                update({ prefer })
+                run(prefer)
+              }}
+            />
+          </>
+        ) : compile.state === 'compiling' ? (
+          <p className="text-slate-500 dark:text-slate-400">
+            {download && !download.preparing && download.loaded < download.total
+              ? `Derleyici indiriliyor (yalnızca ilk seferde): ${(download.loaded / 1e6).toFixed(1)} / ${(download.total / 1e6).toFixed(1)} MB`
+              : download?.library
+                ? `Kütüphane: ${download.library}… (ilk seferde biraz sürebilir)`
+                : 'GCC ile derleniyor…'}
+          </p>
+        ) : (
+          <p className="text-slate-500 dark:text-slate-400">
+            {target === 'real' ? 'Hazır. “Derle ve yükle” kodu USB’deki gerçek Arduino’ya yükler.' : 'Hazır. “Derle ve yükle” ile kodu karta yükleyin; kart enerji aldığı sürece çalışır.'}
+          </p>
+        )}
+        {target === 'real' && real.upload.state === 'uploading' ? (
+          <div className="mt-1 flex items-center gap-2 text-slate-600 dark:text-slate-300">
+            <span>Karta yükleniyor… %{Math.round(real.upload.progress * 100)}</span>
+            <span className="h-1.5 w-32 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
+              <span className="block h-full bg-emerald-500 transition-[width]" style={{ width: `${real.upload.progress * 100}%` }} />
+            </span>
+          </div>
+        ) : target === 'real' && real.upload.state === 'done' ? (
+          <p className="mt-1 text-emerald-700 dark:text-emerald-300">
+            Gerçek karta yüklendi ve doğrulandı: {real.upload.bytes} bayt ({real.upload.seconds.toFixed(1)} s).
+          </p>
+        ) : target === 'real' && real.upload.state === 'error' ? (
+          <p className="mt-1 text-rose-700 dark:text-rose-300">{real.upload.message}</p>
+        ) : null}
+        {sim.runtimeError ? <p className="mt-1 text-rose-700 dark:text-rose-300">Simülasyon durdu: {sim.runtimeError}</p> : null}
+      </div>
+    </section>
+  )
+  const benchPane = (
+    <section className="relative h-full overflow-hidden rounded-xl border border-slate-300/80 bg-slate-200 dark:border-teal-300/15 dark:bg-[#0d1517]">
+      {project.mode === 'bench' ? (
+        <BenchView
+          circuit={project.circuit}
+          inputs={project.inputs}
+          selection={selection}
+          dark={dark}
+          frameKey={project.exampleId}
+          subscribe={sim.subscribe}
+          onSelect={setSelection}
+          onConnect={(from, to) => setCircuit('circuit', (circuit) => connectEndpoints(circuit, from, to))}
+          onMovePart={(id, position) => setCircuit('circuit', (circuit) => movePart(circuit, id, position))}
+          onPress={(id, pressed) => setInput(id, 'pressed', pressed)}
+          onReset={() => running && sim.resetBoard()}
+          onPower={togglePower}
+          locked={locked}
+          apiRef={benchApi}
+        />
+      ) : (
+        <CarView track={track} view={carView} dark={dark} subscribe={sim.subscribe} resetToken={carResetToken} />
+      )}
+      {wide ? (
+        <div {...paneBar('bench')} className="font-code absolute left-3 top-3 flex cursor-grab items-center gap-1 rounded-md bg-slate-900/70 py-1 pl-1 pr-2.5 text-xs text-white backdrop-blur-sm active:cursor-grabbing [&_button]:text-white/70 [&_button:hover]:text-white">
+          {paneGrip('bench', '3B görünüm')}
+          {project.mode === 'bench' ? '3B tezgâh' : '3B parkur'}
+        </div>
+      ) : null}
+      {running ? (
+        <span className="font-code pointer-events-none absolute right-3 top-3 rounded-md bg-emerald-600/90 px-2 py-1 text-xs text-white">
+          {sim.paused ? '❚❚ duraklatıldı' : '● çalışıyor'}
+          {project.mode === 'bench' && !power.usb ? ' · 9V pilden' : ''}
+          {sim.hud?.speed && !sim.paused ? ` · gerçek zamanın %${Math.round(Math.min(1, sim.hud.speed) * 100)}’i` : ''}
+        </span>
+      ) : null}
+    </section>
+  )
+  // The panels, by id; null when there is nothing to show.
+  const panels =
+    project.mode === 'bench'
+      ? {
+          selected: selection?.partId === UNO_ID ? (
+            <PanelCard title="Seçili parça">
+              <UnoInspector
+                running={running}
+                board={unoPlacement(project.circuit).board}
+                power={power}
+                onPower={togglePower}
+                onBoard={(board) => setCircuit('circuit', (circuit) => ({ ...circuit, uno: { ...unoPlacement(circuit), board } }))}
+                locked={Boolean(locked[UNO_ID])}
+                onToggleLock={() => toggleLock(UNO_ID)}
+                onRotate={() => rotate(UNO_ID)}
+                onReset={sim.resetBoard}
+              />
+            </PanelCard>
+          ) : selectedPart ? (
+            <PanelCard title="Seçili parça">
+              <PartInspector
+                part={selectedPart}
+                circuit={project.circuit}
+                inputs={project.inputs[selectedPart.id]}
+                state={sim.hud?.parts?.[selectedPart.id]}
+                locked={Boolean(locked[selectedPart.id])}
+                onToggleLock={() => toggleLock(selectedPart.id)}
+                onInput={(key, value) => setInput(selectedPart.id, key, value)}
+                onWire={(part, pin, uno) => wireToUno('circuit', part, pin, uno)}
+                onStrip={stripToUno}
+                onRotate={() => rotate(selectedPart.id)}
+                onDelete={() => {
+                  setSelection(null)
+                  setCircuit('circuit', (circuit) => removePart(circuit, selectedPart.id))
+                }}
+                onProp={(key, value) => setCircuit('circuit', (circuit) => ({ ...circuit, parts: circuit.parts.map((part) => (part.id === selectedPart.id ? { ...part, props: { ...part.props, [key]: value } } : part)) }))}
+              />
+            </PanelCard>
+          ) : selectedWire ? (
+            <PanelCard title="Seçili kablo">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-code text-sm text-slate-700 dark:text-slate-200">
+                  {describeEndpoint(project.circuit, selectedWire.from)} ↔ {describeEndpoint(project.circuit, selectedWire.to)}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelection(null)
+                    setCircuit('circuit', (circuit) => ({ ...circuit, wires: circuit.wires.filter((wire) => wire.id !== selectedWire.id) }))
+                  }}
+                  className="rounded-md border border-rose-300 px-3 py-1.5 text-sm text-rose-700 hover:bg-rose-50 dark:border-rose-400/40 dark:text-rose-200 dark:hover:bg-rose-500/10"
+                >
+                  Kabloyu sök
+                </button>
+              </div>
+            </PanelCard>
+          ) : null,
+          parts: (
+            <PanelCard
+              title="Parçalar"
+              actions={
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => lockAll(!allLocked)}
+                    title={allLocked ? 'Bütün parçaların kilidini aç' : 'Bütün parçaları yerinde kilitle'}
+                    className="font-code inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:border-teal-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300"
+                  >
+                    {allLocked ? <LockOpen size={12} /> : <Lock size={12} />}
+                    {allLocked ? 'Kilitleri aç' : 'Hepsini kilitle'}
+                  </button>
                   <label className="relative">
                     <span className="sr-only">Parça ekle</span>
                     <select
                       value=""
                       onChange={(event) => event.target.value && addPart(event.target.value)}
-                      className="font-code appearance-none rounded-md bg-teal-700 py-1 pl-7 pr-3 text-xs font-semibold text-white dark:bg-teal-400 dark:text-teal-950"
+                      className="font-code w-[7.5rem] appearance-none rounded-md bg-teal-700 py-1 pl-7 pr-2 text-xs font-semibold text-white dark:bg-teal-400 dark:text-teal-950"
                     >
                       <option value="">Parça ekle</option>
                       {[
@@ -419,7 +674,7 @@ export default function SimulatorPage() {
                       ].map(([group, test]) => (
                         <optgroup key={group} label={group}>
                           {Object.entries(PART_CATALOG)
-                            .filter(test)
+                            .filter((entry) => !entry[1].legacy && test(entry))
                             .map(([type, definition]) => (
                               <option key={type} value={type}>
                                 {definition.name}
@@ -430,130 +685,337 @@ export default function SimulatorPage() {
                     </select>
                     <Plus size={13} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-white dark:text-teal-950" />
                   </label>
-                }
-              >
-                {selectedPart ? (
-                  <PartInspector
-                    part={selectedPart}
-                    circuit={project.circuit}
-                    inputs={project.inputs[selectedPart.id]}
-                    state={sim.hud?.parts?.[selectedPart.id]}
-                    onInput={(key, value) => setInput(selectedPart.id, key, value)}
-                    onWire={(part, pin, uno) => wireToUno('circuit', part, pin, uno)}
-                    onRotate={() => setCircuit('circuit', (circuit) => rotatePart(circuit, selectedPart.id))}
-                    onDelete={() => {
-                      setSelection(null)
-                      setCircuit('circuit', (circuit) => removePart(circuit, selectedPart.id))
-                    }}
-                    onProp={(key, value) => setCircuit('circuit', (circuit) => ({ ...circuit, parts: circuit.parts.map((part) => (part.id === selectedPart.id ? { ...part, props: { ...part.props, [key]: value } } : part)) }))}
-                  />
-                ) : selectedWire ? (
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-code text-sm text-slate-700 dark:text-slate-200">
-                      {describeEndpoint(project.circuit, selectedWire.from)} ↔ {describeEndpoint(project.circuit, selectedWire.to)}
-                    </p>
+                </div>
+              }
+            >
+              {/* The Uno comes first; it can be moved and turned but not removed. */}
+              <ul className="flex flex-wrap gap-2">
+                {[{ id: UNO_ID, label: 'Arduino Uno' }, ...project.circuit.parts.map((part) => ({ id: part.id, label: partLabel(part) }))].map(({ id, label }) => {
+                  const chosen = selection?.partId === id
+                  return (
+                    <li key={id}>
+                      <button
+                        type="button"
+                        aria-pressed={chosen}
+                        data-part-chip={id}
+                        onClick={(event) => {
+                          chipAnchor.current = { id, top: event.currentTarget.getBoundingClientRect().top }
+                          setSelection(chosen ? null : { partId: id })
+                        }}
+                        className={`font-code inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-sm transition ${chosen ? 'border-teal-600 bg-teal-50 text-teal-900 dark:border-teal-300/60 dark:bg-teal-400/10 dark:text-teal-100' : 'border-slate-300 text-slate-700 hover:border-teal-600 hover:text-teal-800 dark:border-white/15 dark:text-slate-200'}`}
+                      >
+                        {chosen ? <Check size={13} /> : null}
+                        {label}
+                        {locked[id] ? <Lock size={11} className="text-amber-600 dark:text-amber-300" aria-label="kilitli" /> : null}
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+              {project.circuit.parts.length ? null : <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Masada başka parça yok. “Parça ekle” ile başlayın.</p>}
+            </PanelCard>
+          ),
+          connections: (
+            <ConnectionsPanel
+              circuit={project.circuit}
+              selection={selection}
+              onSelect={setSelection}
+              onWire={(part, pin, uno) => wireToUno('circuit', part, pin, uno)}
+              onStrip={stripToUno}
+              onConnect={(from, to) => setCircuit('circuit', (circuit) => connectEndpoints(circuit, from, to))}
+            />
+          ),
+          issues: issues.length ? (
+            <PanelCard title="Devre kontrolü">
+              <IssuesList issues={issues} />
+            </PanelCard>
+          ) : null,
+          serial: serialPanel,
+        }
+      : {
+          car: (
+            <PanelCard
+              title="Araba"
+              actions={
+                <button
+                  type="button"
+                  onClick={() => {
+                    sim.resetCar()
+                    setCarResetToken((token) => token + 1)
+                  }}
+                  className="font-code inline-flex items-center gap-1 text-xs text-slate-600 hover:text-teal-700 dark:text-slate-300 dark:hover:text-teal-300"
+                >
+                  <RotateCcw size={12} />
+                  Başa al
+                </button>
+              }
+            >
+              <div className="mb-4 flex flex-wrap gap-2">
+                <select
+                  aria-label="Parkur"
+                  value={track}
+                  onChange={(event) => {
+                    setTrack(event.target.value)
+                    sim.setTrack(event.target.value)
+                  }}
+                  className="font-code rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100"
+                >
+                  {Object.entries(TRACKS).map(([id, item]) => (
+                    <option key={id} value={id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex rounded-md border border-slate-300 p-0.5 dark:border-white/15">
+                  {[
+                    ['follow', 'Takip'],
+                    ['top', 'Üstten'],
+                    ['free', 'Serbest'],
+                  ].map(([view, text]) => (
                     <button
+                      key={view}
                       type="button"
-                      onClick={() => {
-                        setSelection(null)
-                        setCircuit('circuit', (circuit) => ({ ...circuit, wires: circuit.wires.filter((wire) => wire.id !== selectedWire.id) }))
-                      }}
-                      className="rounded-md border border-rose-300 px-3 py-1.5 text-sm text-rose-700 hover:bg-rose-50 dark:border-rose-400/40 dark:text-rose-200 dark:hover:bg-rose-500/10"
+                      onClick={() => setCarView(view)}
+                      className={`rounded-sm px-2.5 py-1 text-sm ${carView === view ? 'bg-teal-700 text-white dark:bg-teal-400 dark:text-teal-950' : 'text-slate-600 dark:text-slate-300'}`}
                     >
-                      Kabloyu sök
+                      {text}
                     </button>
-                  </div>
-                ) : project.circuit.parts.length ? (
-                  <ul className="flex flex-wrap gap-2">
-                    {project.circuit.parts.map((part) => (
-                      <li key={part.id}>
-                        <button
-                          type="button"
-                          onClick={() => setSelection({ partId: part.id })}
-                          className="font-code rounded-md border border-slate-300 px-2.5 py-1 text-sm text-slate-700 hover:border-teal-600 hover:text-teal-800 dark:border-white/15 dark:text-slate-200"
-                        >
-                          {partLabel(part)}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-slate-600 dark:text-slate-300">Masada parça yok. “Parça ekle” ile başlayın.</p>
-                )}
-              </PanelCard>
+                  ))}
+                </div>
+              </div>
+              <CarHud car={sim.hud?.car} />
+            </PanelCard>
+          ),
+          carWiring: (
+            <PanelCard title="Araba kabloları">
+              <CarWiring circuit={project.carCircuit} onWire={(part, pin, uno) => wireToUno('carCircuit', part, pin, uno)} />
               {issues.length ? (
-                <PanelCard title="Devre kontrolü">
+                <div className="mt-4">
                   <IssuesList issues={issues} />
-                </PanelCard>
+                </div>
               ) : null}
-            </>
-          ) : (
-            <>
-              <PanelCard
-                title="Araba"
-                actions={
+            </PanelCard>
+          ),
+          serial: serialPanel,
+        }
+
+  const panelIds = new Set(Object.keys(panels).filter((id) => panels[id]))
+  const { layout } = dock
+  const columnCount = layout.columns ?? autoColumns
+  const twoColumns = columnCount === 2
+  const hasDock = (sides) => sides.some((side) => layout.docks[side].some((id) => panelIds.has(id))) || Boolean(dock.dragging)
+  // Column widths stay within the screen; the 3D view keeps at least 380 px
+  // (480 in two columns, where the code column is wider).
+  const room = Math.max(0, workspaceWidth - 32)
+  const widths = (current) => {
+    if ((current.columns ?? autoColumns) === 2) return { left2: Math.max(340, Math.min(current.left2, room - 480)) }
+    const left = Math.max(300, Math.min(current.left, room - 380 - Math.max(280, current.right)))
+    return { left, right: Math.max(280, Math.min(current.right, room - 380 - left)) }
+  }
+  const { left: leftWidth = 0, right: rightWidth = 0, left2: codeWidth = 0 } = widths(layout)
+  // Dragging works from the latest widths, so fast drags keep up.
+  const resize = (side, delta) => dock.update((current) => ({ [side]: widths(current)[side] + delta }))
+  const resizeTop = (delta) => dock.update((current) => ({ top: Math.max(320, (current.top ?? viewportHeight - 270) + delta) }))
+  // A column: its pane on top (the code grows with its text), where the
+  // other pane can be dropped to swap them, and the dock under it (sides,
+  // beside: see Dock).
+  const column = (sides, beside, pane) => {
+    const code = pane === 'code'
+    const target = dock.paneDragging && dock.paneDragging !== pane
+    return (
+      <div className="flex min-w-0 flex-col">
+        <div
+          onDragOver={(event) => {
+            if (!target) return
+            event.preventDefault()
+            event.dataTransfer.dropEffect = 'move'
+          }}
+          onDrop={(event) => {
+            if (!target) return
+            event.preventDefault()
+            dock.swapPanes()
+            dock.setPaneDragging(null)
+          }}
+          className={`flex flex-col rounded-xl ${target ? 'outline-2 outline-offset-2 outline-dashed outline-teal-500/60' : ''}`}
+          style={code ? { minHeight: topHeight } : { height: topHeight }}
+        >
+          {code ? editorPane : benchPane}
+        </div>
+        <Splitter direction="horizontal" label="3B görünüm ile kodun yüksekliği" onMove={resizeTop} />
+        {hasDock(sides) ? <Dock sides={sides} beside={beside} dock={dock} panels={panels} className="space-y-3" /> : null}
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div className={wide ? 'space-y-2' : 'space-y-3'}>
+        <h1 className="sr-only">Arduino Simülatörü</h1>
+        <PanelCard className="[&>div]:px-3 [&>div]:py-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              aria-label="Örnek proje"
+              value={project.exampleId}
+              onChange={(event) => chooseExample(event.target.value)}
+              className="font-code w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 py-2 text-sm dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100 sm:w-auto sm:min-w-[16rem]"
+            >
+              {[1, 2, 3, 4, 5, 0].map((week) => (
+                <optgroup key={week} label={WEEK_LABELS[week]}>
+                  {EXAMPLES.filter((item) => item.week === week).map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.title}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            <div className="flex rounded-md border border-slate-300 p-0.5 dark:border-white/15">
+              {[
+                ['bench', 'Tezgâh', <Cpu key="icon" size={15} />],
+                ['car', 'Robot araba', <Bot key="icon" size={15} />],
+              ].map(([mode, text, icon]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => {
+                    setSelection(null)
+                    update({ mode })
+                  }}
+                  className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm transition ${project.mode === mode ? 'bg-teal-700 text-white dark:bg-teal-400 dark:text-teal-950' : 'text-slate-600 hover:text-teal-800 dark:text-slate-300'}`}
+                >
+                  {icon}
+                  {text}
+                </button>
+              ))}
+            </div>
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+              <button type="button" onClick={() => setSound((value) => !value)} title={sound ? 'Sesi kapat' : 'Sesi aç'} aria-label={sound ? 'Sesi kapat' : 'Sesi aç'} className="rounded-md border border-slate-300 p-2 text-slate-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300">
+                {sound ? <Volume2 size={16} /> : <VolumeX size={16} />}
+              </button>
+              {/* The board runs while it has power; this only freezes the simulation. */}
+              {running ? (
+                <button
+                  type="button"
+                  onClick={() => sim.setPaused(!sim.paused)}
+                  title={sim.paused ? 'Simülasyonu kaldığı yerden sürdür' : 'Simülasyonu dondur (kartın durumu korunur)'}
+                  className="inline-flex items-center gap-2 rounded-md border border-slate-300 px-3 py-2 font-semibold text-slate-700 hover:border-teal-600 hover:text-teal-800 dark:border-white/15 dark:text-slate-200"
+                >
+                  {sim.paused ? <Play size={15} /> : <Pause size={15} />}
+                  {sim.paused ? 'Sürdür' : 'Duraklat'}
+                </button>
+              ) : null}
+              {/* The board and port, as in the IDE: the simulated Uno or a real one. */}
+              <div className="flex items-center rounded-md border border-slate-300 dark:border-white/15">
+                <select
+                  aria-label="Yükleme hedefi"
+                  value={target}
+                  onChange={(event) => {
+                    setTarget(event.target.value)
+                    real.forget()
+                  }}
+                  title={real.supported ? 'Kodun yükleneceği kart' : 'Gerçek karta yüklemek için bilgisayarda Chrome veya Edge kullanın.'}
+                  className="font-code max-w-[13rem] rounded-md bg-transparent px-2 py-2 text-sm text-slate-700 dark:bg-[#0b1517] dark:text-slate-100"
+                >
+                  <option value="sim">Simülatördeki Uno</option>
+                  <option value="real" disabled={!real.supported}>
+                    {real.supported ? 'Gerçek Uno (USB)' : 'Gerçek Uno (Chrome/Edge gerekir)'}
+                  </option>
+                </select>
+                {target === 'real' ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      sim.resetCar()
-                      setCarResetToken((token) => token + 1)
-                    }}
-                    className="font-code inline-flex items-center gap-1 text-xs text-slate-600 hover:text-teal-700 dark:text-slate-300 dark:hover:text-teal-300"
+                    onClick={real.askPort}
+                    title={real.port ? `Seçili port: ${describePort(real.port)} (USB ${portIds(real.port)}). Başka bir port seçmek için tıklayın.` : 'Kartın takılı olduğu USB portunu seç'}
+                    className="font-code inline-flex items-center gap-1 whitespace-nowrap border-l border-slate-300 px-2 py-2 text-sm text-slate-600 hover:text-teal-700 dark:border-white/15 dark:text-slate-300 dark:hover:text-teal-300"
                   >
-                    <RotateCcw size={12} />
-                    Başa al
+                    <Usb size={14} />
+                    {real.port ? describePort(real.port) : 'Port seç'}
                   </button>
-                }
-              >
-                <div className="mb-4 flex flex-wrap gap-2">
-                  <select
-                    aria-label="Parkur"
-                    value={track}
-                    onChange={(event) => {
-                      setTrack(event.target.value)
-                      sim.setTrack(event.target.value)
-                    }}
-                    className="font-code rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100"
-                  >
-                    {Object.entries(TRACKS).map(([id, item]) => (
-                      <option key={id} value={id}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="flex rounded-md border border-slate-300 p-0.5 dark:border-white/15">
-                    {[
-                      ['follow', 'Takip'],
-                      ['top', 'Üstten'],
-                      ['free', 'Serbest'],
-                    ].map(([view, text]) => (
-                      <button
-                        key={view}
-                        type="button"
-                        onClick={() => setCarView(view)}
-                        className={`rounded-sm px-2.5 py-1 text-sm ${carView === view ? 'bg-teal-700 text-white dark:bg-teal-400 dark:text-teal-950' : 'text-slate-600 dark:text-slate-300'}`}
-                      >
-                        {text}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <CarHud car={sim.hud?.car} />
-              </PanelCard>
-              <PanelCard title="Araba kabloları">
-                <CarWiring circuit={project.carCircuit} onWire={(part, pin, uno) => wireToUno('carCircuit', part, pin, uno)} />
-                {issues.length ? (
-                  <div className="mt-4">
-                    <IssuesList issues={issues} />
-                  </div>
                 ) : null}
-              </PanelCard>
-            </>
-          )}
-        </div>
-      </div>
+              </div>
+              <RunButtons
+                compiling={compile.state === 'compiling'}
+                uploading={real.uploading}
+                needsBuild={built !== project.code}
+                onBuildAndRun={() => run()}
+                onBuild={() => build()}
+                onRun={() => (built === project.code && hexRef.current ? uploadBuilt() : run())}
+              />
+            </div>
+          </div>
+          {uploadBlocked && !power.usb ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-amber-300/70 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-300/30 dark:bg-amber-400/10 dark:text-amber-100">
+              <Usb size={15} />
+              Kod karta yüklenemedi: USB kablosu takılı değil. Kod bilgisayardan karta USB üzerinden gider.
+              <button type="button" onClick={() => togglePower('usb')} className="rounded-md bg-amber-600 px-2.5 py-1 font-semibold text-white">
+                USB kablosunu tak
+              </button>
+            </div>
+          ) : null}
+          {example ? (
+            <div className="mt-2 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+              <p className="min-w-0 flex-1 basis-80 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{example.summary}</p>
+              <AnswerBar key={example.id} example={example} onShowCode={showCode} onShowWires={showWires} onReset={resetExercise} className="space-y-2" />
+            </div>
+          ) : null}
+        </PanelCard>
 
-      <Licenses ref={licensesRef} />
-    </div>
+        {wide ? (
+          // Code | 3D view | panels, or code and 3D view with panels under each.
+          <div>
+            <div className="mb-1.5 flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+              <span className="hidden xl:inline">Çubukları sürükleyerek alanları büyütün; panelleri tutamaklarından sürükleyip yerlerini değiştirin, başlıklarına tıklayıp katlayın.</span>
+              <div className="flex rounded-md border border-slate-300 p-0.5 dark:border-white/15" role="group" aria-label="Düzen">
+                {[
+                  [3, '3 sütun', <Columns3 key="icon" size={13} />],
+                  [2, '2 sütun', <Columns2 key="icon" size={13} />],
+                ].map(([columns, text, icon]) => (
+                  <button
+                    key={columns}
+                    type="button"
+                    aria-pressed={columnCount === columns}
+                    onClick={() => dock.update({ columns })}
+                    className={`font-code inline-flex items-center gap-1 rounded-sm px-2 py-0.5 ${columnCount === columns ? 'bg-teal-700 text-white dark:bg-teal-400 dark:text-teal-950' : 'hover:text-teal-700 dark:hover:text-teal-300'}`}
+                  >
+                    {icon}
+                    {text}
+                  </button>
+                ))}
+              </div>
+              <button type="button" onClick={dock.reset} className="font-code inline-flex items-center gap-1 hover:text-teal-700 dark:hover:text-teal-300">
+                <LayoutTemplate size={13} />
+                Düzeni sıfırla
+              </button>
+            </div>
+            {twoColumns ? (
+              <div className="grid items-start" style={{ gridTemplateColumns: `${codeWidth}px auto minmax(0,1fr)` }} ref={workspaceRef}>
+                {column(['left'], { right: 'right' }, layout.panes[0])}
+                <Splitter label="Kod ile 3B görünümün genişliği" onMove={(dx) => resize('left2', dx)} />
+                {column(['center', 'right'], { left: 'left' }, layout.panes[1])}
+              </div>
+            ) : (
+              <div className="grid items-start" style={{ gridTemplateColumns: `${leftWidth}px auto minmax(0,1fr) auto ${rightWidth}px` }} ref={workspaceRef}>
+                {column(['left'], { right: 'center' }, layout.panes[0])}
+                <Splitter label="Kod ile 3B görünümün genişliği" onMove={(dx) => resize('left', dx)} />
+                {column(['center'], { left: 'left', right: 'right' }, layout.panes[1])}
+                <Splitter label="3B görünüm ile panellerin genişliği" onMove={(dx) => resize('right', -dx)} />
+                <Dock sides={['right']} beside={{ left: 'center' }} dock={dock} panels={panels} className="space-y-3" />
+              </div>
+            )}
+          </div>
+        ) : (
+          // Phones and tablets: the 3D view first, then the code and the panels.
+          <div className="space-y-4">
+            <div className="h-[380px] sm:h-[520px]">{benchPane}</div>
+            <div className="h-[460px] sm:h-[540px]">{editorPane}</div>
+            {[...layout.docks.left, ...layout.docks.center, ...layout.docks.right].map((id) => (panels[id] ? <div key={id}>{panels[id]}</div> : null))}
+          </div>
+        )}
+
+      </div>
+      <div className="mt-4">
+        <Licenses />
+      </div>
+    </>
   )
 }

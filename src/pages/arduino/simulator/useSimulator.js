@@ -13,6 +13,9 @@ export default function useSimulator({ sound }) {
   const audio = useRef({ context: null, voices: new Map() })
   const soundRef = useRef(sound)
   const [running, setRunning] = useState(false)
+  // Paused by the user: the board keeps its state, simulated time stands.
+  const [paused, setPaused] = useState(false)
+  const pausedRef = useRef(false)
   const [hud, setHud] = useState(null)
   const [serial, setSerial] = useState('')
   const [issues, setIssues] = useState([])
@@ -58,6 +61,8 @@ export default function useSimulator({ sound }) {
     workerRef.current?.terminate()
     workerRef.current = null
     setRunning(false)
+    pausedRef.current = false
+    setPaused(false)
     playBuzzers({})
     latest.current = null
     for (const listener of listeners.current) listener(null)
@@ -99,9 +104,24 @@ export default function useSimulator({ sound }) {
       worker.postMessage({ type: 'start', hex, circuit, carCircuit, track, inputs })
       workerRef.current = worker
       setRunning(true)
+      pausedRef.current = false
+      setPaused(false)
     },
     [playBuzzers, stop],
   )
+
+  // A sketch left running in a background tab is paused (and its buzzers
+  // silenced) until the tab is shown again.
+  useEffect(() => {
+    const onVisibility = () => {
+      const hidden = document.visibilityState === 'hidden'
+      // Coming back does not undo a pause the user chose.
+      if (hidden || !pausedRef.current) workerRef.current?.postMessage({ type: hidden ? 'pause' : 'resume' })
+      if (hidden) playBuzzers({})
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [playBuzzers])
 
   useEffect(() => () => {
     workerRef.current?.terminate()
@@ -113,6 +133,14 @@ export default function useSimulator({ sound }) {
 
   return {
     running,
+    paused,
+    // Freezes the simulation (or lets it go on) without touching the board.
+    setPaused: (value) => {
+      pausedRef.current = value
+      setPaused(value)
+      workerRef.current?.postMessage({ type: value ? 'pause' : 'resume' })
+      if (value) playBuzzers({})
+    },
     hud,
     serial,
     issues,
@@ -127,6 +155,8 @@ export default function useSimulator({ sound }) {
     setInput: (part, key, value) => post({ type: 'input', part, key, value }),
     sendSerial: (text) => post({ type: 'serial', text }),
     resetCar: () => post({ type: 'resetCar' }),
+    // The Uno's reset button: setup() runs again, nothing is recompiled.
+    resetBoard: () => post({ type: 'reset' }),
     setTrack: (track) => post({ type: 'setTrack', track }),
     subscribe: useCallback((listener) => {
       listeners.current.add(listener)

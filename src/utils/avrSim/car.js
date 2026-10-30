@@ -5,8 +5,16 @@
 import { CYCLES_PER_US, PinState } from './uno.js'
 
 const STEP_S = 0.001
-const MAX_SPEED = 0.45 // m/s at full PWM: TT motor through an L298N on 4×AA
-const DEAD_ZONE = 0.3 // below ~30% PWM a TT motor does not turn
+// The 2WD kit's TT gear motor: 6 V, 250 rpm unloaded, 66 mm wheels
+// (Elektronikport's kit page). It runs from the kit's 4×AA pack (6 V)
+// through an L298N, whose two transistors in series drop about 1.8 V, so
+// at full PWM the motor gets about 4.2 V. Against its gearbox it needs
+// about 1.2 V to turn at all (below ~30% PWM it stands still), and
+// carrying the robot costs it some 15% of its speed.
+const BATTERY_VOLTS = 6
+const L298N_DROP_VOLTS = 1.8
+const MOTOR = { ratedVolts: 6, ratedRpm: 250, startVolts: 1.2 }
+const LOADED = 0.85
 const MOTOR_LAG_S = 0.12
 const RIGHT_MOTOR_GAIN = 0.97 // no two motors are identical
 const WHEEL_TRACK = 0.13
@@ -15,7 +23,7 @@ const SENSOR_SPACING = 0.02
 const LINE_WIDTH = 0.019 // black electrical tape
 export const ARENA = { width: 2.0, height: 1.4 }
 export const CAR_SIZE = { length: 0.2, width: 0.14 }
-export const WHEEL_RADIUS = 0.0325
+export const WHEEL_RADIUS = 0.033
 
 // Lays out a track the way real line-follower tracks are built: straights
 // and arcs of a known radius. ['S', metres] or ['A', radius, degrees], where
@@ -86,6 +94,13 @@ function distanceToTrack(points, x, y) {
   return { distance: best, index: bestIndex }
 }
 
+// Shaft speed for an L298N command (-1…1: direction times PWM duty).
+export function motorRpm(command, load = LOADED) {
+  const volts = Math.abs(command) * (BATTERY_VOLTS - L298N_DROP_VOLTS)
+  if (volts <= MOTOR.startVolts) return 0
+  return Math.sign(command) * load * MOTOR.ratedRpm * ((volts - MOTOR.startVolts) / (MOTOR.ratedVolts - MOTOR.startVolts))
+}
+
 export class RobotCar {
   // pins: { ena, in1, in2, enb, in3, in4, left, center, right }
   constructor(uno, pins, trackId = 'oval') {
@@ -131,10 +146,9 @@ export class RobotCar {
     return direction * speed
   }
 
+  // Ground speed in m/s.
   wheelSpeed(command, gain) {
-    const magnitude = Math.abs(command)
-    if (magnitude < DEAD_ZONE) return 0
-    return Math.sign(command) * gain * MAX_SPEED * ((magnitude - DEAD_ZONE) / (1 - DEAD_ZONE))
+    return ((gain * motorRpm(command)) / 60) * 2 * Math.PI * WHEEL_RADIUS
   }
 
   sensorPoint(side) {

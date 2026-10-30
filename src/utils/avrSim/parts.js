@@ -1,6 +1,8 @@
 // Electronic parts wired to the simulated Uno. Each part reads the pins the
 // chip drives and/or drives the pins the chip reads, with the same timing
 // the real part has, so unmodified Arduino libraries work against them.
+import { motorRpm } from './car.js'
+import { lightLux } from './catalog.js'
 import { CYCLES_PER_US, PinState } from './uno.js'
 
 class Part {
@@ -20,13 +22,6 @@ class Led extends Part {
   update(sample) {
     const { pin, constant } = this.config
     this.state = { brightness: pin === undefined ? (constant ?? 0) : sample.duty[pin] }
-  }
-}
-
-class RgbLed extends Part {
-  update(sample) {
-    const { r, g, b } = this.config
-    this.state = { red: sample.duty[r], green: sample.duty[g], blue: sample.duty[b] }
   }
 }
 
@@ -51,49 +46,6 @@ class Button extends Part {
     }
     this.uno.setInput(pin, level)
     this.state = { pressed: this.input.pressed }
-  }
-}
-
-class Potentiometer extends Part {
-  constructor(uno, config) {
-    super(uno, config)
-    this.input = { value: 512 }
-  }
-
-  update() {
-    // With the outer legs swapped (5 V and GND reversed) the reading flips.
-    const fraction = this.input.value / 1023
-    this.uno.setAnalogVolts(this.config.pin, (this.config.inverted ? 1 - fraction : fraction) * 5)
-  }
-}
-
-// LDR in a divider with a 10 kΩ resistor: more light, lower LDR resistance,
-// higher voltage on the analog pin.
-class Ldr extends Part {
-  constructor(uno, config) {
-    super(uno, config)
-    this.input = { light: 50 }
-  }
-
-  update() {
-    const lux = 10 ** (this.input.light / 25) // 1 .. 100 000 lux
-    const ldrOhms = 50_000 * lux ** -0.7 + 100
-    this.uno.setAnalogVolts(this.config.pin, (5 * 10_000) / (10_000 + ldrOhms))
-  }
-}
-
-class Buzzer extends Part {
-  update(sample) {
-    const { pin, constant } = this.config
-    if (pin === undefined) {
-      this.state = { on: constant === 1, frequency: 2300 }
-      return
-    }
-    const toggling = sample.frequency[pin] > 30
-    // An active buzzer beeps at its own pitch whenever its pin is HIGH;
-    // tone() toggles the pin, and then the pitch follows the toggling.
-    const on = toggling || sample.duty[pin] > 0.5
-    this.state = { on, frequency: toggling ? sample.frequency[pin] : 2300 }
   }
 }
 
@@ -210,15 +162,6 @@ class Dht11 extends Part {
   }
 }
 
-const SEGMENTS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp']
-
-// Common-cathode display: a segment lights while its pin is HIGH.
-class SevenSegment extends Part {
-  update(sample) {
-    this.state = { segments: SEGMENTS.map((name) => (this.config[name] === undefined ? 0 : sample.duty[this.config[name]])) }
-  }
-}
-
 // KH-09 / FC-51 style IR module: output goes LOW when the IR light comes back
 // (white surface or an obstacle) and stays HIGH over a black line.
 class IrSensor extends Part {
@@ -252,12 +195,33 @@ class MotorDriver extends Part {
   }
 }
 
-// Bare components on a breadboard: resistors, tact buttons and LEDs. Each
-// frame it finds the voltage of every net: driven nets (5 V, GND, an OUTPUT
-// pin and its PWM duty) first, then nets reached through resistors (pull-up,
-// pull-down, dividers, by Millman's theorem), and leaves the rest floating.
-// It drives the Uno's input pins from that and lights the LEDs that are
-// forward-biased.
+// GL5528, the kit's 5 mm LDR: about 15 kΩ at 10 lux (the datasheet gives
+// 8–20 kΩ) and γ = 0.7, so ten times the light gives a fifth of the
+// resistance; in the dark it settles near 1 MΩ.
+export function ldrOhms(lux) {
+  const curve = lux > 0 ? 15_000 * (lux / 10) ** -0.7 : Infinity
+  return 1 / (1 / curve + 1 / 1_000_000)
+}
+
+const POT_OHMS = 10_000
+
+// A TT motor on an L298N channel: OUT1 follows IN1, OUT2 follows IN2, so a
+// motor with its red lead on OUT1 turns forward when IN1 is HIGH. On the
+// bench its wheel turns in the air, unloaded.
+class TtMotor extends Part {
+  update(sample) {
+    const { enable, forward, backward, sign } = this.config
+    const command = sign * motorOutput(sample, this.uno, enable, forward, backward)
+    this.state = { command, rpm: motorRpm(command, 1) }
+  }
+}
+
+// Bare components on a breadboard: resistors, a pot, an LDR, tact buttons,
+// LEDs, a buzzer. Each frame it finds the voltage of every net: driven nets
+// (5 V, GND, an OUTPUT pin and its PWM duty) are fixed, and every other net
+// reached through resistance settles where the currents into it cancel
+// (dividers, pull-ups, chains); nets reaching nothing float. It drives the
+// Uno's input pins from that and lights the LEDs that are forward-biased.
 class NetSolver extends Part {
   constructor(uno, config) {
     super(uno, config)
@@ -265,7 +229,7 @@ class NetSolver extends Part {
   }
 
   update(sample) {
-    const { switches, resistors, leds, netInfo, moduleDriven } = this.config
+    const { switches, resistors, leds, pots = [], ldrs = [], buzzers = [], netInfo, moduleDriven } = this.config
     const uno = this.uno
     const parent = {}
     const find = (key) => {
@@ -277,45 +241,86 @@ class NetSolver extends Part {
 
     const groups = {}
     for (const [net, info] of Object.entries(netInfo)) {
-      const group = (groups[find(net)] ??= { io: [], vcc: false, gnd: false })
+      const group = (groups[find(net)] ??= { io: [], vcc: false, gnd: false, v33: false, reset: false })
       group.io.push(...info.io)
       group.vcc ||= info.vcc
+      group.v33 ||= info.v33
       group.gnd ||= info.gnd
+      group.reset ||= info.reset
     }
 
     const driven = {}
+    const driver = {}
     const shorts = []
     for (const [key, group] of Object.entries(groups)) {
       const outputs = group.io.filter((pin) => [PinState.High, PinState.Low].includes(uno.mode(pin)))
       if (group.vcc && group.gnd) shorts.push(key)
       if (group.vcc) driven[key] = 1
       else if (group.gnd) driven[key] = 0
-      else if (outputs.length) driven[key] = sample.duty[outputs[0]]
+      else if (group.v33) driven[key] = 3.3 / 5
+      else if (outputs.length) {
+        driven[key] = sample.duty[outputs[0]]
+        driver[key] = outputs[0]
+      }
       // An OUTPUT pin set HIGH straight into GND (or LOW into 5 V) is a short too.
       if ((group.vcc || group.gnd) && outputs.some((pin) => uno.mode(pin) === (group.gnd ? PinState.High : PinState.Low))) shorts.push(key)
     }
 
-    const level = (key) => {
-      if (driven[key] !== undefined) return driven[key]
-      let conductance = 0
-      let current = 0
-      for (const r of resistors) {
-        const a = find(r.a)
-        const b = find(r.b)
-        const other = a === key ? b : b === key ? a : null
-        if (other !== null && other !== key && driven[other] !== undefined) {
-          conductance += 1 / r.ohms
-          current += driven[other] / r.ohms
-        }
-      }
-      for (const pin of groups[key]?.io ?? []) {
-        if (uno.mode(pin) === PinState.InputPullUp) {
-          conductance += 1 / 35_000
-          current += 1 / 35_000
-        }
-      }
-      return conductance ? current / conductance : null
+    // Every resistance this frame: fixed resistors, the pot's two halves
+    // either side of the wiper, the LDR at the light it sees.
+    const links = resistors.map((r) => ({ a: find(r.a), b: find(r.b), ohms: r.ohms }))
+    for (const pot of pots) {
+      const turn = Math.min(1023, Math.max(0, this.buttons[pot.part]?.value ?? 512)) / 1023
+      // A wiper never quite reaches its end; the track keeps about 50 Ω.
+      links.push({ a: find(pot.a), b: find(pot.w), ohms: 50 + POT_OHMS * (1 - turn) }, { a: find(pot.w), b: find(pot.b), ohms: 50 + POT_OHMS * turn })
     }
+    for (const ldr of ldrs) links.push({ a: find(ldr.a), b: find(ldr.b), ohms: ldrOhms(lightLux(this.buttons[ldr.part]?.light ?? 50)) })
+
+    // Pulls inside the chip: INPUT_PULLUP's ~35 kΩ, the reset line's 10 kΩ.
+    const pulls = {}
+    for (const [key, group] of Object.entries(groups)) {
+      let conductance = group.io.filter((pin) => uno.mode(pin) === PinState.InputPullUp).length / 35_000
+      if (group.reset) conductance += 1 / 10_000
+      if (conductance) pulls[key] = conductance
+    }
+
+    // Nets with a path to something driven, found by spreading out from
+    // the driven ones; the rest float.
+    const nets = new Set([...Object.keys(groups), ...links.flatMap((l) => [l.a, l.b])])
+    const reached = new Set(Object.keys(driven).concat(Object.keys(pulls)))
+    for (let grew = true; grew; ) {
+      grew = false
+      for (const { a, b } of links) {
+        if (reached.has(a) !== reached.has(b)) {
+          reached.add(reached.has(a) ? b : a)
+          grew = true
+        }
+      }
+    }
+    const volts = {}
+    for (const net of nets) if (reached.has(net)) volts[net] = driven[net] ?? 0.5
+    const free = [...nets].filter((net) => reached.has(net) && driven[net] === undefined)
+    const around = Object.fromEntries(free.map((net) => [net, links.filter((l) => l.a === net || l.b === net)]))
+    // Gauss–Seidel on the node equations; a breadboard circuit settles in a
+    // few dozen rounds.
+    for (let round = 0; round < 60 && free.length; round += 1) {
+      let change = 0
+      for (const net of free) {
+        let conductance = pulls[net] ?? 0
+        let current = conductance
+        for (const l of around[net]) {
+          const other = l.a === net ? l.b : l.a
+          if (other === net || volts[other] === undefined) continue
+          conductance += 1 / l.ohms
+          current += volts[other] / l.ohms
+        }
+        const next = conductance ? current / conductance : volts[net]
+        change = Math.max(change, Math.abs(next - volts[net]))
+        volts[net] = next
+      }
+      if (change < 1e-5) break
+    }
+    const level = (key) => volts[key] ?? null
 
     for (const [key, group] of Object.entries(groups)) {
       const value = level(key)
@@ -331,30 +336,43 @@ class NetSolver extends Part {
       }
     }
 
+    // A LED's brightness follows the voltage across it; an RGB LED or a
+    // display is several LEDs in one part.
     const ledStates = {}
+    const channels = {}
     for (const led of leds) {
       const anode = level(find(led.anode))
       const cathode = level(find(led.cathode))
-      ledStates[led.part] = anode === null || cathode === null ? 0 : Math.max(0, Math.min(1, anode - cathode))
+      const brightness = anode === null || cathode === null ? 0 : Math.max(0, Math.min(1, anode - cathode))
+      if (led.channel === undefined) ledStates[led.part] = brightness
+      else (channels[led.part] ??= {})[led.channel] = brightness
+    }
+    // The kit's active buzzer has its own oscillator: it sounds at about
+    // 2.3 kHz while it gets more than ~3 V. Driven by tone(), the pin's
+    // toggling sets the pitch instead.
+    const buzzerStates = {}
+    for (const buzzer of buzzers) {
+      const plus = find(buzzer.plus)
+      const across = (level(plus) ?? 0) - (level(find(buzzer.minus)) ?? 0)
+      const pin = driver[plus]
+      const toggling = pin !== undefined && sample.frequency[pin] > 30
+      buzzerStates[buzzer.part] = { on: toggling || across > 0.6, frequency: toggling ? sample.frequency[pin] : 2300 }
     }
     const buttonStates = Object.fromEntries(switches.map((sw) => [sw.part, Boolean(this.buttons[sw.part]?.pressed)]))
-    this.state = { leds: ledStates, buttons: buttonStates, shorted: shorts.length > 0 }
+    const resetHeld = Object.entries(groups).some(([key, group]) => group.reset && level(key) < 0.5)
+    this.state = { leds: ledStates, channels, buzzers: buzzerStates, buttons: buttonStates, shorted: shorts.length > 0, resetHeld }
   }
 }
 
 export const PART_TYPES = {
   led: Led,
-  rgbLed: RgbLed,
   button: Button,
-  potentiometer: Potentiometer,
-  ldr: Ldr,
-  buzzer: Buzzer,
   servo: ServoMotor,
   ultrasonic: Ultrasonic,
   dht11: Dht11,
-  sevenSegment: SevenSegment,
   irSensor: IrSensor,
   motorDriver: MotorDriver,
+  ttMotor: TtMotor,
   netSolver: NetSolver,
 }
 

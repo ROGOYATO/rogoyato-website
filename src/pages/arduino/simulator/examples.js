@@ -1,6 +1,6 @@
 // The simulator's exercises, following the training weeks. Each starts with
 // an empty sketch and its parts placed but unwired. Blink's answer is here;
-// the others are encrypted one by one in answers/locked.json and open with
+// the others are encrypted one by one in the lock state and open with
 // their own code or their week's (src/utils/answerLock.js, scripts/answers.mjs).
 
 // Breadboard layouts: the board sits beside the digital header and parts
@@ -8,8 +8,21 @@
 const P = 0.254
 const BOARD = { id: 'bb', type: 'breadboard', position: [0, -9], rotation: 0 }
 const col = (n) => (n - 32) * P
-const row = { h: 0.381 + 2 * P, f: 0.381 }
+const row = Object.fromEntries(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'].map((name, i) => [name, i < 5 ? -0.381 - (4 - i) * P : 0.381 + (i - 5) * P]))
+// A resistor standing from row j into the bottom − rail.
+const toRail = (row.j + 2.413) / 2
 const onBoard = (x, z) => [BOARD.position[0] + x, BOARD.position[1] + z]
+
+// What building the 2WD chassis connects: battery to the L298N's power
+// terminal, the left motor to OUT1/OUT2, the right one to OUT3/OUT4.
+const CHASSIS_WIRES = [
+  { id: 'pil+', from: { part: 'pil', pin: 'PLUS' }, to: { part: 'driver', pin: 'VS' } },
+  { id: 'pil-', from: { part: 'pil', pin: 'MINUS' }, to: { part: 'driver', pin: 'GND' } },
+  { id: 'mL1', from: { part: 'motorL', pin: 'M1' }, to: { part: 'driver', pin: 'OUT1' } },
+  { id: 'mL2', from: { part: 'motorL', pin: 'M2' }, to: { part: 'driver', pin: 'OUT2' } },
+  { id: 'mR1', from: { part: 'motorR', pin: 'M1' }, to: { part: 'driver', pin: 'OUT3' } },
+  { id: 'mR2', from: { part: 'motorR', pin: 'M2' }, to: { part: 'driver', pin: 'OUT4' } },
+]
 
 const carCircuit = {
   parts: [
@@ -17,9 +30,14 @@ const carCircuit = {
     { id: 'ir-left', type: 'irSensor', position: [0, 0] },
     { id: 'ir-center', type: 'irSensor', position: [0, 0] },
     { id: 'ir-right', type: 'irSensor', position: [0, 0] },
+    { id: 'pil', type: 'battery', position: [0, 0] },
+    { id: 'motorL', type: 'ttMotor', position: [0, 0] },
+    { id: 'motorR', type: 'ttMotor', position: [0, 0] },
   ],
-  // Left unwired: students connect the driver and sensors themselves.
-  wires: [],
+  // The battery pack and the motors are screwed into the L298N's terminals
+  // when the chassis is built; students wire the driver and sensors to the
+  // Uno.
+  wires: CHASSIS_WIRES,
 }
 
 export const EXAMPLES = [
@@ -27,10 +45,10 @@ export const EXAMPLES = [
     id: 'blink',
     week: 1,
     title: 'Blink',
-    summary: 'Karttaki dahili LED’i (LED_BUILTIN, D13’teki L LED’i) yarım saniyede bir yakıp söndür. Kablo gerekmez.',
+    summary: 'Karttaki dahili LED’i (LED_BUILTIN, D13’teki L LED’i) 1 saniye yakıp 1 saniye söndür. Kablo gerekmez.',
     mode: 'bench',
-    code: `// Görev: Karttaki dahili LED’i (LED_BUILTIN, D13’teki L LED’i) yarım
-// saniyede bir yakıp söndür. Kablo gerekmez.
+    code: `// Görev: Karttaki dahili LED’i (LED_BUILTIN, D13’teki L LED’i) 1 saniye
+// yakıp 1 saniye söndür. Kablo gerekmez.
 
 void setup() {
 
@@ -50,9 +68,9 @@ void setup() {
 
 void loop() {
   digitalWrite(LED_BUILTIN, HIGH); // LED'i yak
-  delay(500);
+  delay(1000);                     // 1000 ms = 1 saniye
   digitalWrite(LED_BUILTIN, LOW);  // LED'i söndür
-  delay(500);
+  delay(1000);
 }
 `,
       wires: [],
@@ -62,9 +80,9 @@ void loop() {
     id: 'breadboard-led',
     week: 1,
     title: 'Breadboard’da LED',
-    summary: 'Breadboard’daki LED’i 330 Ω dirençle D13’e bağla ve yarım saniyede bir yakıp söndür.',
+    summary: 'Breadboard’daki LED’i 330 Ω dirençle D8’e bağla ve yarım saniyede bir yakıp söndür.',
     mode: 'bench',
-    code: `// Görev: Breadboard’daki LED’i 330 Ω dirençle D13’e bağla ve yarım
+    code: `// Görev: Breadboard’daki LED’i 330 Ω dirençle D8’e bağla ve yarım
 // saniyede bir yakıp söndür.
 
 void setup() {
@@ -88,10 +106,11 @@ void loop() {
     id: 'buton-led',
     week: 1,
     title: 'Butonla LED',
-    summary: 'Butona basılı tutunca LED yansın, bırakınca sönsün. Buton D2’ye, LED D8’e; buton bırakılınca D2 boşta kalmasın.',
+    summary: 'Butona basılı tutunca LED yansın, bırakınca sönsün. Buton D7 ile GND arasına, LED 330 Ω dirençle D8’e. Ayrı direnç yok: INPUT_PULLUP kullan.',
     mode: 'bench',
-    code: `// Görev: Butona basılı tutunca LED yansın, bırakınca sönsün. Buton D2’ye,
-// LED D8’e; buton bırakılınca D2 boşta kalmasın.
+    code: `// Görev: Butona basılı tutunca LED yansın, bırakınca sönsün. Buton D7 ile
+// GND arasına, LED 330 Ω dirençle D8’e. Ayrı direnç yok: INPUT_PULLUP
+// kullan.
 
 void setup() {
 
@@ -106,8 +125,6 @@ void loop() {
         BOARD,
         // The button straddles the channel: columns 11 and 13 join when pressed.
         { id: 'btn', type: 'tactButton', position: onBoard(col(12), 0), rotation: 0 },
-        // 10 kΩ pull-down standing from j13 into the − rail.
-        { id: 'r2', type: 'resistor', position: onBoard(col(13), (1.397 + 2.413) / 2), rotation: 90, props: { ohms: 10000 } },
         { id: 'r1', type: 'resistor', position: onBoard(col(19), row.h), rotation: 0, props: { ohms: 330 } },
         { id: 'led1', type: 'bareLed', position: onBoard(col(21.5), row.f), rotation: 0, props: { color: 'green' } },
       ],
@@ -133,8 +150,11 @@ void loop() {
 `,
     circuit: {
       parts: [
-        { id: 'pot', type: 'potentiometer', position: [2.2, 7.5] },
-        { id: 'led1', type: 'led', position: [-1.5, -6.5], rotation: 180, props: { color: 'yellow' } },
+        BOARD,
+        // The pot's legs in j8, j10 and j12, its shaft towards you.
+        { id: 'pot', type: 'potentiometer', position: onBoard(col(10), row.j), rotation: 0 },
+        { id: 'r1', type: 'resistor', position: onBoard(col(19), row.h), rotation: 0, props: { ohms: 330 } },
+        { id: 'led1', type: 'bareLed', position: onBoard(col(21.5), row.f), rotation: 0, props: { color: 'yellow' } },
       ],
       wires: [],
     },
@@ -143,11 +163,12 @@ void loop() {
     id: 'ldr-gece-lambasi',
     week: 2,
     title: 'LDR ile gece lambası',
-    summary: 'Ortam karardığında LED yansın (analogRead 400’ün altı karanlık), ışık değerini Serial’e yaz. LDR A1’e, LED D6’ya. Işığı LDR’yi seçip kaydırıcıyla değiştir.',
+    summary: 'Ortam karardığında LED yansın (analogRead 400’ün altı karanlık), ışık değerini Serial’e yaz. LDR ile 10 kΩ direnç bir gerilim bölücü kurar; orta noktaları A0’a, LED D6’ya. Işığı LDR’yi seçip kaydırıcıyla değiştir.',
     mode: 'bench',
     code: `// Görev: Ortam karardığında LED yansın (analogRead 400’ün altı karanlık),
-// ışık değerini Serial’e yaz. LDR A1’e, LED D6’ya. Işığı LDR’yi seçip
-// kaydırıcıyla değiştir.
+// ışık değerini Serial’e yaz. LDR ile 10 kΩ direnç bir gerilim bölücü
+// kurar; orta noktaları A0’a, LED D6’ya. Işığı LDR’yi seçip kaydırıcıyla
+// değiştir.
 
 void setup() {
 
@@ -159,8 +180,11 @@ void loop() {
 `,
     circuit: {
       parts: [
-        { id: 'ldr', type: 'ldr', position: [2.6, 7.5] },
-        { id: 'led1', type: 'led', position: [2.2, -6.5], rotation: 180, props: { color: 'white' } },
+        BOARD,
+        { id: 'ldr', type: 'ldr', position: onBoard(col(9.5), row.f), rotation: 0 },
+        { id: 'r2', type: 'resistor', position: onBoard(col(12), row.h), rotation: 0, props: { ohms: 10000 } },
+        { id: 'r1', type: 'resistor', position: onBoard(col(19), row.h), rotation: 0, props: { ohms: 330 } },
+        { id: 'led1', type: 'bareLed', position: onBoard(col(21.5), row.f), rotation: 0, props: { color: 'white' } },
       ],
       wires: [],
     },
@@ -170,10 +194,10 @@ void loop() {
     id: 'mesafe-uyari',
     week: 2,
     title: 'Mesafe uyarısı',
-    summary: 'HC-SR04 ile mesafeyi ölçüp Serial’e yaz; engel 20 cm’den yakınsa buzzer ötsün. TRIG D7’ye, ECHO D6’ya, buzzer D8’e.',
+    summary: 'HC-SR04 ile mesafeyi ölçüp Serial’e yaz; engel 15 cm’den yakınsa buzzer ötsün. TRIG D10’a, ECHO D11’e, buzzer D6’ya.',
     mode: 'bench',
-    code: `// Görev: HC-SR04 ile mesafeyi ölçüp Serial’e yaz; engel 20 cm’den yakınsa
-// buzzer ötsün. TRIG D7’ye, ECHO D6’ya, buzzer D8’e.
+    code: `// Görev: HC-SR04 ile mesafeyi ölçüp Serial’e yaz; engel 15 cm’den yakınsa
+// buzzer ötsün. TRIG D10’a, ECHO D11’e, buzzer D6’ya.
 
 void setup() {
 
@@ -185,8 +209,9 @@ void loop() {
 `,
     circuit: {
       parts: [
-        { id: 'sonar', type: 'ultrasonic', position: [1.5, -8], rotation: 180 },
-        { id: 'buzzer', type: 'buzzer', position: [-6, -3] , rotation: 90 },
+        { id: 'sonar', type: 'ultrasonic', position: [-7, -2], rotation: -90 },
+        BOARD,
+        { id: 'buzzer', type: 'buzzer', position: onBoard(col(22.5), row.g), rotation: 0 },
       ],
       wires: [],
     },
@@ -215,6 +240,28 @@ void loop() {
     },
   },
   {
+    id: 'servo-aci',
+    week: 3,
+    title: 'Servo açı kontrolü',
+    summary: 'Servoyu sırayla 0°, 90° ve 180°’ye gönder; her konumda 1 saniye beklesin. Servo sinyali D9’a.',
+    mode: 'bench',
+    code: `// Görev: Servoyu sırayla 0°, 90° ve 180°’ye gönder; her konumda 1 saniye
+// beklesin. Servo sinyali D9’a.
+
+void setup() {
+
+}
+
+void loop() {
+
+}
+`,
+    circuit: {
+      parts: [{ id: 'servo', type: 'servo', position: [0.5, -8], rotation: 180 }],
+      wires: [],
+    },
+  },
+  {
     id: 'servo-pot',
     week: 3,
     title: 'Servoyu potansiyometreyle çevirmek',
@@ -233,8 +280,57 @@ void loop() {
 `,
     circuit: {
       parts: [
-        { id: 'servo', type: 'servo', position: [0.5, -8], rotation: 180 },
-        { id: 'pot', type: 'potentiometer', position: [2.2, 7.5] },
+        BOARD,
+        { id: 'servo', type: 'servo', position: [-7.5, -1], rotation: 90 },
+        { id: 'pot', type: 'potentiometer', position: onBoard(col(10), row.j), rotation: 0 },
+      ],
+      wires: [],
+    },
+  },
+  {
+    id: 'kh09-okuma',
+    week: 3,
+    title: 'KH-09 ile çizgi algılama',
+    summary: 'KH-09’un çıkışını D2’den okuyup Serial Monitor’e yaz. Açık zeminde ve siyah çizgide hangi değeri verdiğini bul; zemini sensörü seçip değiştir.',
+    mode: 'bench',
+    code: `// Görev: KH-09’un çıkışını D2’den okuyup Serial Monitor’e yaz. Açık zeminde
+// ve siyah çizgide hangi değeri verdiğini bul; zemini sensörü seçip değiştir.
+
+void setup() {
+
+}
+
+void loop() {
+
+}
+`,
+    circuit: {
+      parts: [{ id: 'ir', type: 'irSensor', position: [3.3, -7.5], rotation: 180 }],
+      wires: [],
+    },
+  },
+  {
+    id: 'kh09-servo',
+    week: 3,
+    title: 'KH-09 ile servo',
+    summary: 'KH-09 siyah çizgiyi görünce servo 30°’ye, açık zeminde 130°’ye gitsin. Sensör D2’ye, servo sinyali D9’a. Kodu oku(), kararVer() ve hareketEt() fonksiyonlarına böl.',
+    mode: 'bench',
+    code: `// Görev: KH-09 siyah çizgiyi görünce servo 30°’ye, açık zeminde 130°’ye
+// gitsin. Sensör D2’ye, servo sinyali D9’a. Kodu oku(), kararVer() ve
+// hareketEt() fonksiyonlarına böl.
+
+void setup() {
+
+}
+
+void loop() {
+
+}
+`,
+    circuit: {
+      parts: [
+        { id: 'ir', type: 'irSensor', position: [3.8, -7.5], rotation: 180 },
+        { id: 'servo', type: 'servo', position: [-1.5, -8], rotation: 180 },
       ],
       wires: [],
     },
@@ -258,8 +354,12 @@ void loop() {
 `,
     circuit: {
       parts: [
-        { id: 'ir', type: 'irSensor', position: [3.3, -7.5], rotation: 180 },
-        { id: 'rgb', type: 'rgbLed', position: [-0.6, -6.5], rotation: 180 },
+        { id: 'ir', type: 'irSensor', position: [6.5, -1.5], rotation: 0 },
+        BOARD,
+        // The LED in the top half; each colour leg reaches the bottom half
+        // through its own 330 Ω resistor across the channel.
+        { id: 'rgb', type: 'rgbLed', position: onBoard(col(21.5), row.b), rotation: 0 },
+        ...[['rR', 20], ['rG', 22], ['rB', 23]].map(([id, n]) => ({ id, type: 'resistor', position: onBoard(col(n), (row.d + row.f) / 2), rotation: 90, props: { ohms: 330 } })),
       ],
       wires: [],
     },
@@ -268,10 +368,10 @@ void loop() {
     id: 'yedi-segment',
     week: 3,
     title: '7 segment sayaç',
-    summary: 'Gösterge her saniye 0’dan 9’a kadar saysın. a–g segmentleri D2–D8’e, COM GND’ye.',
+    summary: 'Gösterge her saniye 0’dan 9’a kadar saysın. a–g segmentleri D2–D8’e; COM, 330 Ω dirençle GND’ye.',
     mode: 'bench',
     code: `// Görev: Gösterge her saniye 0’dan 9’a kadar saysın. a–g segmentleri
-// D2–D8’e, COM GND’ye.
+// D2–D8’e; COM, 330 Ω dirençle GND’ye.
 
 void setup() {
 
@@ -282,7 +382,12 @@ void loop() {
 }
 `,
     circuit: {
-      parts: [{ id: 'seg', type: 'sevenSegment', position: [1.6, -7.5], rotation: 180 }],
+      parts: [
+        BOARD,
+        // Across the channel: its top legs in row d, the bottom ones in row h.
+        { id: 'seg', type: 'sevenSegment', position: onBoard(col(12), (row.d + row.h) / 2), rotation: 0 },
+        { id: 'r1', type: 'resistor', position: onBoard(col(12), toRail), rotation: 90, props: { ohms: 330 } },
+      ],
       wires: [],
     },
   },
@@ -290,10 +395,12 @@ void loop() {
     id: 'motorlar',
     week: 4,
     title: 'L298N ile iki motor',
-    summary: 'Motorları sırayla ileri, geri, sağa, sola döndür ve durdur; her adımı Serial’e yaz. ENA D5, IN1 D7, IN2 D8, ENB D6, IN3 D9, IN4 D10.',
+    summary: 'Motorları sırayla ileri, geri, sağa, sola döndür ve durdur; her adımı Serial’e yaz. Sol motor OUT1–OUT2’ye, sağ motor OUT3–OUT4’e; ENA D5, IN1 D8, IN2 D9, ENB D6, IN3 D10, IN4 D11. Motorları 4×AA pil besler: + ucu L298N’in +12V’una, − ucu GND’sine; GND’yi Arduino GND’siyle ortakla.',
     mode: 'bench',
     code: `// Görev: Motorları sırayla ileri, geri, sağa, sola döndür ve durdur; her
-// adımı Serial’e yaz. ENA D5, IN1 D7, IN2 D8, ENB D6, IN3 D9, IN4 D10.
+// adımı Serial’e yaz. Sol motor OUT1–OUT2’ye, sağ motor OUT3–OUT4’e; ENA D5,
+// IN1 D8, IN2 D9, ENB D6, IN3 D10, IN4 D11. Motorları 4×AA pil besler: + ucu
+// L298N’in +12V’una, − ucu GND’sine; GND’yi Arduino GND’siyle ortakla.
 
 void setup() {
 
@@ -304,19 +411,26 @@ void loop() {
 }
 `,
     circuit: {
-      parts: [{ id: 'driver', type: 'motorDriver', position: [0, -9.5], rotation: 180 }],
+      parts: [
+        { id: 'driver', type: 'motorDriver', position: [0, -9.5], rotation: 180 },
+        { id: 'motorL', type: 'ttMotor', position: [-9.5, -9.5], rotation: -90 },
+        { id: 'motorR', type: 'ttMotor', position: [9.5, -9.5], rotation: 90 },
+        { id: 'pil', type: 'battery', position: [9.5, -3], rotation: 0 },
+      ],
       wires: [],
     },
   },
   {
     id: 'robot-araba',
     week: 5,
-    title: 'Robot araba',
-    summary: 'Yarışma arabası çizgiyi izlesin. L298N ve üç KH-09 sensörü takılı ama bağlı değil; “Araba kabloları”ndan bağla. KH-09 siyah çizgide HIGH, beyaz zeminde LOW verir.',
+    title: 'Çizgi izleyen robot',
+    summary: 'Yarışma arabası çizgiyi izlesin. L298N ve üç KH-09 sensörü takılı ama bağlı değil; “Araba kabloları”ndan bağla: ENA D5, IN1 D8, IN2 D9, ENB D6, IN3 D10, IN4 D11; sol, orta, sağ sensör D2, D3, D4. 4×AA pil L298N’e bağlı; L298N GND’sini Arduino GND’sine bağla. KH-09 siyah çizgide HIGH, beyaz zeminde LOW verir.',
     mode: 'car',
     code: `// Görev: Yarışma arabası çizgiyi izlesin. L298N ve üç KH-09 sensörü takılı
-// ama bağlı değil; “Araba kabloları”ndan bağla. KH-09 siyah çizgide HIGH,
-// beyaz zeminde LOW verir.
+// ama bağlı değil; “Araba kabloları”ndan bağla: ENA D5, IN1 D8, IN2 D9,
+// ENB D6, IN3 D10, IN4 D11; sol, orta, sağ sensör D2, D3, D4. 4×AA pil
+// L298N’e bağlı; L298N GND’sini Arduino GND’sine bağla. KH-09 siyah çizgide
+// HIGH, beyaz zeminde LOW verir.
 
 void setup() {
 

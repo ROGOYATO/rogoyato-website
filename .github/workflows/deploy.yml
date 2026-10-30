@@ -31,6 +31,19 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # The simulator's lock state can live in a private repository; the
+      # trainers' page saves there and starts this workflow.
+      - name: Fetch lock state
+        run: node scripts/fetch-lock-state.mjs
+        env:
+          KILIT_TOKEN: ${{ secrets.KILIT_TOKEN }}
+
+      # The Arduino Library Manager's list of libraries, for the simulator's
+      # compiler; if it cannot be fetched, the browser fetches it itself.
+      - name: Build library index
+        run: node scripts/build-library-index.mjs
+        continue-on-error: true
+
       - name: Build
         run: npm run build
         env:

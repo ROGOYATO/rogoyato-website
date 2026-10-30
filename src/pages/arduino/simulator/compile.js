@@ -47,13 +47,13 @@ async function compileOnServer(code) {
 const known = new Map(Object.values(exampleHex).map((entry) => [entry.hash, entry.hex]))
 export const rememberCompiled = (code, hex) => known.set(sketchHash(code), hex)
 
-export async function compileSketch(code) {
+export async function compileSketch(code, prefer = {}) {
   const precompiled = known.get(sketchHash(code))
   if (precompiled) return { ok: true, hex: precompiled, source: 'example' }
 
   if (browserCompilerSupported()) {
-    const result = await compileInBrowser(code)
-    if (result.ok) return { ok: true, hex: result.hex, size: usage(result), source: 'browser' }
+    const result = await compileInBrowser(code, prefer)
+    if (result.ok) return { ok: true, hex: result.hex, size: usage(result), source: 'browser', libraries: result.libraries ?? [] }
     if (!result.unavailable || !COMPILE_URL) return { ok: false, errors: result.errors, diagnostics: parseDiagnostics(result.errors) }
   }
   if (COMPILE_URL) return compileOnServer(code)

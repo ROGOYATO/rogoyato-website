@@ -2,20 +2,31 @@
 // Pins use Arduino numbering: 0-13 are D0-D13, 14-19 are A0-A5.
 import {
   AVRADC,
+  AVRClock,
+  AVREEPROM,
   AVRIOPort,
+  AVRSPI,
+  AVRTWI,
   AVRTimer,
   AVRUSART,
+  AVRWatchdog,
   CPU,
+  EEPROMMemoryBackend,
   PinState,
   adcConfig,
   avrInstruction,
+  clockConfig,
+  eepromConfig,
   portBConfig,
   portCConfig,
   portDConfig,
+  spiConfig,
   timer0Config,
   timer1Config,
   timer2Config,
+  twiConfig,
   usart0Config,
+  watchdogConfig,
 } from 'avr8js'
 
 export const CLOCK_HZ = 16_000_000
@@ -48,6 +59,13 @@ export class ArduinoUno {
     this.portD = new AVRIOPort(this.cpu, portDConfig)
     this.usart = new AVRUSART(this.cpu, usart0Config, CLOCK_HZ)
     this.adc = new AVRADC(this.cpu, adcConfig)
+    // The rest of the chip, so libraries using them run: I2C (nothing
+    // answers on the bus), SPI (reads 0), EEPROM and the watchdog.
+    this.twi = new AVRTWI(this.cpu, twiConfig, CLOCK_HZ)
+    this.spi = new AVRSPI(this.cpu, spiConfig, CLOCK_HZ)
+    this.eeprom = new AVREEPROM(this.cpu, new EEPROMMemoryBackend(1024), eepromConfig)
+    this.clock = new AVRClock(this.cpu, CLOCK_HZ, clockConfig)
+    this.watchdog = new AVRWatchdog(this.cpu, watchdogConfig, this.clock)
 
     // Edge and duty-cycle bookkeeping per pin, used by LEDs, servos, sensors.
     this.levels = new Array(20).fill(false)

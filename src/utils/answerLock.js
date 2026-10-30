@@ -1,13 +1,18 @@
 // Locks the simulator's answers. Every exercise is encrypted (AES-GCM) with
-// a key derived from its own unlock code; a week also has a code that opens
-// all of its exercises. The codes come from a master password only the club
-// knows, so the site and the public repository hold nothing readable. The
-// trainers' page reads the codes from a list sealed with a separate page
-// password. Works with Web Crypto in the browser and in Node 20+.
+// its own unlock code; a week also has a code that opens all of its
+// exercises. The trainers' page reads the code list with a page password,
+// and can renew any code or open an answer for everyone. A master password
+// recovers the code list if the page password is lost. Nothing readable is
+// in the site or the repository. Works with Web Crypto in the browser and
+// in Node 20+.
 //
-//   master password --PBKDF2--> master key --HMAC--> exercise and week codes
-//   code --PBKDF2--> AES key that opens that exercise (or the week's code list)
+//   code --PBKDF2--> AES key that opens an exercise (or its week's code list)
 //   page password --PBKDF2--> AES key that opens the trainers' code list
+//   master password --PBKDF2--> AES key that opens the recovery RSA key,
+//                               which opens a second copy of the code list
+//
+// The first codes were derived from the master password (weekCode,
+// exerciseCode); renewed codes are random.
 
 const subtle = globalThis.crypto.subtle
 const encoder = new TextEncoder()
@@ -32,7 +37,7 @@ async function pbkdf2(secret, salt, rounds) {
 export const normalizeCode = (code) => String(code ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '')
 export const formatCode = (code) => normalizeCode(code).replace(/(.{4})(?=.)/g, '$1-')
 export const looksLikeCode = (code) => normalizeCode(code).length === CODE_LENGTH && [...normalizeCode(code)].every((c) => ALPHABET.includes(c))
-// "Kartal LİMON  güvercin-IZ 47" and "kartal-limon-guvercin-iz-47" are the same:
+// "Örnek KELİME  şeker-İNCİ 12" and "ornek-kelime-seker-inci-12" are the same:
 // case, spacing and Turkish letters do not matter.
 const PLAIN = { ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u', â: 'a', î: 'i', û: 'u' }
 export const normalizePassphrase = (text) =>
@@ -88,3 +93,48 @@ export const unlockWith = async (code, scope, payload) =>
 export const sealForPage = async (passphrase, value) => seal(await aesKey(normalizePassphrase(passphrase), 'rogoyato-kilit-sayfasi-v1', SLOW_ROUNDS), value)
 export const openForPage = async (passphrase, payload) =>
   payload && normalizePassphrase(passphrase) ? open(await aesKey(normalizePassphrase(passphrase), 'rogoyato-kilit-sayfasi-v1', SLOW_ROUNDS), payload) : null
+
+// A fresh random code, for renewing one exercise's or one week's code.
+export function randomCode() {
+  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(CODE_LENGTH))
+  return formatCode([...bytes].map((byte) => ALPHABET[byte % 32]).join(''))
+}
+
+// Recovery: the code list is also sealed to an RSA public key whose private
+// half is locked with the master password. The trainers' page can update
+// that copy without knowing the master password, and the master password
+// can always bring the codes back (and set a new page password).
+const RSA = { name: 'RSA-OAEP', hash: 'SHA-256' }
+const recoveryKey = (password) => aesKey(normalizePassphrase(password), 'rogoyato-kurtarma-v1', SLOW_ROUNDS)
+
+export async function createRecovery(password) {
+  const pair = await subtle.generateKey({ ...RSA, modulusLength: 3072, publicExponent: new Uint8Array([1, 0, 1]) }, true, ['encrypt', 'decrypt'])
+  const publicKey = toBase64(new Uint8Array(await subtle.exportKey('spki', pair.publicKey)))
+  const privateKey = toBase64(new Uint8Array(await subtle.exportKey('pkcs8', pair.privateKey)))
+  return { publicKey, privateKey: await seal(await recoveryKey(password), privateKey) }
+}
+
+// Same key pair under a new master password.
+export async function rekeyRecovery(recovery, password, newPassword) {
+  const privateKey = await open(await recoveryKey(password), recovery.privateKey)
+  return privateKey ? { publicKey: recovery.publicKey, privateKey: await seal(await recoveryKey(newPassword), privateKey) } : null
+}
+
+export async function sealForRecovery(recovery, value) {
+  const publicKey = await subtle.importKey('spki', fromBase64(recovery.publicKey), RSA, false, ['encrypt'])
+  const raw = globalThis.crypto.getRandomValues(new Uint8Array(32))
+  const wrapped = new Uint8Array(await subtle.encrypt(RSA, publicKey, raw))
+  return { key: toBase64(wrapped), ...(await seal(await subtle.importKey('raw', raw, 'AES-GCM', false, ['encrypt']), value)) }
+}
+
+export async function openWithRecovery(password, recovery, escrow) {
+  const privateKey = await open(await recoveryKey(password), recovery.privateKey)
+  if (!privateKey || !escrow) return null
+  try {
+    const key = await subtle.importKey('pkcs8', fromBase64(privateKey), RSA, false, ['decrypt'])
+    const raw = new Uint8Array(await subtle.decrypt(RSA, key, fromBase64(escrow.key)))
+    return open(await subtle.importKey('raw', raw, 'AES-GCM', false, ['decrypt']), escrow)
+  } catch {
+    return null
+  }
+}
