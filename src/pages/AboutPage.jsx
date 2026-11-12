@@ -140,6 +140,34 @@ export default function AboutPage() {
             </div>
           </div>
         </div>
+
+        <h3 className="mt-10 font-heading text-2xl text-slate-900 dark:text-white">29 Ekim Logoları</h3>
+        <p className="mt-2 text-[1.02rem] leading-relaxed text-slate-700 dark:text-slate-300">
+          Cumhuriyet Bayramı için hazırladığımız ay yıldızlı logolarımız.
+        </p>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          {/* 29 Ekim Koyu */}
+          <div className="flex flex-col items-center justify-between gap-6 overflow-hidden rounded-2xl border border-zinc-800 bg-[#420812]">
+            <img src={`${publicBase}branding/preview/29ekim_koyu.webp`} alt="29 Ekim Koyu Logo" className="w-full object-contain" />
+            <div className="flex w-full px-6 pb-6 sm:px-8 sm:pb-8">
+              <a href={`${publicBase}branding/29ekim_koyu.jpg`} download="ROGOYATO_29_Ekim_Koyu.jpg" className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20">
+                <Download size={16} />
+                JPG İndir
+              </a>
+            </div>
+          </div>
+
+          {/* 29 Ekim Açık */}
+          <div className="flex flex-col items-center justify-between gap-6 overflow-hidden rounded-2xl border border-slate-200 bg-[#f8f5f0]">
+            <img src={`${publicBase}branding/preview/29ekim_acik.webp`} alt="29 Ekim Açık Logo" className="w-full object-contain" />
+            <div className="flex w-full px-6 pb-6 sm:px-8 sm:pb-8">
+              <a href={`${publicBase}branding/29ekim_acik.jpg`} download="ROGOYATO_29_Ekim_Acik.jpg" className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-xs transition hover:bg-slate-100">
+                <Download size={16} />
+                JPG İndir
+              </a>
+            </div>
+          </div>
+        </div>
       </section>
     </motion.section>
   )
