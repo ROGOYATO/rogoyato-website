@@ -45,7 +45,7 @@ export const events = [
       'Eğitimde Arduino IDE kurulumu ve ilk programlardan başlanarak breadboard devreleri, dijital ve analog girişler, PWM, HC-SR04, LDR, DHT11 ve KH-09 sensörleri, SG90 servo ve L298N ile iki DC motorun kontrolü uygulamalı olarak işlendi.',
       'Katılımcılar dersler arasında sitemizdeki tarayıcı tabanlı Arduino simülatörüyle pratik yaptı. Eğitimin ardından katılımcılar Çizgi İzleyen Robot Yarışması’nda öğrendiklerini sınıyor.',
     ],
-    coverImage: null,
+    coverImage: 'events/2026-10-24-arduino-egitimi/cover.webp',
     galleryImages: [],
     agenda: [
       '1. hafta: Kurulum, Arduino temelleri ve temel elektronik',
