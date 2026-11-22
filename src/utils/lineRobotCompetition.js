@@ -7,7 +7,7 @@ export const lineRobotCompetition = {
   raceStart: '2026-11-28T15:00:00+03:00',
   // The Google Form for entries (its public address, not the editor's);
   // null hides the button.
-  applicationUrl: 'https://docs.google.com/forms/d/15SuGpaYVGwVMgkKEK9_c-006ARq-GCN5MSU-V2SIix8/viewform',
+  applicationUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSdbGE_kz49O-7NB6Itwbb_Dg7QBzfOQPOIW9etBSXWs1IlyqQ/viewform',
   edition: '2026 Güz',
   organizer: 'TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu (ROGOYATO)',
   sponsor: 'Westonya',
