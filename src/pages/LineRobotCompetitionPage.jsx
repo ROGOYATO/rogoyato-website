@@ -36,7 +36,19 @@ function General() {
     ['Robot hazırlığı', 'Yarış gününe kadar, katılımcıların kendi zamanında'],
     ['Teknik danışma', '28 Kasım, 10:00–14:45, yarış alanında'],
     ['Sıralama turları', '28 Kasım, 15:00'],
-    ['Başvuru', competition.applicationUrl ? 'Google Form ile (aşağıdaki bağlantıdan)' : 'Google Form ile; bağlantı yakında bu sayfada paylaşılacak'],
+    [
+      'Başvuru',
+      competition.applicationUrl ? (
+        <>
+          Google Form ile:{' '}
+          <a href={competition.applicationUrl} target="_blank" rel="noreferrer" className="font-semibold text-sky-700 underline underline-offset-2 hover:text-sky-900 dark:text-sky-300 dark:hover:text-sky-200">
+            başvuru formu
+          </a>
+        </>
+      ) : (
+        'Google Form ile; bağlantı yakında bu sayfada paylaşılacak'
+      ),
+    ],
     ['Ödül sponsoru', competition.sponsor],
   ]
   return (
