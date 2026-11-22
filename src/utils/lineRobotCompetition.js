@@ -5,6 +5,8 @@ export const lineRobotCompetition = {
   path: '/yarisma/cizgi-izleyen-robot',
   // When the races start (Türkiye time); the countdown runs to it.
   raceStart: '2026-11-28T15:00:00+03:00',
+  // The Google Form for entries; null until it is ready.
+  applicationUrl: null,
   edition: '2026 Güz',
   organizer: 'TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu (ROGOYATO)',
   sponsor: 'Westonya',
@@ -21,7 +23,7 @@ export const lineRobotCompetition = {
     { when: 'Yarış gününe kadar', title: 'Robotunu hazırla', text: 'Robotunu kendi zamanında, istediğin yerde kur, kodla ve dene. Teknik sorularını eğitim WhatsApp grubundan sorabilirsin.', highlight: true },
     { when: '28 Kasım · 10:00–14:45', title: 'Danışma ve pist denemesi', text: 'Yarış alanı açık: eğitmenlere teknik sorularını sorabilir, robotunu yarış pistinde deneyebilirsin. Robot burada sıfırdan yapılmaz; hazır getirilir.', highlight: true },
     { when: '28 Kasım · 14:45', title: 'Yoklama ve sıralama turları', text: 'Yoklamanın ardından 15:00’te her yarışmacı ya da takım sırayla piste çıkar.' },
-    { when: '28 Kasım · ~16:30', title: 'Final ve ödül töreni', text: 'En iyi dört robot finalde kapışır, ardından kupalar verilir.' },
+    { when: '28 Kasım · ~16:15', title: 'Sonuçlar ve ödül töreni', text: 'Dereceler açıklanır, ilk üçe kupaları verilir.' },
   ],
   // The race day hour by hour.
   dayPlan: [
@@ -29,9 +31,8 @@ export const lineRobotCompetition = {
     { time: '10:00–14:45', title: 'Teknik danışma ve pist denemesi', text: 'Yarışmacılar robotlarını pistte dener, eğitmenlere teknik sorularını sorar.' },
     { time: '14:45–15:00', title: 'Yoklama ve açılış', text: 'Robotların ve yarışmacıların kaydı, kuralların hatırlatılması.' },
     { time: '15:00–16:15', title: 'Sıralama turları', text: 'Her robot sırayla piste çıkar; en fazla üç deneme.' },
-    { time: '16:15–16:30', title: 'Ara', text: 'Sıralamanın açıklanması, finalistlerin belirlenmesi.' },
-    { time: '16:30–16:50', title: 'Final', text: 'En iyi dört robotun final denemeleri.' },
-    { time: '16:50–17:00', title: 'Ödül töreni ve kapanış', text: 'Kupaların verilmesi, toplu fotoğraf.' },
+    { time: '16:15–16:30', title: 'Sonuçların açıklanması', text: 'Derecelerin hesaplanması ve açıklanması.' },
+    { time: '16:30–16:45', title: 'Ödül töreni ve kapanış', text: 'İlk üç dereceye kupaların verilmesi, toplu fotoğraf.' },
   ],
   // The regulation, article by article.
   rules: [
@@ -39,6 +40,7 @@ export const lineRobotCompetition = {
       title: 'Katılım',
       items: [
         'Yarışmaya 2026 Güz Arduino Eğitimi’ne katılan öğrenciler katılabilir.',
+        'Yarışmaya katılmak için başvuru formunun doldurulması gerekir; takımlarda formu bir kişi takım adına doldurur.',
         'Yarışmaya tek başına ya da en fazla üç kişilik takımlar hâlinde katılınabilir. Bir kişi yalnızca bir takımda yer alabilir.',
         'Her yarışmacı ya da takım tek bir robotla yarışır; robotunu kendisi kurar ve kodlar.',
         'Yarışmacılar 28 Kasım 14:45’teki yoklamada robotlarıyla birlikte yarış alanında bulunmalıdır; takımlarda en az bir üyenin bulunması yeterlidir.',
@@ -81,11 +83,11 @@ export const lineRobotCompetition = {
       ],
     },
     {
-      title: 'Final',
+      title: 'Dereceler',
       items: [
-        'Sıralama turlarının en iyi dört robotu finale kalır.',
-        'Finalde her finalist bir deneme daha yapar; dereceler, sıralama ve final denemelerinin en iyisine göre belirlenir.',
-        'Eşitlik durumunda kısa bir tekrar sürüşü yapılır.',
+        'Dereceler sıralama turlarının sonucuna göre belirlenir; ayrıca final turu yapılmaz.',
+        'İlk üç dereceye giren yarışmacılara ya da takımlara kupa verilir.',
+        'Derece için eşitlik olması durumunda eşit robotlar kısa bir tekrar sürüşü yapar.',
       ],
     },
     {
@@ -104,12 +106,13 @@ export const lineRobotCompetition = {
     { place: 3, title: 'Üçüncülük', trophy: 'Microbot', base: 'Bronz kaide', height: '21 cm', image: 'yarisma/cizgi-izleyen-robot/kupa-microbot.webp' },
   ],
   faq: [
+    { q: 'Nasıl başvururum?', a: 'Başvurular Google Form üzerinden alınır. Form bağlantısı bu sayfada ve eğitim WhatsApp grubunda paylaşılacak.' },
     { q: 'Takım olarak katılabilir miyim?', a: 'Evet. Tek başına ya da en fazla üç kişilik bir takımla katılabilirsin. Takımın tüm üyeleri Arduino Eğitimi katılımcısı olmalı ve bir kişi yalnızca bir takımda yer alabilir.' },
     { q: 'Robotu nerede ve ne zaman yapacağım?', a: 'Robotunu yarış gününe kadar kendi zamanında, istediğin yerde hazırlarsın. Yarış gününe tamamlanmış robotla gelinir; robotlar yarış günü sıfırdan yapılmaz.' },
     { q: 'Takıldığım yerde yardım alabilir miyim?', a: 'Hazırlık haftasında teknik sorularını eğitim WhatsApp grubundan sorabilirsin. Yarış günü 10:00–14:45 arasında yarış alanında eğitmenler teknik sorunlarda yardım eder; kod yazmaz ve taktik vermez.' },
     { q: 'Yarışma nerede yapılacak?', a: 'Yarışmanın yapılacağı yer kesinleştiğinde bu sayfada ve eğitim WhatsApp grubunda duyurulacak.' },
     { q: 'Malzemelerim yanımda değilken nasıl çalışırım?', a: 'Sitemizdeki Arduino simülatöründe yarışma arabası kablolanmış olarak hazır; kodunu yazıp sanal parkurlarda deneyebilirsin.' },
-    { q: 'Sıralama nasıl belirlenir?', a: 'Turu tamamlayan robotlar süreye göre, tamamlayamayanlar parkurda ilerledikleri mesafeye göre sıralanır. En iyi dört robot finalde bir kez daha koşar.' },
+    { q: 'Sıralama nasıl belirlenir?', a: 'Turu tamamlayan robotlar süreye göre, tamamlayamayanlar parkurda ilerledikleri mesafeye göre sıralanır. İlk üç dereceye kupa verilir; ayrıca final yapılmaz.' },
   ],
   contact: [
     { label: 'E-posta', value: 'rogoyato@gmail.com', href: 'mailto:rogoyato@gmail.com' },
