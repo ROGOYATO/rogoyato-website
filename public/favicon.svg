@@ -1,4 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="64" height="64" viewBox="190.17 49.86 214.21 214.21">
+<style>
+@media (prefers-color-scheme: dark) {
+  [fill="#172B6B"] { fill: #6A87F0; }
+  [fill="#B21C28"] { fill: #FF4D5A; }
+}
+</style>
 <defs>
 <g>
 <g id="glyph-0-0">

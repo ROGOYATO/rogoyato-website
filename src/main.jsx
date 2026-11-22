@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 import AboutPage from './pages/AboutPage.jsx'
@@ -26,9 +26,15 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   })
 }
 
+// Addresses used to look like rogoyato.com/#/etkinlikler; links shared
+// back then still open the right page.
+if (window.location.hash.startsWith('#/')) {
+  window.history.replaceState(null, '', window.location.hash.slice(1))
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <HashRouter>
+    <BrowserRouter>
       <Routes>
         <Route path="/arduino" element={<ArduinoLayout />}>
           <Route index element={<ArduinoHomePage />} />
@@ -54,6 +60,6 @@ createRoot(document.getElementById('root')).render(
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
-    </HashRouter>
+    </BrowserRouter>
   </StrictMode>,
 )
