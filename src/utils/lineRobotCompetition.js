@@ -114,7 +114,7 @@ export const lineRobotCompetition = {
     { q: 'Takıldığım yerde yardım alabilir miyim?', a: 'Hazırlık haftasında teknik sorularını eğitim WhatsApp grubundan sorabilirsin. Yarış günü 10:00–14:45 arasında yarış alanında eğitmenler teknik sorunlarda yardım eder; kod yazmaz ve taktik vermez.' },
     { q: 'Parkur nasıl olacak?', a: 'Parkur bilgileri daha sonra duyurulacak. O zamana kadar simülatördeki parkurlarda kodunu deneyebilirsin.' },
     { q: 'Yarışma nerede yapılacak?', a: 'Yarışmanın yapılacağı yer kesinleştiğinde bu sayfada ve eğitim WhatsApp grubunda duyurulacak.' },
-    { q: 'Malzemelerim yanımda değilken nasıl çalışırım?', a: 'Sitemizdeki Arduino simülatöründe yarışma arabası kablolanmış olarak hazır; kodunu yazıp sanal parkurlarda deneyebilirsin.' },
+    { q: 'Malzemelerim yanımda değilken nasıl çalışırım?', a: 'Sitemizdeki Arduino simülatöründe “Çizgi izleyen robot” örneğini aç: yarışma arabası, L298N, üç KH-09 sensörü ve 4×AA pil takılı gelir. Kabloları gerçek robottaki gibi kendin bağlar, kodunu yazıp sanal parkurlarda denersin.' },
     { q: 'Sıralama nasıl belirlenir?', a: 'Turu tamamlayan robotlar süreye göre, tamamlayamayanlar parkurda ilerledikleri mesafeye göre sıralanır. İlk üç dereceye kupa verilir; ayrıca final yapılmaz.' },
   ],
   contact: [
