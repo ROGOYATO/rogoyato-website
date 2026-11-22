@@ -2,7 +2,9 @@
 // load them from disk instead of the network. GitHub Pages only allows
 // a 10 minute HTTP cache, so this is where longer caching happens.
 // Pages themselves (HTML) are never cached here and always come fresh.
-const CACHE = 'rogoyato-v1'
+// Bump when images are replaced under the same name (the new logo), so
+// browsers drop the old copies at once.
+const CACHE = 'rogoyato-v2'
 const IMAGE_PATH = /\.(?:webp|png|jpe?g|gif|svg|ico)$/i
 
 self.addEventListener('install', () => {
