@@ -283,8 +283,13 @@ export const trainingRoadmap = [
   {
     term: '2026-2027 Güz',
     title: 'Arduino Robotik Kodlama Eğitimi',
-    status: 'Planlandı',
+    status: 'Tamamlandı',
     link: '/arduino',
+  },
+  {
+    term: '2026-2027 Bahar',
+    title: 'IoT Eğitimi',
+    status: 'Planlandı',
   },
 ]
 
