@@ -40,20 +40,22 @@ function normalizeText(value) {
     .replace('ç', 'c')
 }
 
+// "11 Ekim 2025", "14–16 Kasım 2025" or "24 Ekim – 21 Kasım 2026": a range
+// counts by its last day.
 function parseTurkishDate(dateText) {
   if (!dateText) {
     return 0
   }
 
-  const parts = dateText.trim().split(/\s+/)
-  if (parts.length < 3) {
+  const matches = [...dateText.matchAll(/(\d{1,2})\s+(\p{L}+)\s+(\d{4})/gu)]
+  if (!matches.length) {
     return 0
   }
 
-  const day = Number.parseInt(parts[0], 10)
-  const monthKey = normalizeText(parts[1])
-  const year = Number.parseInt(parts[2], 10)
-  const monthIndex = monthMap[monthKey]
+  const [, dayText, monthText, yearText] = matches[matches.length - 1]
+  const day = Number.parseInt(dayText, 10)
+  const monthIndex = monthMap[normalizeText(monthText)]
+  const year = Number.parseInt(yearText, 10)
 
   if (!Number.isFinite(day) || !Number.isFinite(year) || monthIndex === undefined) {
     return 0
