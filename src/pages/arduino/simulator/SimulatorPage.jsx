@@ -1,4 +1,4 @@
-import { Bot, Check, Columns2, Columns3, Cpu, GripVertical, LayoutTemplate, Lock, LockOpen, Pause, Play, Plus, RotateCcw, Usb, Volume2, VolumeX } from 'lucide-react'
+import { Bot, Check, Columns2, Columns3, Cpu, GripVertical, LayoutTemplate, Lock, LockOpen, Pause, PenLine, Play, Plus, RotateCcw, Usb, Volume2, VolumeX } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
@@ -19,6 +19,7 @@ import {
   unoPlacement,
 } from '../../../utils/avrSim/catalog'
 import { TRACKS } from '../../../utils/avrSim/car'
+import TrackDrawer from './TrackDrawer'
 import BenchView from './BenchView'
 import CarView from './CarView'
 import CodeEditor from './CodeEditor'
@@ -122,6 +123,25 @@ function nextPosition(circuit, type) {
   return spots.find(free) ?? [0, 22]
 }
 
+const DRAWN_TRACK_KEY = 'rogoyato-cizilen-pist'
+
+function loadDrawnTrack() {
+  try {
+    const value = JSON.parse(window.localStorage.getItem(DRAWN_TRACK_KEY))
+    return Array.isArray(value?.points) && value.points.length > 10 ? value : null
+  } catch {
+    return null
+  }
+}
+
+function saveDrawnTrack(value) {
+  try {
+    window.localStorage.setItem(DRAWN_TRACK_KEY, JSON.stringify({ name: value.name, points: value.points.map(([x, y]) => [Math.round(x * 1000) / 1000, Math.round(y * 1000) / 1000]) }))
+  } catch {
+    // Without storage the track lasts for this visit.
+  }
+}
+
 export default function SimulatorPage() {
   const [searchParams] = useSearchParams()
   const dark = useDarkMode()
@@ -147,7 +167,11 @@ export default function SimulatorPage() {
   const [unoUnlocked, setUnoUnlocked] = useState(false)
   const [compile, setCompile] = useState({ state: 'idle' })
   const [sound, setSound] = useState(true)
-  const [track, setTrack] = useState('oval')
+  const [trackId, setTrackId] = useState('oval')
+  // A track the student drew, kept in this browser for the next visit.
+  const [drawnTrack, setDrawnTrack] = useState(loadDrawnTrack)
+  const [drawing, setDrawing] = useState(false)
+  const track = trackId === 'drawn' && drawnTrack ? drawnTrack : trackId
   const [carView, setCarView] = useState('follow')
   const [carResetToken, setCarResetToken] = useState(0)
   const hexRef = useRef(null)
@@ -368,7 +392,8 @@ export default function SimulatorPage() {
     const key = project.mode === 'car' ? 'carCircuit' : 'circuit'
     const start = example[key] ?? CAR_EXAMPLE.carCircuit
     const current = project[key]
-    const ownWires = current.wires.length && JSON.stringify(current.wires) !== JSON.stringify(answer.wires)
+    // Wires the exercise starts with (the car's chassis) are not the student's.
+    const ownWires = JSON.stringify(current.wires) !== JSON.stringify(start.wires) && JSON.stringify(current.wires) !== JSON.stringify(answer.wires)
     if (ownWires && !window.confirm('Çektiğiniz kablolar kaldırılıp cevabın bağlantıları kurulacak. Devam edilsin mi?')) return
     const parts = [
       ...start.parts.map((part) => {
@@ -753,10 +778,11 @@ export default function SimulatorPage() {
               <div className="mb-4 flex flex-wrap gap-2">
                 <select
                   aria-label="Parkur"
-                  value={track}
+                  value={trackId}
                   onChange={(event) => {
-                    setTrack(event.target.value)
-                    sim.setTrack(event.target.value)
+                    const id = event.target.value
+                    setTrackId(id)
+                    sim.setTrack(id === 'drawn' ? drawnTrack : id)
                   }}
                   className="font-code rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100"
                 >
@@ -765,7 +791,29 @@ export default function SimulatorPage() {
                       {item.name}
                     </option>
                   ))}
+                  {drawnTrack ? <option value="drawn">{drawnTrack.name}</option> : null}
                 </select>
+                <button
+                  type="button"
+                  onClick={() => setDrawing(true)}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-700 hover:border-teal-600 hover:text-teal-800 dark:border-white/15 dark:text-slate-200 dark:hover:border-teal-300 dark:hover:text-teal-200"
+                >
+                  <PenLine size={14} />
+                  Pist çiz
+                </button>
+                {drawing ? (
+                  <TrackDrawer
+                    initial={drawnTrack}
+                    onClose={() => setDrawing(false)}
+                    onUse={(next) => {
+                      setDrawing(false)
+                      setDrawnTrack(next)
+                      saveDrawnTrack(next)
+                      setTrackId('drawn')
+                      sim.setTrack(next)
+                    }}
+                  />
+                ) : null}
                 <div className="flex rounded-md border border-slate-300 p-0.5 dark:border-white/15">
                   {[
                     ['follow', 'Takip'],

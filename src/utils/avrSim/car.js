@@ -65,8 +65,20 @@ function oval() {
   return points
 }
 
+// A figure of eight: the line crosses itself at right angles in the middle,
+// where the robot has to keep straight on.
+function figureEight() {
+  const points = []
+  for (let i = 0; i < 480; i += 1) {
+    const a = (i / 480) * Math.PI * 2
+    points.push([1.0 + 0.8 * Math.cos(a), 0.7 + 0.45 * Math.sin(2 * a)])
+  }
+  return points
+}
+
 export const TRACKS = {
   oval: { name: 'Oval', points: oval() },
+  sekiz: { name: 'Sekiz (kesişmeli)', points: figureEight() },
   race: {
     name: 'Yarış parkuru',
     points: buildTrack([0.65, 0.27], 0, [
@@ -74,6 +86,55 @@ export const TRACKS = {
       ['S', 0.65], ['A', 0.22, 90], ['S', 0.1], ['A', 0.15, 60], ['A', 0.15, -60], ['S', 0.12], ['A', 0.22, 90],
     ]),
   },
+}
+
+// A track by id, or one drawn by the student ({ name, points }).
+export const resolveTrack = (track) => (typeof track === 'string' ? (TRACKS[track] ?? TRACKS.oval) : track)
+
+// Turns a hand-drawn line (points in metres) into a closed track: kept off
+// the arena's edges, joined back to where it started, smoothed and evenly
+// spaced every centimetre like the built-in tracks. Null when too short.
+export const MIN_DRAWN_LENGTH = 1.5
+export function trackFromDrawing(raw) {
+  const edge = 0.1
+  const clamp = ([x, y]) => [Math.min(ARENA.width - edge, Math.max(edge, x)), Math.min(ARENA.height - edge, Math.max(edge, y))]
+  const line = raw.map(clamp)
+  if (line.length < 3) return null
+  line.push(line[0])
+  let length = 0
+  for (let i = 1; i < line.length; i += 1) length += Math.hypot(line[i][0] - line[i - 1][0], line[i][1] - line[i - 1][1])
+  if (length < MIN_DRAWN_LENGTH) return null
+  const step = 0.01
+  let points = [line[0]]
+  let carried = 0
+  for (let i = 1; i < line.length; i += 1) {
+    const [ax, ay] = line[i - 1]
+    const [bx, by] = line[i]
+    const piece = Math.hypot(bx - ax, by - ay)
+    let at = step - carried
+    while (at <= piece) {
+      points.push([ax + ((bx - ax) * at) / piece, ay + ((by - ay) * at) / piece])
+      at += step
+    }
+    carried = piece - (at - step)
+  }
+  points.pop() // closes back onto the first point
+  // A hand's wobble smoothed out: each point moves to the average of its
+  // neighbours, a few times over, around the closed loop.
+  const n = points.length
+  for (let pass = 0; pass < 4; pass += 1) {
+    points = points.map((_, i) => {
+      let x = 0
+      let y = 0
+      for (let k = -4; k <= 4; k += 1) {
+        const [px, py] = points[(i + k + n) % n]
+        x += px
+        y += py
+      }
+      return [x / 9, y / 9]
+    })
+  }
+  return { name: 'Çizdiğim pist', points }
 }
 
 function distanceToTrack(points, x, y) {
@@ -103,17 +164,16 @@ export function motorRpm(command, load = LOADED) {
 
 export class RobotCar {
   // pins: { ena, in1, in2, enb, in3, in4, left, center, right }
-  constructor(uno, pins, trackId = 'oval') {
+  constructor(uno, pins, track = 'oval') {
     this.uno = uno
     this.pins = pins
-    this.setTrack(trackId)
+    this.setTrack(track)
     this.tick = this.tick.bind(this)
     uno.cpu.addClockEvent(this.tick, STEP_S * 1e6 * CYCLES_PER_US)
   }
 
-  setTrack(trackId) {
-    this.trackId = trackId
-    this.track = TRACKS[trackId]
+  setTrack(track) {
+    this.track = resolveTrack(track)
     this.reset()
   }
 

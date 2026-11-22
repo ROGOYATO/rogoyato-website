@@ -1,7 +1,6 @@
 // The simulator's exercises, following the training weeks. Each starts with
-// an empty sketch and its parts placed but unwired. Blink's answer is here;
-// the others are encrypted one by one in the lock state and open with
-// their own code or their week's (src/utils/answerLock.js, scripts/answers.mjs).
+// an empty sketch and its parts placed but unwired. Blink's answer is here,
+// the others are in answers.json.
 
 // Breadboard layouts: the board sits beside the digital header and parts
 // sit in its lower half (rows f–j), next to the Uno.
@@ -424,7 +423,7 @@ void loop() {
     id: 'robot-araba',
     week: 5,
     title: 'Çizgi izleyen robot',
-    summary: 'Yarışma arabası çizgiyi izlesin. L298N ve üç KH-09 sensörü takılı ama bağlı değil; “Araba kabloları”ndan bağla: ENA D5, IN1 D8, IN2 D9, ENB D6, IN3 D10, IN4 D11; sol, orta, sağ sensör D2, D3, D4. 4×AA pil L298N’e bağlı; L298N GND’sini Arduino GND’sine bağla. KH-09 siyah çizgide HIGH, beyaz zeminde LOW verir.',
+    summary: 'Yarışma arabası çizgiyi izlesin. L298N ve üç KH-09 sensörü takılı ama bağlı değil; “Araba kabloları”ndan bağla: ENA D5, IN1 D8, IN2 D9, ENB D6, IN3 D10, IN4 D11; sol, orta, sağ sensör D2, D3, D4. 4×AA pil L298N’e bağlı; L298N GND’sini Arduino GND’sine bağla. KH-09 siyah çizgide HIGH, beyaz zeminde LOW verir. İstersen “Bağlantıları göster” ile kabloları hazır kurabilirsin; kod sana kalmış.',
     mode: 'car',
     code: `// Görev: Yarışma arabası çizgiyi izlesin. L298N ve üç KH-09 sensörü takılı
 // ama bağlı değil; “Araba kabloları”ndan bağla: ENA D5, IN1 D8, IN2 D9,

@@ -9,7 +9,6 @@ import ArduinoLayout from './pages/arduino/ArduinoLayout.jsx'
 import ArduinoMaterialsPage from './pages/arduino/ArduinoMaterialsPage.jsx'
 import ArduinoWeekPage from './pages/arduino/ArduinoWeekPage.jsx'
 import LazySimulatorPage from './pages/arduino/simulator/LazySimulatorPage.jsx'
-import ArduinoLockPage from './pages/arduino/ArduinoLockPage.jsx'
 import CompetitionsPage from './pages/CompetitionsPage.jsx'
 import EventApplyPage from './pages/EventApplyPage.jsx'
 import EventDetailPage from './pages/EventDetailPage.jsx'
@@ -43,7 +42,6 @@ createRoot(document.getElementById('root')).render(
           <Route path="yarisma" element={<Navigate to="/yarisma/cizgi-izleyen-robot" replace />} />
           <Route path="malzemeler" element={<ArduinoMaterialsPage />} />
           <Route path="simulator" element={<LazySimulatorPage />} />
-          <Route path="kilit" element={<ArduinoLockPage />} />
           <Route path="*" element={<Navigate to="/arduino" replace />} />
         </Route>
         <Route path="/" element={<App />}>

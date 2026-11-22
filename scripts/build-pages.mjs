@@ -25,7 +25,6 @@ const pages = [
   ...arduinoWeeks.map(({ week }) => [`/arduino/hafta/${week}`, `Arduino Eğitimi ${week}. Hafta`, true]),
   ['/arduino/malzemeler', 'Arduino Eğitimi Malzemeleri', true],
   ['/arduino/simulator', 'Arduino Simülatörü', true],
-  ['/arduino/kilit', 'Arduino Eğitimi', false],
   ['/snake-game', 'Snake', false],
 ]
 

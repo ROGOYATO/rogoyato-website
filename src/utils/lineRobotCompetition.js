@@ -48,7 +48,7 @@ export const lineRobotCompetition = {
         'Robot, yarış gününe kadar yarışmacıların kendi zamanında hazırlanır; montaj, kablolama ve kod yarış gününden önce tamamlanmış olmalıdır.',
         'Yarış günü 10:00–14:45 arasında yarış alanında eğitmenlerden teknik destek alınabilir: arızalı bağlantı, yüklenmeyen kod, çalışmayan sensör gibi sorunlarda yardım edilir.',
         'Eğitmenler kod yazmaz, hazır çözüm ya da yarış taktiği vermez.',
-        'Hazırlık için simülatördeki robot araba ve parkurlar kullanılabilir.',
+        'Sitemizdeki Arduino simülatörü, robot kodunun genel mantığını kurmak için kullanılabilir.',
       ],
     },
     {
@@ -62,9 +62,14 @@ export const lineRobotCompetition = {
     },
     {
       title: 'Parkur',
+      figure: {
+        image: 'yarisma/cizgi-izleyen-robot/ornek-parkur-kesisme.svg',
+        caption: 'Şekil 1 – Örnek parkur: çizgi kendisiyle kesişebilir, robot kesişmede düz devam eder. Yarışma parkuru farklı olacaktır.',
+      },
       items: [
         'Parkur bilgileri daha sonra duyurulacaktır.',
-        'Çizgiler beyaz zemin üzerine yaklaşık 2 cm genişliğinde siyah bantla çekilir.',
+        'Parkur, beyaz zemin üzerinde yaklaşık 2 cm genişliğinde siyah bir çizgiden oluşur.',
+        'Parkur çizgisi kendisiyle kesişebilir; kesişme noktalarında robot düz devam eder (Şekil 1).',
         'Yarış günü 10:00–14:45 arasında yarış alanında deneme sürüşü yapılabilir.',
       ],
     },
@@ -107,9 +112,9 @@ export const lineRobotCompetition = {
     { q: 'Takım olarak katılabilir miyim?', a: 'Evet. Tek başına ya da en fazla üç kişilik bir takımla katılabilirsin. Takımın tüm üyeleri Arduino Eğitimi katılımcısı olmalı ve bir kişi yalnızca bir takımda yer alabilir.' },
     { q: 'Robotu nerede ve ne zaman yapacağım?', a: 'Robotunu yarış gününe kadar kendi zamanında, istediğin yerde hazırlarsın. Yarış gününe tamamlanmış robotla gelinir; robotlar yarış günü sıfırdan yapılmaz.' },
     { q: 'Takıldığım yerde yardım alabilir miyim?', a: 'Hazırlık haftasında teknik sorularını eğitim WhatsApp grubundan sorabilirsin. Yarış günü 10:00–14:45 arasında yarış alanında eğitmenler teknik sorunlarda yardım eder; kod yazmaz ve taktik vermez.' },
-    { q: 'Parkur nasıl olacak?', a: 'Parkur bilgileri daha sonra duyurulacak. O zamana kadar simülatördeki parkurlarda kodunu deneyebilirsin.' },
+    { q: 'Parkur nasıl olacak?', a: 'Parkur bilgileri daha sonra duyurulacak. Beyaz zemin üzerinde yaklaşık 2 cm genişliğinde siyah bir çizgi olacak; çizgi kendisiyle kesişebilir, kesişmelerde robot düz devam eder (Şartname, Şekil 1).' },
     { q: 'Yarışma nerede yapılacak?', a: 'Yarışmanın yapılacağı yer kesinleştiğinde bu sayfada ve eğitim WhatsApp grubunda duyurulacak.' },
-    { q: 'Malzemelerim yanımda değilken nasıl çalışırım?', a: 'Sitemizdeki Arduino simülatöründe “Çizgi izleyen robot” örneğini aç: yarışma arabası, L298N, üç KH-09 sensörü ve 4×AA pil takılı gelir. Kabloları gerçek robottaki gibi kendin bağlar, kodunu yazıp sanal parkurlarda denersin.' },
+    { q: 'Malzemelerim yanımda değilken nasıl çalışırım?', a: 'Sitemizdeki Arduino simülatörü, robot kodunun genel mantığını kurmak için kullanılabilir.' },
     { q: 'Sıralama nasıl belirlenir?', a: 'Turu tamamlayan robotlar süreye göre, tamamlayamayanlar parkurda ilerledikleri mesafeye göre sıralanır. İlk üç dereceye kupa verilir; ayrıca final yapılmaz.' },
   ],
   contact: [
@@ -135,7 +140,7 @@ export const lineRobotCompetition = {
     { name: 'Arduino IDE kurulu dizüstü bilgisayar ve USB kablosu', note: 'Yarış günü deneme sürüşlerinin ardından kodda ayar yapmak için.' },
     { name: 'Küçük yıldız ve düz tornavida', note: 'Vidaları sıkmak ve KH-09’ların hassasiyet ayarı için.' },
     { name: 'Kablo bağı, çift taraflı bant, izole bant', note: 'Kartları ve kabloları şasiye sabitlemek için.', url: 'https://www.elektronikport.com/kategori/bant-ve-sprey-cesitleri' },
-    { name: 'Beyaz karton ve siyah elektrik bandı', note: 'Evde kısa bir deneme parkuru kurmak için (19 mm bant).' },
+    { name: 'Beyaz karton ve siyah çizgi', note: 'Evde kısa bir deneme parkuru için: yaklaşık 2 cm genişliğinde siyah çizgiyi yazıcıdan çıkarıp kartona yapıştırabilirsin.' },
     { name: 'Yedek jumper kablolar', note: 'Gevşeyen ya da kopan bağlantılar için.' },
     { name: 'Multimetre', note: 'İsteğe bağlı; pil gerilimini ve bağlantıları ölçmek için.' },
   ],

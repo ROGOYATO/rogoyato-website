@@ -3,12 +3,12 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import SmoothZoom from './smoothZoom'
-import { ARENA, TRACKS, WHEEL_RADIUS } from '../../../utils/avrSim/car'
+import { ARENA, WHEEL_RADIUS, resolveTrack } from '../../../utils/avrSim/car'
 import { box, cylinder, mat } from './models'
 
 const CM = 100
 
-function trackTexture(trackId) {
+function trackTexture(track) {
   const scale = 10 // px per cm
   const canvas = document.createElement('canvas')
   canvas.width = ARENA.width * CM * scale
@@ -16,7 +16,7 @@ function trackTexture(trackId) {
   const ctx = canvas.getContext('2d')
   ctx.fillStyle = '#f4f4f0'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
-  const points = TRACKS[trackId].points
+  const { points } = resolveTrack(track)
   ctx.strokeStyle = '#111111'
   ctx.lineWidth = 1.9 * scale
   ctx.lineJoin = 'round'
@@ -176,14 +176,14 @@ export class Car3D {
     this.dirty = true
   }
 
-  setTrack(trackId) {
-    this.trackId = trackId
+  setTrack(track) {
     this.floor.material.map?.dispose()
-    this.floor.material.map = trackTexture(trackId)
+    this.floor.material.map = trackTexture(track)
     this.floor.material.needsUpdate = true
     this.trailPoints = []
-    const [x0, y0] = TRACKS[trackId].points[0]
-    const [x1, y1] = TRACKS[trackId].points[3]
+    const { points } = resolveTrack(track)
+    const [x0, y0] = points[0]
+    const [x1, y1] = points[3]
     this.setState({ pose: { x: x0 - 0.09 * Math.cos(Math.atan2(y1 - y0, x1 - x0)), y: y0 - 0.09 * Math.sin(Math.atan2(y1 - y0, x1 - x0)), heading: Math.atan2(y1 - y0, x1 - x0) }, sensors: {}, spin: { left: 0, right: 0 } })
   }
 

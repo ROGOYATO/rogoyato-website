@@ -24,8 +24,6 @@ dist-ssr
 *.sw?
 answers.local.json
 
-# Fetched from the private data repository at deploy (scripts/fetch-lock-state.mjs).
-src/pages/arduino/simulator/answers/kilit.json
 
 # The cc1 WebAssembly build (scripts/build-wasm-cc1.sh).
 scripts/out/

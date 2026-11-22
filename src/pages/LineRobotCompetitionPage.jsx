@@ -143,6 +143,12 @@ function Regulation() {
                 </li>
               ))}
             </ol>
+            {section.figure ? (
+              <figure className="mt-4">
+                <img src={`${publicBase}${section.figure.image}`} alt={section.figure.caption} className="w-full max-w-xl rounded-md border border-slate-200 dark:border-white/10" loading="lazy" />
+                <figcaption className="mt-2 text-sm text-slate-600 dark:text-slate-400">{section.figure.caption}</figcaption>
+              </figure>
+            ) : null}
           </section>
         ))}
         <section>
