@@ -92,4 +92,4 @@ Lisans metinleri bu klasörde: GPL-3.0.txt, LGPL-3.0.txt, LGPL-2.1.txt,
 GCC-exception-3.1.txt, avr-libc.txt, Apache-2.0.txt, DHT-sensor-library-MIT.txt,
 avr8js-MIT.txt, three.js-MIT.txt, CC-BY-SA-4.0.txt.
 
-Aynı bilgiler sitede, simülatör sayfasının altında: https://rogoyato.com/#/arduino/simulator
+Aynı bilgiler sitede, simülatör sayfasının altında: https://rogoyato.com/arduino/simulator
