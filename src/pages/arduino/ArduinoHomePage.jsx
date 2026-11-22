@@ -133,9 +133,9 @@ export default function ArduinoHomePage() {
               <Flag size={22} />
             </span>
             <span className="min-w-0">
-              <span className="font-code block text-xs text-orange-800 dark:text-orange-200">5. hafta · Ayrı etkinlik</span>
+              <span className="font-code block text-xs text-orange-800 dark:text-orange-200">Ödüllü yarışma · Kurallar ve program</span>
               <span className="mt-0.5 block font-semibold text-slate-900 dark:text-white">{arduinoCompetition.title}</span>
-              <span className="mt-1 block text-sm text-slate-600 dark:text-slate-300">Ders yok; herkes kendi robotunu kurar ve parkurda yarışır.</span>
+              <span className="mt-1 block text-sm text-slate-600 dark:text-slate-300">28 Kasım Cumartesi, TM 218 · Robotunu kendi zamanında hazırla, yarış günü getir. Kupalar Westonya’dan.</span>
             </span>
             <ArrowRight size={18} className="ml-auto mt-1 shrink-0 text-orange-500 transition group-hover:translate-x-1" />
           </Link>
