@@ -1,6 +1,6 @@
 // Maintains the simulator's lock state (src/utils/lockState.js): the encrypted
 // answers, the open list and the code list. Renewing codes and opening
-// answers is done on the trainers' page (#/arduino/kilit); this script is for
+// answers is done on the trainers' page (/arduino/kilit); this script is for
 // adding or editing answers and for the passwords.
 //
 // The state is read from the gist or data repository named in

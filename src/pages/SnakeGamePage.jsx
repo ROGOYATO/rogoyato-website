@@ -331,7 +331,7 @@ export default function SnakeGamePage() {
       </div>
 
       <div
-        className="relative w-full touch-none select-none rounded-2xl border border-slate-300/25"
+        className="relative w-full touch-none select-none rounded-2xl border-[3px] border-slate-500 bg-slate-900/[0.03] shadow-[0_0_0_4px_rgba(100,116,139,0.18)] dark:border-slate-300/80 dark:bg-white/[0.03] dark:shadow-[0_0_0_4px_rgba(203,213,225,0.12)]"
         style={{
           ...(boardConfig.isMobile
             ? {
