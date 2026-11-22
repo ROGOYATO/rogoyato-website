@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { ArrowRight, Cpu } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import logoImage from '../assets/logo.webp'
@@ -7,7 +7,7 @@ import aboutHeroImage from '../assets/heroes/about-hero.webp'
 import achievementsHeroImage from '../assets/heroes/achievements-hero.webp'
 import eventsHeroImage from '../assets/heroes/events-hero.webp'
 import teamHeroImage from '../assets/heroes/team-hero.webp'
-import { arduinoTraining } from '../utils/arduinoTraining'
+import { lineRobotCompetition } from '../utils/lineRobotCompetition'
 
 const primaryLinks = [
   { to: '/etkinlikler', label: 'Etkinlikler', backdrop: eventsHeroImage },
@@ -68,19 +68,24 @@ export default function HomePage() {
       </motion.section>
 
       <Link
-        to="/arduino"
-        className="group flex flex-col gap-4 rounded-2xl border border-teal-600/40 bg-teal-700 p-5 text-white shadow-[0_12px_38px_rgba(15,118,110,0.28)] transition hover:bg-teal-800 dark:border-teal-300/30 dark:bg-teal-900/70 dark:shadow-none dark:hover:bg-teal-900 sm:flex-row sm:items-center sm:p-6"
+        to={lineRobotCompetition.path}
+        className="group flex flex-col gap-5 rounded-2xl border-t-4 border-amber-400 bg-slate-900 p-5 text-white shadow-[0_12px_38px_rgba(15,23,42,0.28)] transition hover:bg-slate-800 dark:bg-zinc-900 dark:shadow-none dark:hover:bg-zinc-800 sm:flex-row sm:items-center sm:p-6"
       >
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/15">
-          <Cpu size={26} />
+        <span className="flex shrink-0 items-end justify-center gap-1 sm:w-40">
+          {[2, 1, 3].map((place) => {
+            const prize = lineRobotCompetition.prizes.find((item) => item.place === place)
+            return <img key={place} src={`${import.meta.env.BASE_URL}${prize.image}`} alt="" className={`w-auto ${place === 1 ? 'h-20' : 'h-14'}`} />
+          })}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-teal-100">Yeni eğitim · {arduinoTraining.term}</span>
-          <span className="mt-1 block font-hero text-2xl font-bold">{arduinoTraining.title}</span>
-          <span className="mt-1 block text-sm leading-relaxed text-teal-50/90">{arduinoTraining.summary}</span>
+          <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-amber-300">Ödüllü yarışma · 28 Kasım 2026</span>
+          <span className="mt-1 block font-hero text-2xl font-bold">{lineRobotCompetition.title}</span>
+          <span className="mt-1 block text-sm leading-relaxed text-slate-300">
+            Arduino Eğitimi katılımcıları kendi kurdukları robotlarla, tek başına ya da en fazla üç kişilik takımlarla yarışıyor. İlk üç dereceye Westonya kupaları.
+          </span>
         </span>
-        <span className="inline-flex shrink-0 items-center gap-2 self-start rounded-full bg-white px-4 py-2 text-sm font-semibold text-teal-800 transition group-hover:gap-3 sm:self-center">
-          Programı incele
+        <span className="inline-flex shrink-0 items-center gap-2 self-start rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition group-hover:gap-3 sm:self-center">
+          Yarışma sayfası
           <ArrowRight size={16} />
         </span>
       </Link>
