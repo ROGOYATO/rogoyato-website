@@ -61,7 +61,7 @@ export const lineRobotCompetition = {
       items: [
         'Robot, eğitimde kullanılan malzemelerle kurulur: 2WD şasi, iki TT motor, Arduino Uno, L298N motor sürücü, en fazla üç KH-09 kızılötesi sensör, motorlar için 4×AA pil yuvası ve Arduino için ayrı bir 9V pil.',
         'Ek motor, ek sensör, hazır çizgi izleme kartı veya uzaktan kumanda kullanılamaz.',
-        'Kablo, bant, vida, kablo bağı ve sensör tutucu gibi bağlantı malzemeleri serbesttir; şasi üzerinde yerleşim yarışmacıya bırakılmıştır.',
+        'Kablo, bant, vida, kablo bağı, karton, yapıştırıcı, sıcak silikon ve sensör tutucu gibi bağlantı ve montaj malzemeleri serbesttir; şasi üzerinde yerleşim yarışmacıya bırakılmıştır.',
         'Robot tamamen otonom çalışır; deneme başladıktan sonra robota bilgisayar ya da kablo bağlanamaz.',
       ],
     },
@@ -131,6 +131,7 @@ export const lineRobotCompetition = {
     { name: 'KH-09 kızılötesi çizgi sensörü', count: '3 adede kadar', url: 'https://www.elektronikport.com/urun/ir-alici-verici-sensor-modulu-1' },
     { name: 'AA pil (motorlar için)', count: '4', url: 'https://www.elektronikport.com/kategori/pil' },
     { name: '9V pil ve DC jaklı pil başlığı (Arduino için, motorlardan ayrı)', count: '1', url: 'https://www.elektronikport.com/kategori/pil' },
+    { name: 'KH-09’ları şasiye monte etmek için karton, bant, yapıştırıcı ya da sıcak silikondan biri', count: 'Yeteri kadar' },
     { name: 'Jumper kablolar (erkek-dişi ve dişi-dişi)', count: 'Yeteri kadar', url: 'https://www.elektronikport.com/kategori/jumper-kablo' },
   ],
   recommendedMaterials: [
