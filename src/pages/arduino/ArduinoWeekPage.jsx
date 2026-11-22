@@ -33,12 +33,6 @@ export default function ArduinoWeekPage() {
             {item.week}. hafta
           </Link>
         ))}
-        <Link
-          to="/arduino/yarisma"
-          className="font-code rounded-md border border-dashed border-orange-400 px-3 py-1.5 text-sm text-orange-700 transition hover:bg-orange-50 dark:border-orange-300/50 dark:text-orange-200 dark:hover:bg-orange-400/10"
-        >
-          Yarışma
-        </Link>
       </div>
 
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start">
@@ -122,12 +116,12 @@ export default function ArduinoWeekPage() {
           </Link>
         )}
         <Link
-          to={next ? `/arduino/hafta/${next.week}` : '/arduino/yarisma'}
+          to={next ? `/arduino/hafta/${next.week}` : '/arduino/malzemeler'}
           className="group flex min-w-0 items-center gap-3 rounded-xl border border-slate-300/80 bg-white/95 p-4 text-right transition hover:border-teal-600 dark:border-teal-300/15 dark:bg-[#0f1d1f]/95 dark:hover:border-teal-400 sm:justify-end"
         >
           <span className="min-w-0 flex-1 sm:flex-none">
-            <span className="font-code block text-xs text-slate-500 dark:text-slate-400">{next ? `Sonraki · ${next.week}. hafta` : 'Sonraki · 5. hafta'}</span>
-            <span className="block truncate font-semibold text-slate-900 dark:text-white">{next ? next.title : 'Çizgi izleyen robot yarışması'}</span>
+            <span className="font-code block text-xs text-slate-500 dark:text-slate-400">{next ? `Sonraki · ${next.week}. hafta` : 'Sonraki'}</span>
+            <span className="block truncate font-semibold text-slate-900 dark:text-white">{next ? next.title : 'Malzeme listesi'}</span>
           </span>
           <ArrowRight size={18} className="shrink-0 text-teal-600 transition group-hover:translate-x-1 dark:text-teal-300" />
         </Link>

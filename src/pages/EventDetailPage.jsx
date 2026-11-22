@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { ArrowLeft, CalendarClock, ChevronLeft, ChevronRight, ClipboardList, MapPin } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CalendarClock, ChevronLeft, ChevronRight, ClipboardList, MapPin } from 'lucide-react'
 import useEmblaCarousel from 'embla-carousel-react'
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
@@ -178,6 +178,15 @@ export default function EventDetailPage() {
             {event.location}
           </p>
         </div>
+        {event.link ? (
+          <Link
+            to={event.link.to}
+            className="mt-5 inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+          >
+            {event.link.label}
+            <ArrowRight size={15} />
+          </Link>
+        ) : null}
       </section>
 
       {event.body && event.body.length ? (

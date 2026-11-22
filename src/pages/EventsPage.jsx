@@ -164,6 +164,14 @@ export default function EventsPage() {
                           Detay
                           <ArrowRight size={14} />
                         </Link>
+                        {event.link ? (
+                          <Link
+                            to={event.link.to}
+                            className="inline-flex rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-xs font-medium text-amber-900 transition hover:bg-amber-200 dark:border-amber-300/40 dark:bg-amber-300/15 dark:text-amber-100 dark:hover:bg-amber-300/25"
+                          >
+                            {event.link.label}
+                          </Link>
+                        ) : null}
                         {event.requiresApplication && event.status !== 'closed' ? (
                           <Link
                             to={`/etkinlikler/${event.id}/basvuru`}

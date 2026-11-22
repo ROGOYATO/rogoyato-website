@@ -1,12 +1,12 @@
 export const arduinoTraining = {
   term: '2026 Güz Dönemi',
   title: 'Arduino Eğitimi',
-  summary: 'Dört haftalık bireysel Arduino eğitimi. Çizgi izleyen robot yarışması, eğitimden ayrı bir etkinliktir.',
+  summary: 'Dört haftalık bireysel Arduino eğitimi.',
   facts: [
     { label: 'Ders günü', value: 'Cumartesi' },
     { label: 'Ders saati', value: '14:45–16:45' },
     { label: 'Ders konumu', value: 'TM 218' },
-    { label: 'Program', value: '4 hafta eğitim + yarışma' },
+    { label: 'Program', value: '4 hafta' },
     { label: 'Çalışma biçimi', value: 'Bireysel' },
   ],
   dailyFlow: [
@@ -21,7 +21,6 @@ export const arduinoTraining = {
     'HC-SR04, LDR, DHT11 ve KH-09 gibi sensörlerden veri okuyabilme',
     'SG90 servo motoru konum kontrollü sürebilme',
     'L298N ile iki DC motorun yön ve hız kontrolünü yapabilme',
-    'Eğitimden ayrı yarışmada 2WD robotu ve üç KH-09 sensörle çizgi izleme becerisini kullanabilme',
   ],
 }
 
@@ -126,100 +125,6 @@ export const arduinoWeeks = [
     simulator: 'motorlar',
   },
 ]
-
-export const arduinoCompetition = {
-  title: 'Çizgi İzleyen Robot Yarışması',
-  edition: '2026 Güz',
-  organizer: 'TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu (ROGOYATO)',
-  sponsor: 'Westonya',
-  summary:
-    'Arduino Eğitimi’nin kapanışı olarak düzenlenen yarışmada katılımcılar, eğitim boyunca öğrendiklerini kendi kurdukları çizgi izleyen robotla parkurda sınar. Robotlar katılımcıların kendi zamanlarında hazırlanır; yarış günü tamamlanmış robotla gelinir.',
-  facts: [
-    { label: 'Başlangıç', value: '21 Kasım 2026 Cumartesi', detail: 'Dersin bitişiyle (16:45)' },
-    { label: 'Yarış günü', value: '28 Kasım 2026 Cumartesi', detail: 'Turlar 14:45’te başlar' },
-    { label: 'Yer', value: 'TM 218', detail: 'Teknoloji Merkezi, 2. kat' },
-    { label: 'Katılım', value: 'Bireysel', detail: 'Arduino Eğitimi katılımcıları' },
-  ],
-  // When things happen; `highlight` marks what participants must not miss.
-  timeline: [
-    { when: '21 Kasım · 16:45', title: 'Yarışma başlar', text: 'Kurallar açıklanır, hazırlık süresi başlar.' },
-    { when: '21–27 Kasım', title: 'Robotunu hazırla', text: 'Robotunu kendi zamanında, istediğin yerde kur, kodla ve dene. Teknik sorularını eğitim WhatsApp grubundan sorabilirsin.', highlight: true },
-    { when: '28 Kasım · 10:00–14:45', title: 'Danışma ve pist denemesi', text: 'TM 218 açık: eğitmenlere teknik sorularını sorabilir, robotunu yarış pistinde deneyebilirsin. Robot burada sıfırdan yapılmaz; hazır getirilir.', highlight: true },
-    { when: '28 Kasım · 14:45', title: 'Yoklama ve sıralama turları', text: 'Robotlar teslim edilir, her yarışmacı sırayla piste çıkar.' },
-    { when: '28 Kasım · ~16:30', title: 'Final ve ödül töreni', text: 'En iyi dört yarışmacı finalde kapışır, ardından kupalar verilir.' },
-  ],
-  // The regulation, article by article.
-  rules: [
-    {
-      title: 'Katılım',
-      items: [
-        'Yarışmaya 2026 Güz Arduino Eğitimi’ne katılan öğrenciler katılabilir.',
-        'Yarışma bireyseldir; her yarışmacı tek bir robotla yarışır ve robotunu kendisi kurar ve kodlar.',
-        'Yarışmacılar 28 Kasım 14:45’teki yoklamada robotlarıyla birlikte TM 218’de bulunmalıdır.',
-      ],
-    },
-    {
-      title: 'Hazırlık ve destek',
-      items: [
-        'Robot, 21–27 Kasım arasında yarışmacının kendi zamanında hazırlanır; montaj, kablolama ve kod yarış gününden önce tamamlanmış olmalıdır.',
-        'Yarış günü 10:00–14:45 arasında TM 218’de eğitmenlerden teknik destek alınabilir: arızalı bağlantı, yüklenmeyen kod, çalışmayan sensör gibi sorunlarda yardım edilir.',
-        'Eğitmenler kod yazmaz, hazır çözüm ya da yarış taktiği vermez.',
-        'Hazırlık için simülatördeki robot araba ve parkurlar kullanılabilir.',
-      ],
-    },
-    {
-      title: 'Robot',
-      items: [
-        'Robot, eğitimde kullanılan malzemelerle kurulur: 2WD şasi, iki TT motor, Arduino Uno, L298N motor sürücü, en fazla üç KH-09 kızılötesi sensör ve 4×AA pil yuvası.',
-        'Ek motor, ek sensör, hazır çizgi izleme kartı veya uzaktan kumanda kullanılamaz.',
-        'Kablo, bant, vida, kablo bağı ve sensör tutucu gibi bağlantı malzemeleri serbesttir; şasi üzerinde yerleşim yarışmacıya bırakılmıştır.',
-        'Robot tamamen otonom çalışır; deneme başladıktan sonra robota bilgisayar ya da kablo bağlanamaz.',
-      ],
-    },
-    {
-      title: 'Parkur',
-      items: [
-        'Parkur, beyaz zemin üzerine yaklaşık 2 cm genişliğinde siyah bantla çizilmiş, virajlı kapalı bir hattır.',
-        'Parkurun tamamı yarış günü 10:00’da açıklanır ve 14:45’e kadar deneme sürüşlerine açıktır.',
-      ],
-    },
-    {
-      title: 'Yarış ve puanlama',
-      items: [
-        'Sıralama turlarında her yarışmacının üç deneme hakkı vardır; en iyi denemesi geçerli sayılır.',
-        'Robot başlangıç çizgisine konur ve hakemin işaretiyle çalıştırılır. Bir deneme en fazla 3 dakika sürer.',
-        'Turu tamamlayan robotlar süreye göre sıralanır; turu tamamlayan her robot, tamamlayamayanların önündedir.',
-        'Turu tamamlayamayan robotlar parkurda ilerledikleri mesafeye göre sıralanır.',
-        'Robot çizgiyi tamamen kaybedip parkurdan çıkarsa ya da deneme sırasında robota dokunulursa o deneme o noktada sona erer.',
-        'Denemeler arasında kod, ayar ve pil değiştirilebilir; sıra gelen yarışmacının en geç 2 dakika içinde piste çıkması gerekir.',
-      ],
-    },
-    {
-      title: 'Final',
-      items: [
-        'Sıralama turlarının en iyi dört yarışmacısı finale kalır.',
-        'Finalde her finalist bir deneme daha yapar; dereceler, finalistin sıralama ve final denemelerinden en iyisine göre belirlenir.',
-        'Eşitlik durumunda kısa bir tekrar sürüşü yapılır.',
-      ],
-    },
-    {
-      title: 'Genel',
-      items: [
-        'Hakem kararları kesindir; itirazlar aynı gün, sonuçlar açıklanmadan önce yarışma sorumlusuna yapılır.',
-        'Kurallara aykırı robotlar veya başkası tarafından hazırlandığı anlaşılan robotlar yarışma dışı bırakılır.',
-        'Yarışmacılar pil, kablo ve şarj ekipmanını güvenli şekilde kullanmakla yükümlüdür.',
-        'ROGOYATO, gerekli gördüğü durumlarda kurallarda değişiklik yapma ve bunu duyurma hakkını saklı tutar.',
-      ],
-    },
-  ],
-  prizes: [
-    { place: 1, title: 'Birincilik', trophy: 'Baymax', base: 'Altın kaide', height: '26 cm', image: 'arduino/yarisma/kupa-baymax.webp' },
-    { place: 2, title: 'İkincilik', trophy: 'Megabot', base: 'Gümüş kaide', height: '24 cm', image: 'arduino/yarisma/kupa-megabot.webp' },
-    { place: 3, title: 'Üçüncülük', trophy: 'Microbot', base: 'Bronz kaide', height: '21 cm', image: 'arduino/yarisma/kupa-microbot.webp' },
-  ],
-  prizeNote: 'Kupalar, ödül sponsorumuz Westonya tarafından çok renkli 3B baskıyla üretilmektedir.',
-  materials: ['2WD robot araba kiti', 'Arduino Uno', 'L298N', '3 adet KH-09', '4×AA pil', 'Jumper kablolar'],
-}
 
 export const arduinoMaterials = {
   starterKitUrl: 'https://www.elektronikport.com/urun/arduino-uno-super-baslangic-seti-6040',

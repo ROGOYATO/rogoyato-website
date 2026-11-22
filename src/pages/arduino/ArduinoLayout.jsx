@@ -8,7 +8,6 @@ import { arduinoTraining } from '../../utils/arduinoTraining'
 const navLinks = [
   { to: '/arduino', label: 'Program', end: true },
   { to: '/arduino/hafta/1', label: 'Haftalar', match: '/arduino/hafta' },
-  { to: '/arduino/yarisma', label: 'Yarışma' },
   { to: '/arduino/malzemeler', label: 'Malzemeler' },
   { to: '/arduino/simulator', label: 'Simülatör' },
 ]
