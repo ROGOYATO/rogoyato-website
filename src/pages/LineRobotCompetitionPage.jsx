@@ -1,5 +1,6 @@
 import { Printer } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
+import logoDarkImage from '../assets/logo-dark.webp'
 import logoImage from '../assets/logo.webp'
 import { lineRobotCompetition as competition } from '../utils/lineRobotCompetition'
 
@@ -328,7 +329,8 @@ export default function LineRobotCompetitionPage() {
       {/* Title block. */}
       <header className="border-t-4 border-slate-900 bg-white px-6 py-6 dark:border-white dark:bg-zinc-900/80 sm:px-8 print:border-0 print:px-0">
         <div className="flex flex-wrap items-center gap-5">
-          <img src={logoImage} alt="ROGOYATO logosu" className="h-16 w-16 shrink-0" />
+          <img src={logoImage} alt="ROGOYATO logosu" className="h-16 w-16 shrink-0 dark:hidden" />
+          <img src={logoDarkImage} alt="ROGOYATO logosu" className="hidden h-16 w-16 shrink-0 dark:block" />
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{competition.organizer}</p>
             <h1 className="mt-1 font-heading text-3xl text-slate-900 dark:text-white sm:text-4xl">
