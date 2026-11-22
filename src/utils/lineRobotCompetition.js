@@ -59,7 +59,7 @@ export const lineRobotCompetition = {
     {
       title: 'Robot',
       items: [
-        'Robot, eğitimde kullanılan malzemelerle kurulur: 2WD şasi, iki TT motor, Arduino Uno, L298N motor sürücü, en fazla üç KH-09 kızılötesi sensör ve 4×AA pil yuvası.',
+        'Robot, eğitimde kullanılan malzemelerle kurulur: 2WD şasi, iki TT motor, Arduino Uno, L298N motor sürücü, en fazla üç KH-09 kızılötesi sensör, motorlar için 4×AA pil yuvası ve Arduino için ayrı bir 9V pil.',
         'Ek motor, ek sensör, hazır çizgi izleme kartı veya uzaktan kumanda kullanılamaz.',
         'Kablo, bant, vida, kablo bağı ve sensör tutucu gibi bağlantı malzemeleri serbesttir; şasi üzerinde yerleşim yarışmacıya bırakılmıştır.',
         'Robot tamamen otonom çalışır; deneme başladıktan sonra robota bilgisayar ya da kablo bağlanamaz.',
@@ -130,10 +130,12 @@ export const lineRobotCompetition = {
     { name: 'L298N motor sürücü modülü', count: '1', url: 'https://www.elektronikport.com/urun/l298n-motor-surucu-modulu-h-kopru' },
     { name: 'KH-09 kızılötesi çizgi sensörü', count: '3 adede kadar', url: 'https://www.elektronikport.com/urun/ir-alici-verici-sensor-modulu-1' },
     { name: 'AA pil (motorlar için)', count: '4', url: 'https://www.elektronikport.com/kategori/pil' },
+    { name: '9V pil ve DC jaklı pil başlığı (Arduino için, motorlardan ayrı)', count: '1', url: 'https://www.elektronikport.com/kategori/pil' },
     { name: 'Jumper kablolar (erkek-dişi ve dişi-dişi)', count: 'Yeteri kadar', url: 'https://www.elektronikport.com/kategori/jumper-kablo' },
   ],
   recommendedMaterials: [
     { name: 'Yedek AA piller ya da şarjlı piller ve şarj cihazı', note: 'Zayıflayan pil motorları yavaşlatır, robotun davranışını değiştirir.' },
+    { name: 'Yedek 9V pil', note: 'Arduino’nun pili biterse kart yeniden başlar ya da hiç çalışmaz.' },
     { name: 'Arduino IDE kurulu dizüstü bilgisayar ve USB kablosu', note: 'Yarış günü deneme sürüşlerinin ardından kodda ayar yapmak için.' },
     { name: 'Küçük yıldız ve düz tornavida', note: 'Vidaları sıkmak ve KH-09’ların hassasiyet ayarı için.' },
     { name: 'Kablo bağı, çift taraflı bant, izole bant', note: 'Kartları ve kabloları şasiye sabitlemek için.', url: 'https://www.elektronikport.com/kategori/bant-ve-sprey-cesitleri' },
@@ -141,5 +143,5 @@ export const lineRobotCompetition = {
     { name: 'Yedek jumper kablolar', note: 'Gevşeyen ya da kopan bağlantılar için.' },
     { name: 'Multimetre', note: 'İsteğe bağlı; pil gerilimini ve bağlantıları ölçmek için.' },
   ],
-  materials: ['2WD robot araba kiti', 'Arduino Uno', 'L298N', '3 adet KH-09', '4×AA pil', 'Jumper kablolar'],
+  materials: ['2WD robot araba kiti', 'Arduino Uno', 'L298N', '3 adet KH-09', '4×AA pil', '9V pil (Arduino için)', 'Jumper kablolar'],
 }
