@@ -22,14 +22,14 @@ export const lineRobotCompetition = {
   // When things happen; `highlight` marks what participants must not miss.
   timeline: [
     { when: 'Yarış gününe kadar', title: 'Robotunu hazırla', text: 'Robotunu kendi zamanında, istediğin yerde kur, kodla ve dene. Teknik sorularını eğitim WhatsApp grubundan sorabilirsin.', highlight: true },
-    { when: '28 Kasım · 10:00–14:45', title: 'Danışma ve pist denemesi', text: 'Yarış alanı açık: eğitmenlere teknik sorularını sorabilir, robotunu yarış pistinde deneyebilirsin. Robot burada sıfırdan yapılmaz; hazır getirilir.', highlight: true },
+    { when: '28 Kasım · 10:00–14:45', title: 'Danışma ve pist denemesi', text: 'Yarış alanı açık: eğitmenlere teknik sorularını sorabilir, robotunla deneme sürüşü yapabilirsin. Robot burada sıfırdan yapılmaz; hazır getirilir.', highlight: true },
     { when: '28 Kasım · 14:45', title: 'Yoklama ve sıralama turları', text: 'Yoklamanın ardından 15:00’te her yarışmacı ya da takım sırayla piste çıkar.' },
     { when: '28 Kasım · ~16:15', title: 'Sonuçlar ve ödül töreni', text: 'Dereceler açıklanır, ilk üçe kupaları verilir.' },
   ],
   // The race day hour by hour.
   dayPlan: [
-    { time: '09:30–10:00', title: 'Hazırlık', text: 'Pistin ve masaların kurulması (ROGOYATO ekibi).' },
-    { time: '10:00–14:45', title: 'Teknik danışma ve pist denemesi', text: 'Yarışmacılar robotlarını pistte dener, eğitmenlere teknik sorularını sorar.' },
+    { time: '09:30–10:00', title: 'Hazırlık', text: 'Yarış alanının hazırlanması (ROGOYATO ekibi).' },
+    { time: '10:00–14:45', title: 'Teknik danışma ve pist denemesi', text: 'Yarışmacılar deneme sürüşü yapar, eğitmenlere teknik sorularını sorar.' },
     { time: '14:45–15:00', title: 'Yoklama ve açılış', text: 'Robotların ve yarışmacıların kaydı, kuralların hatırlatılması.' },
     { time: '15:00–16:15', title: 'Sıralama turları', text: 'Her robot sırayla piste çıkar; en fazla üç deneme.' },
     { time: '16:15–16:30', title: 'Sonuçların açıklanması', text: 'Derecelerin hesaplanması ve açıklanması.' },
@@ -68,8 +68,9 @@ export const lineRobotCompetition = {
     {
       title: 'Parkur',
       items: [
-        'Parkur, beyaz zemin üzerine yaklaşık 2 cm genişliğinde siyah bantla çizilmiş, virajlı kapalı bir hattır.',
-        'Parkurun tamamı yarış günü 10:00’da açıklanır ve 14:45’e kadar deneme sürüşlerine açıktır.',
+        'Parkur bilgileri daha sonra duyurulacaktır.',
+        'Çizgiler beyaz zemin üzerine yaklaşık 2 cm genişliğinde siyah bantla çekilir.',
+        'Yarış günü 10:00–14:45 arasında yarış alanında deneme sürüşü yapılabilir.',
       ],
     },
     {
@@ -111,6 +112,7 @@ export const lineRobotCompetition = {
     { q: 'Takım olarak katılabilir miyim?', a: 'Evet. Tek başına ya da en fazla üç kişilik bir takımla katılabilirsin. Takımın tüm üyeleri Arduino Eğitimi katılımcısı olmalı ve bir kişi yalnızca bir takımda yer alabilir.' },
     { q: 'Robotu nerede ve ne zaman yapacağım?', a: 'Robotunu yarış gününe kadar kendi zamanında, istediğin yerde hazırlarsın. Yarış gününe tamamlanmış robotla gelinir; robotlar yarış günü sıfırdan yapılmaz.' },
     { q: 'Takıldığım yerde yardım alabilir miyim?', a: 'Hazırlık haftasında teknik sorularını eğitim WhatsApp grubundan sorabilirsin. Yarış günü 10:00–14:45 arasında yarış alanında eğitmenler teknik sorunlarda yardım eder; kod yazmaz ve taktik vermez.' },
+    { q: 'Parkur nasıl olacak?', a: 'Parkur bilgileri daha sonra duyurulacak. O zamana kadar simülatördeki parkurlarda kodunu deneyebilirsin.' },
     { q: 'Yarışma nerede yapılacak?', a: 'Yarışmanın yapılacağı yer kesinleştiğinde bu sayfada ve eğitim WhatsApp grubunda duyurulacak.' },
     { q: 'Malzemelerim yanımda değilken nasıl çalışırım?', a: 'Sitemizdeki Arduino simülatöründe yarışma arabası kablolanmış olarak hazır; kodunu yazıp sanal parkurlarda deneyebilirsin.' },
     { q: 'Sıralama nasıl belirlenir?', a: 'Turu tamamlayan robotlar süreye göre, tamamlayamayanlar parkurda ilerledikleri mesafeye göre sıralanır. İlk üç dereceye kupa verilir; ayrıca final yapılmaz.' },
