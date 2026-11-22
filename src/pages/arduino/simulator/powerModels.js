@@ -31,6 +31,19 @@ function batteryWrap() {
   })
 }
 
+// The 9 V battery with its snap clip on the +x end, lying on y = 0.
+export function buildNineVolt() {
+  const battery = new THREE.Group()
+  const black = mat('#141416', { roughness: 0.5 })
+  const wrap = new THREE.MeshStandardMaterial({ map: batteryWrap(), roughness: 0.45, metalness: 0.2 })
+  const steel = metal('#b9bec4', 0.35)
+  // Steel at the ends, the wrapper round the sides and top.
+  battery.add(box(4.85, 1.75, 2.65, [steel, steel, wrap, wrap, wrap, wrap], 0, 0.875, 0))
+  // The snap clip over its terminals.
+  battery.add(box(0.75, 1.5, 2.5, black, 2.8, 0.875, 0), box(0.12, 0.3, 0.6, metal('#d7dbdf', 0.3), 3.2, 0.875, 0.55), box(0.12, 0.3, 0.6, metal('#d7dbdf', 0.3), 3.2, 0.875, -0.55))
+  return battery
+}
+
 // usb, dc: each socket's frame on the board (position, rotation) and, in
 // that frame, the mouth's centre (x, y) and its z; the plug comes out
 // along +z. dc.batteryAt: where the battery lies, in the board's frame.
@@ -87,13 +100,7 @@ export function buildPowerGear({ usb, dc }) {
     dcGroup.add(grip)
   }
   // The battery lies on the mat beside the board, its snap towards the jack.
-  const battery = new THREE.Group()
-  const wrap = new THREE.MeshStandardMaterial({ map: batteryWrap(), roughness: 0.45, metalness: 0.2 })
-  const steel = metal('#b9bec4', 0.35)
-  // Steel at the ends, the wrapper round the sides and top.
-  battery.add(box(4.85, 1.75, 2.65, [steel, steel, wrap, wrap, wrap, wrap], 0, 0.875, 0))
-  // The snap clip over its terminals.
-  battery.add(box(0.75, 1.5, 2.5, black, 2.8, 0.875, 0), box(0.12, 0.3, 0.6, metal('#d7dbdf', 0.3), 3.2, 0.875, 0.55), box(0.12, 0.3, 0.6, metal('#d7dbdf', 0.3), 3.2, 0.875, -0.55))
+  const battery = buildNineVolt()
   // Placed in the board's frame, lying along it with the snap end towards
   // the jack.
   dcGroup.updateMatrix()

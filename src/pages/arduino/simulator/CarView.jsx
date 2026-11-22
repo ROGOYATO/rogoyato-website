@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Car3D } from './Car3D'
 
-export default function CarView({ track, view, dark, subscribe, resetToken }) {
+export default function CarView({ track, view, dark, quality, subscribe, resetToken }) {
   const containerRef = useRef(null)
   const sceneRef = useRef(null)
 
@@ -29,6 +29,10 @@ export default function CarView({ track, view, dark, subscribe, resetToken }) {
   useEffect(() => {
     sceneRef.current?.setTheme(dark)
   }, [dark])
+
+  useEffect(() => {
+    sceneRef.current?.setQuality(quality)
+  }, [quality])
 
   return <div ref={containerRef} className="absolute inset-0" />
 }
