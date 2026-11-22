@@ -46,7 +46,15 @@ export const events = [
       'Katılımcılar dersler arasında sitemizdeki tarayıcı tabanlı Arduino simülatörüyle pratik yaptı. Eğitimin ardından katılımcılar Çizgi İzleyen Robot Yarışması’nda öğrendiklerini sınıyor.',
     ],
     coverImage: 'events/2026-10-24-arduino-egitimi/cover.webp',
-    galleryImages: [],
+    galleryImages: [
+      'events/2026-10-24-arduino-egitimi/gallery-01.webp',
+      'events/2026-10-24-arduino-egitimi/gallery-02.webp',
+      'events/2026-10-24-arduino-egitimi/gallery-03.webp',
+      'events/2026-10-24-arduino-egitimi/gallery-04.webp',
+      'events/2026-10-24-arduino-egitimi/gallery-05.webp',
+      'events/2026-10-24-arduino-egitimi/gallery-06.webp',
+      'events/2026-10-24-arduino-egitimi/gallery-07.webp',
+    ],
     agenda: [
       '1. hafta: Kurulum, Arduino temelleri ve temel elektronik',
       '2. hafta: Analog girişler, PWM ve temel sensörler',
