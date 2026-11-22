@@ -5,8 +5,9 @@ export const lineRobotCompetition = {
   path: '/yarisma/cizgi-izleyen-robot',
   // When the races start (Türkiye time); the countdown runs to it.
   raceStart: '2026-11-28T15:00:00+03:00',
-  // The Google Form for entries; null until it is ready.
-  applicationUrl: null,
+  // The Google Form for entries (its public address, not the editor's);
+  // null hides the button.
+  applicationUrl: 'https://docs.google.com/forms/d/15SuGpaYVGwVMgkKEK9_c-006ARq-GCN5MSU-V2SIix8/viewform',
   edition: '2026 Güz',
   organizer: 'TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu (ROGOYATO)',
   sponsor: 'Westonya',
@@ -106,7 +107,7 @@ export const lineRobotCompetition = {
     { place: 3, title: 'Üçüncülük', trophy: 'Microbot', base: 'Bronz kaide', height: '21 cm', image: 'yarisma/cizgi-izleyen-robot/kupa-microbot.webp' },
   ],
   faq: [
-    { q: 'Nasıl başvururum?', a: 'Başvurular Google Form üzerinden alınır. Form bağlantısı bu sayfada ve eğitim WhatsApp grubunda paylaşılacak.' },
+    { q: 'Nasıl başvururum?', a: 'Başvurular Google Form üzerinden alınır; bu sayfanın üstündeki “Başvuru formu” butonundan forma ulaşabilirsin. Takımlarda formu bir kişi, takım adına doldurur.' },
     { q: 'Takım olarak katılabilir miyim?', a: 'Evet. Tek başına ya da en fazla üç kişilik bir takımla katılabilirsin. Takımın tüm üyeleri Arduino Eğitimi katılımcısı olmalı ve bir kişi yalnızca bir takımda yer alabilir.' },
     { q: 'Robotu nerede ve ne zaman yapacağım?', a: 'Robotunu yarış gününe kadar kendi zamanında, istediğin yerde hazırlarsın. Yarış gününe tamamlanmış robotla gelinir; robotlar yarış günü sıfırdan yapılmaz.' },
     { q: 'Takıldığım yerde yardım alabilir miyim?', a: 'Hazırlık haftasında teknik sorularını eğitim WhatsApp grubundan sorabilirsin. Yarış günü 10:00–14:45 arasında yarış alanında eğitmenler teknik sorunlarda yardım eder; kod yazmaz ve taktik vermez.' },
