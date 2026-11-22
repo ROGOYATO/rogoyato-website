@@ -11,15 +11,14 @@ export const lineRobotCompetition = {
   summary:
     'ROGOYATO Arduino Eğitimi katılımcılarının tek başına ya da en fazla üç kişilik takımlar hâlinde kendi kurdukları çizgi izleyen robotlarla parkurda yarıştığı ödüllü yarışma. Robotlar katılımcıların kendi zamanlarında hazırlanır; yarış günü tamamlanmış robotla gelinir.',
   facts: [
-    { label: 'Başlangıç', value: '21 Kasım 2026 Cumartesi', detail: 'Dersin bitişiyle (16:45)' },
+    { label: 'Hazırlık', value: 'Yarış gününe kadar', detail: 'Katılımcıların kendi zamanında' },
     { label: 'Yarış günü', value: '28 Kasım 2026 Cumartesi', detail: 'Sıralama turları 15:00’te' },
     { label: 'Yer', value: 'Duyurulacak', detail: 'TOBB ETÜ kampüsü' },
     { label: 'Katılım', value: 'Bireysel veya takım', detail: 'Takımlar en fazla 3 kişi' },
   ],
   // When things happen; `highlight` marks what participants must not miss.
   timeline: [
-    { when: '21 Kasım · 16:45', title: 'Yarışma başlar', text: 'Kurallar açıklanır, hazırlık süresi başlar.' },
-    { when: '21–27 Kasım', title: 'Robotunu hazırla', text: 'Robotunu kendi zamanında, istediğin yerde kur, kodla ve dene. Teknik sorularını eğitim WhatsApp grubundan sorabilirsin.', highlight: true },
+    { when: 'Yarış gününe kadar', title: 'Robotunu hazırla', text: 'Robotunu kendi zamanında, istediğin yerde kur, kodla ve dene. Teknik sorularını eğitim WhatsApp grubundan sorabilirsin.', highlight: true },
     { when: '28 Kasım · 10:00–14:45', title: 'Danışma ve pist denemesi', text: 'Yarış alanı açık: eğitmenlere teknik sorularını sorabilir, robotunu yarış pistinde deneyebilirsin. Robot burada sıfırdan yapılmaz; hazır getirilir.', highlight: true },
     { when: '28 Kasım · 14:45', title: 'Yoklama ve sıralama turları', text: 'Yoklamanın ardından 15:00’te her yarışmacı ya da takım sırayla piste çıkar.' },
     { when: '28 Kasım · ~16:30', title: 'Final ve ödül töreni', text: 'En iyi dört robot finalde kapışır, ardından kupalar verilir.' },
@@ -48,7 +47,7 @@ export const lineRobotCompetition = {
     {
       title: 'Hazırlık ve destek',
       items: [
-        'Robot, 21–27 Kasım arasında yarışmacıların kendi zamanında hazırlanır; montaj, kablolama ve kod yarış gününden önce tamamlanmış olmalıdır.',
+        'Robot, yarış gününe kadar yarışmacıların kendi zamanında hazırlanır; montaj, kablolama ve kod yarış gününden önce tamamlanmış olmalıdır.',
         'Yarış günü 10:00–14:45 arasında yarış alanında eğitmenlerden teknik destek alınabilir: arızalı bağlantı, yüklenmeyen kod, çalışmayan sensör gibi sorunlarda yardım edilir.',
         'Eğitmenler kod yazmaz, hazır çözüm ya da yarış taktiği vermez.',
         'Hazırlık için simülatördeki robot araba ve parkurlar kullanılabilir.',
@@ -106,7 +105,7 @@ export const lineRobotCompetition = {
   ],
   faq: [
     { q: 'Takım olarak katılabilir miyim?', a: 'Evet. Tek başına ya da en fazla üç kişilik bir takımla katılabilirsin. Takımın tüm üyeleri Arduino Eğitimi katılımcısı olmalı ve bir kişi yalnızca bir takımda yer alabilir.' },
-    { q: 'Robotu nerede ve ne zaman yapacağım?', a: 'Robotunu 21–27 Kasım arasında kendi zamanında, istediğin yerde hazırlarsın. Yarış gününe tamamlanmış robotla gelinir; robotlar yarış günü sıfırdan yapılmaz.' },
+    { q: 'Robotu nerede ve ne zaman yapacağım?', a: 'Robotunu yarış gününe kadar kendi zamanında, istediğin yerde hazırlarsın. Yarış gününe tamamlanmış robotla gelinir; robotlar yarış günü sıfırdan yapılmaz.' },
     { q: 'Takıldığım yerde yardım alabilir miyim?', a: 'Hazırlık haftasında teknik sorularını eğitim WhatsApp grubundan sorabilirsin. Yarış günü 10:00–14:45 arasında yarış alanında eğitmenler teknik sorunlarda yardım eder; kod yazmaz ve taktik vermez.' },
     { q: 'Yarışma nerede yapılacak?', a: 'Yarışmanın yapılacağı yer kesinleştiğinde bu sayfada ve eğitim WhatsApp grubunda duyurulacak.' },
     { q: 'Malzemelerim yanımda değilken nasıl çalışırım?', a: 'Sitemizdeki Arduino simülatöründe yarışma arabası kablolanmış olarak hazır; kodunu yazıp sanal parkurlarda deneyebilirsin.' },
