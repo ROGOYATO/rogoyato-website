@@ -29,10 +29,12 @@ function General() {
     ['Düzenleyen', competition.organizer],
     ['Yarış günü', '28 Kasım 2026 Cumartesi'],
     ['Yer', 'Duyurulacak (TOBB ETÜ kampüsü)'],
+    ['Parkur', 'Duyurulacak'],
     ['Katılım', 'Arduino Eğitimi katılımcıları; bireysel ya da en fazla 3 kişilik takım'],
     ['Robot hazırlığı', 'Yarış gününe kadar, katılımcıların kendi zamanında'],
     ['Teknik danışma', '28 Kasım, 10:00–14:45, yarış alanında'],
     ['Sıralama turları', '28 Kasım, 15:00'],
+    ['Başvuru', competition.applicationUrl ? 'Google Form ile (aşağıdaki bağlantıdan)' : 'Google Form ile; bağlantı yakında bu sayfada paylaşılacak'],
     ['Ödül sponsoru', competition.sponsor],
   ]
   return (
@@ -54,7 +56,7 @@ function General() {
       <div className="mt-6 border-l-4 border-slate-800 bg-slate-50 px-5 py-4 text-sm leading-relaxed text-slate-700 dark:border-white/50 dark:bg-white/5 dark:text-slate-300">
         <p className="font-semibold text-slate-900 dark:text-white">Önemli</p>
         <p className="mt-1">
-          Robotlar yarış gününden önce, katılımcıların kendi zamanında hazırlanır; yarış gününe tamamlanmış robotla gelinir. Yarış günü 10:00–14:45 arasında eğitmenlere teknik sorular sorulabilir ve robot yarış pistinde denenebilir. Eğitmenler kod
+          Robotlar yarış gününden önce, katılımcıların kendi zamanında hazırlanır; yarış gününe tamamlanmış robotla gelinir. Yarış günü 10:00–14:45 arasında eğitmenlere teknik sorular sorulabilir ve deneme sürüşü yapılabilir. Eğitmenler kod
           yazmaz, taktik vermez.
         </p>
       </div>
@@ -271,6 +273,14 @@ export default function LineRobotCompetitionPage() {
             </h1>
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">28 Kasım 2026 Cumartesi · Yer duyurulacak · Bireysel veya en fazla 3 kişilik takım</p>
           </div>
+          {/* The entry form, once it is out. */}
+          {competition.applicationUrl ? (
+            <a href={competition.applicationUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-md bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 print:hidden">
+              Başvuru formu
+            </a>
+          ) : (
+            <p className="shrink-0 rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-600 dark:border-white/20 dark:text-slate-300 print:hidden">Başvuru formu yakında</p>
+          )}
         </div>
       </header>
 
