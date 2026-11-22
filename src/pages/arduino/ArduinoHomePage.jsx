@@ -1,6 +1,6 @@
-import { ArrowRight, CheckCircle2, Flag, Package } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Package } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { arduinoCompetition, arduinoTraining, arduinoWeeks } from '../../utils/arduinoTraining'
+import { arduinoTraining, arduinoWeeks } from '../../utils/arduinoTraining'
 import { Bullets, Label, Panel } from './ArduinoParts'
 
 const flowMinutes = [55, 15, 50]
@@ -105,7 +105,7 @@ export default function ArduinoHomePage() {
 
       <section>
         <Label>Program</Label>
-        <h2 className="mt-2 font-hero text-2xl font-bold text-slate-900 dark:text-white">Dört haftalık eğitim ve yarışma</h2>
+        <h2 className="mt-2 font-hero text-2xl font-bold text-slate-900 dark:text-white">Dört haftalık eğitim</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           {arduinoWeeks.map((week) => (
             <Link
@@ -125,20 +125,6 @@ export default function ArduinoHomePage() {
             </Link>
           ))}
 
-          <Link
-            to="/arduino/yarisma"
-            className="group flex min-w-0 gap-4 rounded-xl border-2 border-dashed border-orange-400/70 bg-orange-50/90 p-5 transition hover:-translate-y-0.5 hover:border-orange-500 hover:shadow-md dark:border-orange-300/40 dark:bg-orange-400/10 md:col-span-2"
-          >
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-orange-500 text-white">
-              <Flag size={22} />
-            </span>
-            <span className="min-w-0">
-              <span className="font-code block text-xs text-orange-800 dark:text-orange-200">Ödüllü yarışma · Kurallar ve program</span>
-              <span className="mt-0.5 block font-semibold text-slate-900 dark:text-white">{arduinoCompetition.title}</span>
-              <span className="mt-1 block text-sm text-slate-600 dark:text-slate-300">28 Kasım Cumartesi, TM 218 · Robotunu kendi zamanında hazırla, yarış günü getir. Kupalar Westonya’dan.</span>
-            </span>
-            <ArrowRight size={18} className="ml-auto mt-1 shrink-0 text-orange-500 transition group-hover:translate-x-1" />
-          </Link>
         </div>
       </section>
 

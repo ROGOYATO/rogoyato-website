@@ -11,6 +11,7 @@ const navLinks = [
   { to: '/ekip', label: 'Ekibimiz' },
   { to: '/basarilar', label: 'Başarılar' },
   { to: '/arduino', label: 'Arduino Eğitimi' },
+  { to: '/yarisma/cizgi-izleyen-robot', label: 'Robot Yarışması' },
 ]
 
 function App() {
@@ -20,7 +21,7 @@ function App() {
     <div className="relative min-h-screen overflow-hidden text-slate-800 dark:text-slate-100">
       <InteractivePattern />
 
-      <header className="sticky top-0 z-30 border-b border-slate-200/90 bg-white/85 backdrop-blur-xl dark:border-cyan-500/20 dark:bg-zinc-950/80">
+      <header className="sticky top-0 z-30 border-b print:hidden border-slate-200/90 bg-white/85 backdrop-blur-xl dark:border-cyan-500/20 dark:bg-zinc-950/80">
         <div className="mx-auto flex w-full max-w-6xl justify-center px-4 py-4 sm:px-6 lg:px-8">
           <nav className="flex flex-wrap items-center justify-center gap-2 text-sm sm:text-[0.95rem]">
             {navLinks.map((item) => (
@@ -50,7 +51,7 @@ function App() {
       <button
         type="button"
         onClick={toggleTheme}
-        className="fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-full border border-slate-300/80 bg-white px-3 py-2 text-slate-700 shadow-xs transition hover:bg-slate-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-slate-100 dark:hover:bg-zinc-800"
+        className="fixed bottom-4 right-4 z-40 inline-flex print:hidden items-center gap-2 rounded-full border border-slate-300/80 bg-white px-3 py-2 text-slate-700 shadow-xs transition hover:bg-slate-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-slate-100 dark:hover:bg-zinc-800"
         aria-label="Tema değiştir"
         title="Tema değiştir"
       >
@@ -58,7 +59,7 @@ function App() {
         <span className="hidden sm:inline">{theme === 'dark' ? 'Açık' : 'Koyu'}</span>
       </button>
 
-      <footer className="relative z-10 border-t border-slate-200/80 bg-white/70 dark:border-white/10 dark:bg-zinc-950/70">
+      <footer className="relative z-10 border-t print:hidden border-slate-200/80 bg-white/70 dark:border-white/10 dark:bg-zinc-950/70">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-6 text-sm text-slate-600 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <div className="flex flex-col gap-1.5">
             <p className="font-medium">ROGOYATO • TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu</p>
