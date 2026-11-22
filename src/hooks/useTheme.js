@@ -22,6 +22,9 @@ export default function useTheme() {
     const root = document.documentElement
     root.classList.toggle('dark', theme === 'dark')
     window.localStorage.setItem(STORAGE_KEY, theme)
+    // The tab icon follows the site's theme: a brighter robot when dark.
+    const icon = document.querySelector('link[rel="icon"][type="image/svg+xml"]')
+    if (icon) icon.href = `${import.meta.env.BASE_URL}${theme === 'dark' ? 'favicon-dark.svg' : 'favicon.svg'}`
   }, [theme])
 
   const toggleTheme = () => {
