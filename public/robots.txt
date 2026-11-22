@@ -1,2 +1,5 @@
 User-agent: *
-Disallow: /
+Disallow: /arduino/kilit
+Disallow: /snake-game
+
+Sitemap: https://rogoyato.com/sitemap.xml
