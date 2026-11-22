@@ -131,10 +131,10 @@ export const lineRobotCompetition = {
     { name: 'KH-09 kızılötesi çizgi sensörü', count: '3 adede kadar', url: 'https://www.elektronikport.com/urun/ir-alici-verici-sensor-modulu-1' },
     { name: 'AA pil (motorlar için)', count: '4', url: 'https://www.elektronikport.com/kategori/pil' },
     { name: '9V pil ve DC jaklı pil başlığı (Arduino için, motorlardan ayrı)', count: '1', url: 'https://www.elektronikport.com/kategori/pil' },
-    { name: 'KH-09’ları şasiye monte etmek için karton, bant, yapıştırıcı ya da sıcak silikondan biri', count: 'Yeteri kadar' },
     { name: 'Jumper kablolar (erkek-dişi ve dişi-dişi)', count: 'Yeteri kadar', url: 'https://www.elektronikport.com/kategori/jumper-kablo' },
   ],
   recommendedMaterials: [
+    { name: 'Karton, bant, yapıştırıcı ya da sıcak silikon', note: 'KH-09 sensörlerini şasiye monte etmek için; bunlardan biri yeterli.' },
     { name: 'Yedek AA piller ya da şarjlı piller ve şarj cihazı', note: 'Zayıflayan pil motorları yavaşlatır, robotun davranışını değiştirir.' },
     { name: 'Yedek 9V pil', note: 'Arduino’nun pili biterse kart yeniden başlar ya da hiç çalışmaz.' },
     { name: 'Arduino IDE kurulu dizüstü bilgisayar ve USB kablosu', note: 'Yarış günü deneme sürüşlerinin ardından kodda ayar yapmak için.' },
