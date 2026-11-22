@@ -10,8 +10,7 @@ const publicBase = import.meta.env.BASE_URL
 // can point straight at the regulation.
 const TABS = [
   ['genel', 'Genel Bilgi'],
-  ['tarihler', 'Önemli Tarihler'],
-  ['program', 'Yarış Günü Programı'],
+  ['program', 'Takvim ve Program'],
   ['sartname', 'Yarışma Şartnamesi'],
   ['malzemeler', 'Malzemeler'],
   ['oduller', 'Ödüller'],
@@ -78,38 +77,14 @@ function General() {
   )
 }
 
-function Dates() {
-  return (
-    <>
-      <TabTitle>Önemli Tarihler</TabTitle>
-      <table className="mt-6 w-full text-sm">
-        <thead>
-          <tr>
-            <th className={`${headCell} w-48`}>Tarih</th>
-            <th className={headCell}>Açıklama</th>
-          </tr>
-        </thead>
-        <tbody>
-          {competition.timeline.map((step) => (
-            <tr key={step.title}>
-              <td className={`${cell} whitespace-nowrap font-semibold text-slate-900 dark:text-white`}>{step.when}</td>
-              <td className={cell}>
-                <p className="font-semibold text-slate-900 dark:text-white">{step.title}</p>
-                <p className="mt-0.5 text-slate-600 dark:text-slate-300">{step.text}</p>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </>
-  )
-}
-
 function Programme() {
   return (
     <>
-      <TabTitle>Yarış Günü Programı</TabTitle>
-      <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">28 Kasım 2026 Cumartesi · Yer duyurulacak</p>
+      <TabTitle>Takvim ve Program</TabTitle>
+      <h3 className="mt-6 font-semibold text-slate-900 dark:text-white">Yarış gününe kadar</h3>
+      <p className="mt-1 leading-relaxed text-slate-700 dark:text-slate-300">{competition.beforeRaceDay}</p>
+      <h3 className="mt-8 font-semibold text-slate-900 dark:text-white">Yarış günü: 28 Kasım 2026 Cumartesi</h3>
+      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Yer duyurulacak</p>
       <table className="mt-4 w-full text-sm">
         <thead>
           <tr>
@@ -320,11 +295,13 @@ function Contact() {
   )
 }
 
-const PANELS = { genel: General, tarihler: Dates, program: Programme, sartname: Regulation, malzemeler: Materials, oduller: Prizes, sss: Faq, iletisim: Contact }
+const PANELS = { genel: General, program: Programme, sartname: Regulation, malzemeler: Materials, oduller: Prizes, sss: Faq, iletisim: Contact }
 
 export default function LineRobotCompetitionPage() {
   const [params, setParams] = useSearchParams()
-  const active = PANELS[params.get('bolum')] ? params.get('bolum') : 'genel'
+  // The dates once had a tab of their own; old links open the programme.
+  const asked = params.get('bolum') === 'tarihler' ? 'program' : params.get('bolum')
+  const active = PANELS[asked] ? asked : 'genel'
   const Panel = PANELS[active]
   const open = (id) => setParams(id === 'genel' ? {} : { bolum: id }, { replace: true })
 

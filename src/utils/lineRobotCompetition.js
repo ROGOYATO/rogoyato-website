@@ -20,13 +20,8 @@ export const lineRobotCompetition = {
     { label: 'Katılım', value: 'Bireysel veya takım', detail: 'Takımlar en fazla 3 kişi' },
   ],
   // When things happen; `highlight` marks what participants must not miss.
-  timeline: [
-    { when: 'Yarış gününe kadar', title: 'Robotunu hazırla', text: 'Robotunu kendi zamanında, istediğin yerde kur, kodla ve dene. Teknik sorularını eğitim WhatsApp grubundan sorabilirsin.', highlight: true },
-    { when: '28 Kasım · 10:00–14:45', title: 'Danışma ve pist denemesi', text: 'Yarış alanı açık: eğitmenlere teknik sorularını sorabilir, robotunla deneme sürüşü yapabilirsin. Robot burada sıfırdan yapılmaz; hazır getirilir.', highlight: true },
-    { when: '28 Kasım · 14:45', title: 'Yoklama ve sıralama turları', text: 'Yoklamanın ardından 15:00’te her yarışmacı ya da takım sırayla piste çıkar.' },
-    { when: '28 Kasım · ~16:15', title: 'Sonuçlar ve ödül töreni', text: 'Dereceler açıklanır, ilk üçe kupaları verilir.' },
-  ],
-  // The race day hour by hour.
+  beforeRaceDay:
+    'Robotunu kendi zamanında, istediğin yerde kur, kodla ve dene. Teknik sorularını eğitim WhatsApp grubundan sorabilirsin. Robot yarış günü sıfırdan yapılmaz; hazır getirilir.',
   dayPlan: [
     { time: '09:30–10:00', title: 'Hazırlık', text: 'Yarış alanının hazırlanması (ROGOYATO ekibi).' },
     { time: '10:00–14:45', title: 'Teknik danışma ve pist denemesi', text: 'Yarışmacılar deneme sürüşü yapar, eğitmenlere teknik sorularını sorar.' },
