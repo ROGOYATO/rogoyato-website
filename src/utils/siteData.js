@@ -229,8 +229,8 @@ export const achievementStats = [
   },
   {
     label: 'Teknik Eğitim',
-    value: '5',
-    note: '4 tamamlanan, 1 planlanan dönemlik teknik eğitim akışı',
+    value: '6',
+    note: '5 tamamlanan, 1 planlanan dönemlik teknik eğitim akışı',
   },
 ]
 
