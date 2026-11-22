@@ -1,5 +1,35 @@
 export const events = [
   {
+    id: 'cizgi-izleyen-robot-yarismasi-2026',
+    title: 'Çizgi İzleyen Robot Yarışması',
+    type: 'Yarışma',
+    date: '28 Kasım 2026',
+    location: 'TOBB ETÜ, TM 218',
+    status: 'upcoming',
+    requiresApplication: false,
+    summary:
+      'Arduino Eğitimi’nin kapanış yarışması: katılımcılar kendi kurdukları çizgi izleyen robotlarla parkurda yarışıyor, ilk üç derece Westonya kupalarını kazanıyor.',
+    body: [
+      'ROGOYATO Arduino Eğitimi’nin kapanışı olarak düzenlenen Çizgi İzleyen Robot Yarışması, 21 Kasım 2026’daki dersin bitişiyle başladı. Katılımcılar robotlarını 21–27 Kasım arasında kendi zamanlarında hazırlıyor.',
+      'Yarış günü 28 Kasım 2026 Cumartesi. TM 218, 10:00–14:45 arasında teknik danışma ve pist denemesi için açık; sıralama turları 14:45’te başlıyor. En iyi dört yarışmacı finalde kapışıyor, ardından ödül töreni yapılıyor.',
+      'İlk üç dereceye, ödül sponsorumuz Westonya’nın çok renkli 3B baskı kupaları veriliyor. Kuralların ve programın tamamı Arduino Eğitimi sayfasındaki yarışma bölümünde.',
+    ],
+    coverImage: 'events/2026-11-28-cizgi-izleyen-robot/cover.webp',
+    galleryImages: [],
+    agenda: [
+      '21–27 Kasım: Robotların hazırlanması (katılımcıların kendi zamanında)',
+      '28 Kasım 10:00–14:45: Teknik danışma ve pist denemesi',
+      '28 Kasım 14:45: Yoklama ve sıralama turları',
+      'Final kapışması ve ödül töreni',
+    ],
+    notes: [
+      'Yarışmaya 2026 Güz Arduino Eğitimi katılımcıları bireysel olarak katılabilir.',
+      'Kurallar ve program: rogoyato.com/#/arduino/yarisma',
+    ],
+    applicationDeadline: null,
+    applicationNote: null,
+  },
+  {
     id: 'rogoyato-tanisma-toplantisi-2025',
     title: 'ROGOYATO Tanışma Toplantısı',
     type: 'Tanışma Toplantısı',
