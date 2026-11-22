@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 import { useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import logoDarkImage from '../assets/logo-dark.webp'
 import logoImage from '../assets/logo.webp'
 import aboutHeroImage from '../assets/heroes/about-hero.webp'
 import achievementsHeroImage from '../assets/heroes/achievements-hero.webp'
@@ -54,7 +55,12 @@ export default function HomePage() {
               <img
                 src={logoImage}
                 alt="TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu logosu"
-                className="h-32 w-32 object-contain sm:h-44 sm:w-44"
+                className="h-32 w-32 object-contain dark:hidden sm:h-44 sm:w-44"
+              />
+              <img
+                src={logoDarkImage}
+                alt="TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu logosu"
+                className="hidden h-32 w-32 object-contain dark:block sm:h-44 sm:w-44"
               />
             </button>
             <h1 className={`${heroFontClass} text-center text-3xl font-extrabold leading-tight text-slate-900 dark:text-white sm:text-left sm:text-5xl sm:leading-[1.05]`}>
