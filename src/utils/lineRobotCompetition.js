@@ -122,5 +122,24 @@ export const lineRobotCompetition = {
     { label: 'Instagram', value: '@eturogoyato', href: 'https://www.instagram.com/eturogoyato/' },
   ],
   prizeNote: 'Kupalar, ödül sponsorumuz Westonya tarafından çok renkli 3B baskıyla üretilmektedir.',
+  // The Materials tab: what a robot needs and what helps on the day.
+  // Links go to Elektronikport, where the training's kit was bought.
+  requiredMaterials: [
+    { name: '2WD robot araba kiti (şasi, 2 TT motor, 2 tekerlek, serbest teker, 4×AA pil yuvası, vida ve somunlar)', count: '1', url: 'https://www.elektronikport.com/urun/2wd-robot-araba-kiti-arduino' },
+    { name: 'Arduino Uno (eğitim setindeki CH340’lı kart) ve USB kablosu', count: '1', url: 'https://www.elektronikport.com/urun/arduino-uno-super-baslangic-seti-6040' },
+    { name: 'L298N motor sürücü modülü', count: '1', url: 'https://www.elektronikport.com/urun/l298n-motor-surucu-modulu-h-kopru' },
+    { name: 'KH-09 kızılötesi çizgi sensörü', count: '3 adede kadar', url: 'https://www.elektronikport.com/urun/ir-alici-verici-sensor-modulu-1' },
+    { name: 'AA pil (motorlar için)', count: '4', url: 'https://www.elektronikport.com/kategori/pil' },
+    { name: 'Jumper kablolar (erkek-dişi ve dişi-dişi)', count: 'Yeteri kadar', url: 'https://www.elektronikport.com/kategori/jumper-kablo' },
+  ],
+  recommendedMaterials: [
+    { name: 'Yedek AA piller ya da şarjlı piller ve şarj cihazı', note: 'Zayıflayan pil motorları yavaşlatır, robotun davranışını değiştirir.' },
+    { name: 'Arduino IDE kurulu dizüstü bilgisayar ve USB kablosu', note: 'Yarış günü deneme sürüşlerinin ardından kodda ayar yapmak için.' },
+    { name: 'Küçük yıldız ve düz tornavida', note: 'Vidaları sıkmak ve KH-09’ların hassasiyet ayarı için.' },
+    { name: 'Kablo bağı, çift taraflı bant, izole bant', note: 'Kartları ve kabloları şasiye sabitlemek için.', url: 'https://www.elektronikport.com/kategori/bant-ve-sprey-cesitleri' },
+    { name: 'Beyaz karton ve siyah elektrik bandı', note: 'Evde kısa bir deneme parkuru kurmak için (19 mm bant).' },
+    { name: 'Yedek jumper kablolar', note: 'Gevşeyen ya da kopan bağlantılar için.' },
+    { name: 'Multimetre', note: 'İsteğe bağlı; pil gerilimini ve bağlantıları ölçmek için.' },
+  ],
   materials: ['2WD robot araba kiti', 'Arduino Uno', 'L298N', '3 adet KH-09', '4×AA pil', 'Jumper kablolar'],
 }

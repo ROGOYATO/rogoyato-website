@@ -12,6 +12,7 @@ const TABS = [
   ['tarihler', 'Önemli Tarihler'],
   ['program', 'Yarış Günü Programı'],
   ['sartname', 'Yarışma Şartnamesi'],
+  ['malzemeler', 'Malzemeler'],
   ['oduller', 'Ödüller'],
   ['sss', 'Sıkça Sorulan Sorular'],
   ['iletisim', 'İletişim'],
@@ -165,6 +166,68 @@ function Regulation() {
   )
 }
 
+function Materials() {
+  return (
+    <>
+      <TabTitle>Malzemeler</TabTitle>
+      <p className="mt-4 leading-relaxed text-slate-700 dark:text-slate-300">
+        Robot yalnızca aşağıdaki gerekli malzemelerle kurulur (Şartname, Madde 3). Önerilen malzemeler zorunlu değildir; hazırlıkta ve yarış günü işinizi kolaylaştırır.
+      </p>
+      <h3 className="mt-6 font-semibold text-slate-900 dark:text-white">Gerekli malzemeler</h3>
+      <table className="mt-2 w-full text-sm">
+        <thead>
+          <tr>
+            <th className={headCell}>Malzeme</th>
+            <th className={`${headCell} w-36`}>Adet</th>
+          </tr>
+        </thead>
+        <tbody>
+          {competition.requiredMaterials.map((item) => (
+            <tr key={item.name}>
+              <td className={`${cell} text-slate-800 dark:text-slate-200`}>
+                {item.url ? (
+                  <a href={item.url} target="_blank" rel="noopener noreferrer" className="underline decoration-slate-400 underline-offset-2 hover:decoration-slate-900 dark:hover:decoration-white">
+                    {item.name}
+                  </a>
+                ) : (
+                  item.name
+                )}
+              </td>
+              <td className={`${cell} text-slate-700 dark:text-slate-300`}>{item.count}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <h3 className="mt-8 font-semibold text-slate-900 dark:text-white">Önerilen malzemeler</h3>
+      <table className="mt-2 w-full text-sm">
+        <thead>
+          <tr>
+            <th className={headCell}>Malzeme</th>
+            <th className={headCell}>Neden</th>
+          </tr>
+        </thead>
+        <tbody>
+          {competition.recommendedMaterials.map((item) => (
+            <tr key={item.name}>
+              <td className={`${cell} w-2/5 text-slate-800 dark:text-slate-200`}>
+                {item.url ? (
+                  <a href={item.url} target="_blank" rel="noopener noreferrer" className="underline decoration-slate-400 underline-offset-2 hover:decoration-slate-900 dark:hover:decoration-white">
+                    {item.name}
+                  </a>
+                ) : (
+                  item.name
+                )}
+              </td>
+              <td className={`${cell} text-slate-600 dark:text-slate-300`}>{item.note}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="mt-6 text-sm text-slate-600 dark:text-slate-300">Bağlantılar, eğitim setinin alındığı Elektronikport’taki ürün ve kategori sayfalarına gider.</p>
+    </>
+  )
+}
+
 function Prizes() {
   return (
     <>
@@ -244,7 +307,7 @@ function Contact() {
   )
 }
 
-const PANELS = { genel: General, tarihler: Dates, program: Programme, sartname: Regulation, oduller: Prizes, sss: Faq, iletisim: Contact }
+const PANELS = { genel: General, tarihler: Dates, program: Programme, sartname: Regulation, malzemeler: Materials, oduller: Prizes, sss: Faq, iletisim: Contact }
 
 export default function LineRobotCompetitionPage() {
   const [params, setParams] = useSearchParams()
