@@ -52,7 +52,6 @@ export const events = [
       'events/2026-10-24-arduino-egitimi/gallery-03.webp',
       'events/2026-10-24-arduino-egitimi/gallery-04.webp',
       'events/2026-10-24-arduino-egitimi/gallery-05.webp',
-      'events/2026-10-24-arduino-egitimi/gallery-06.webp',
       'events/2026-10-24-arduino-egitimi/gallery-07.webp',
     ],
     agenda: [
