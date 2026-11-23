@@ -31,7 +31,8 @@ function General() {
     ['Yarış günü', '28 Kasım 2026 Cumartesi'],
     ['Yer', 'Duyurulacak (TOBB ETÜ kampüsü)'],
     ['Parkur', 'Duyurulacak'],
-    ['Katılım', 'Arduino Eğitimi katılımcıları; bireysel ya da en fazla 3 kişilik takım'],
+    ['Katılım', 'Herkese açık; bireysel ya da en fazla 3 kişilik takım'],
+    ['Kategoriler', 'Eğitim kategorisi (Arduino Eğitimi katılımcıları) ve Açık kategori (eğitime katılmayanlar); ayrı sıralanır'],
     ['Robot hazırlığı', 'Yarış gününe kadar, katılımcıların kendi zamanında'],
     ['Teknik danışma', '28 Kasım, 10:00–14:45, yarış alanında'],
     ['Sıralama turları', '28 Kasım, 15:00'],
@@ -195,9 +196,11 @@ function Materials() {
         Robot yalnızca aşağıdaki gerekli malzemelerle kurulur (Şartname, Madde 3). Önerilen malzemeler zorunlu değildir; hazırlıkta ve yarış günü işinizi kolaylaştırır.
       </p>
       <h3 className="mt-6 font-semibold text-slate-900 dark:text-white">Gerekli malzemeler</h3>
+      <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Parçaların birebir aynı marka ve model olması gerekmez, eşdeğer olmaları yeterlidir; eşdeğerliğe yarış günü jüri karar verir (Şartname, Madde 3). Görseller satıcıların ürün sayfalarındandır.</p>
       <table className="mt-2 w-full text-sm">
         <thead>
           <tr>
+            <th className={`${headCell} w-24 sm:w-36`}>Görsel</th>
             <th className={headCell}>Malzeme</th>
             <th className={`${headCell} w-36`}>Adet</th>
           </tr>
@@ -205,7 +208,14 @@ function Materials() {
         <tbody>
           {competition.requiredMaterials.map((item) => (
             <tr key={item.name}>
-              <td className={`${cell} text-slate-800 dark:text-slate-200`}>
+              <td className={cell}>
+                {item.image ? (
+                  <a href={`${publicBase}${item.image}`} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} görseli`}>
+                    <img src={`${publicBase}${item.image}`} alt={item.name} loading="lazy" className="h-16 w-20 rounded border border-slate-200 bg-white object-contain p-0.5 sm:h-24 sm:w-32 dark:border-white/10" />
+                  </a>
+                ) : null}
+              </td>
+              <td className={`${cell} align-middle text-slate-800 dark:text-slate-200`}>
                 {item.url ? (
                   <a href={item.url} target="_blank" rel="noopener noreferrer" className="underline decoration-slate-400 underline-offset-2 hover:decoration-slate-900 dark:hover:decoration-white">
                     {item.name}
@@ -214,7 +224,7 @@ function Materials() {
                   item.name
                 )}
               </td>
-              <td className={`${cell} text-slate-700 dark:text-slate-300`}>{item.count}</td>
+              <td className={`${cell} align-middle text-slate-700 dark:text-slate-300`}>{item.count}</td>
             </tr>
           ))}
         </tbody>
@@ -253,7 +263,7 @@ function Prizes() {
   return (
     <>
       <TabTitle>Ödüller</TabTitle>
-      <p className="mt-4 leading-relaxed text-slate-700 dark:text-slate-300">İlk üç dereceye kupa verilir. {competition.prizeNote}</p>
+      <p className="mt-4 leading-relaxed text-slate-700 dark:text-slate-300">Eğitim kategorisinde ilk üç dereceye kupa verilir. {competition.prizeNote} Açık kategorinin ödülleri ayrıca duyurulacak.</p>
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         {competition.prizes.map((prize) => (
           <figure key={prize.place} className="border border-slate-200 dark:border-white/10">

@@ -87,7 +87,7 @@ export default function HomePage() {
           <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-amber-300">Ödüllü yarışma · 28 Kasım 2026</span>
           <span className="mt-1 block font-hero text-2xl font-bold">{lineRobotCompetition.title}</span>
           <span className="mt-1 block text-sm leading-relaxed text-slate-300">
-            Arduino Eğitimi katılımcıları kendi kurdukları robotlarla, tek başına ya da en fazla üç kişilik takımlarla yarışıyor. İlk üç dereceye Westonya kupaları.
+            Kendi kurulan robotlarla, tek başına ya da en fazla üç kişilik takımlarla yarışılıyor. Arduino Eğitimi katılımcıları ve eğitim dışından katılanlar ayrı kategorilerde; eğitim kategorisinde ilk üçe Westonya kupaları.
           </span>
         </span>
         <span className="inline-flex shrink-0 items-center gap-2 self-start rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition group-hover:gap-3 sm:self-center">

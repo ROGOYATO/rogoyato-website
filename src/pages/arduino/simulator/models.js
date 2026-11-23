@@ -1219,7 +1219,7 @@ const BUILDERS = {
     }
     // The L298N in its 15-lead Multiwatt package, bolted to a black
     // anodised finned heat sink (23 × 25 × 16 mm) that stands on the board.
-    const sink = mat('#1c1d22', { metalness: 0.7, roughness: 0.38 })
+    const sink = mat('#2b2d34', { metalness: 0.65, roughness: 0.35 })
     const sinkZ = -0.55
     group.add(box(2.3, 2.5, 0.25, sink, 0, top + 1.25, sinkZ))
     for (let i = 0; i < 7; i += 1) group.add(box(0.1, 2.4, 1.15, sink, -1.1 + i * (2.2 / 6), top + 1.3, sinkZ + 0.7))
