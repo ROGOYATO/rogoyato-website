@@ -8,11 +8,11 @@ export const events = [
     status: 'upcoming',
     requiresApplication: false,
     summary:
-      'Arduino Eğitimi katılımcıları kendi kurdukları çizgi izleyen robotlarla, tek başına ya da en fazla üç kişilik takımlarla parkurda yarışıyor; ilk üç derece Westonya kupalarını kazanıyor.',
+      'Kendi kurulan çizgi izleyen robotlarla, tek başına ya da en fazla üç kişilik takımlarla parkurda yarışılıyor. Arduino Eğitimi katılımcıları ve eğitim dışından katılanlar ayrı kategorilerde değerlendiriliyor.',
     body: [
       'ROGOYATO’nun ödüllü Çizgi İzleyen Robot Yarışması’nda katılımcılar robotlarını yarış gününe kadar kendi zamanlarında hazırlıyor.',
       'Yarış günü 28 Kasım 2026 Cumartesi. Yarış alanı 10:00–14:45 arasında teknik danışma ve deneme sürüşleri için açık; sıralama turları 15:00’te başlıyor. Turların ardından dereceler açıklanıyor ve ödül töreni yapılıyor.',
-      'İlk üç dereceye, ödül sponsorumuz Westonya’nın çok renkli 3B baskı kupaları veriliyor.',
+      'Eğitim kategorisinde ilk üç dereceye, ödül sponsorumuz Westonya’nın çok renkli 3B baskı kupaları veriliyor; Açık kategorinin ödülleri ayrıca duyurulacak.',
     ],
     coverImage: 'events/2026-11-28-cizgi-izleyen-robot/cover.webp',
     galleryImages: [],
@@ -23,7 +23,7 @@ export const events = [
       'Sonuçların açıklanması ve ödül töreni',
     ],
     notes: [
-      'Yarışmaya 2026 Güz Arduino Eğitimi katılımcıları tek başına ya da en fazla üç kişilik takımlarla katılabilir.',
+      'Yarışma herkese açık; tek başına ya da en fazla üç kişilik takımlarla katılınabilir. Arduino Eğitimi katılımcıları ve eğitime katılmayanlar ayrı kategorilerde değerlendirilir.',
       'Yarışmanın yapılacağı yer ayrıca duyurulacak.',
     ],
     link: { to: '/yarisma/cizgi-izleyen-robot', label: 'Yarışma sayfası: kurallar, program ve ödüller' },

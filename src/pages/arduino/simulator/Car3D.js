@@ -216,27 +216,25 @@ function buildDetailedCar() {
   swivel.add(casterWheel)
   car.add(swivel)
 
-  // 4×AA holder on top at the back, the 9 V battery strapped under the
-  // plate between the motors, and the rocker switch.
+  // On the back of the plate, side by side: the 4×AA holder (6 × 5.7 cm,
+  // for the motors) and the 9 V battery (4.85 × 2.65 cm, for the Uno), its
+  // snap towards the front. The rocker switch sits on the right wing.
   const pack = carPart('battery', 'pil')
-  pack.group.position.set(-8.3, plateTop, 0)
-  pack.group.rotation.y = Math.PI / 2
+  pack.group.position.set(-6.3, plateTop, -1.85)
   car.add(pack.group)
   const nineVolt = buildNineVolt()
-  nineVolt.rotation.z = Math.PI
-  nineVolt.position.set(-4.6, plateBottom, 0)
+  nineVolt.position.set(-6.3, plateTop, 2.9)
   car.add(nineVolt)
-  car.add(box(0.6, 0.12, 2.9, '#111111', -5.2, plateBottom - 1.76, 0)) // strap
   const black = mat('#151515', { roughness: 0.7 })
-  car.add(box(1.5, 0.9, 1.0, black, -4.8, plateTop + 0.45, 4.1), box(0.7, 0.35, 0.8, '#262626', -4.6, plateTop + 1.05, 4.1))
+  car.add(box(1.5, 0.9, 1.0, black, 5.0, plateTop + 0.45, 6.2), box(0.7, 0.35, 0.8, '#262626', 5.2, plateTop + 1.05, 6.2))
 
   // L298N with its power terminals towards the battery, its logic header
   // towards the Uno and the motor terminals to each side.
   const driver = carPart('motorDriver', 'driver')
   driver.group.rotation.y = -Math.PI / 2
-  driver.group.position.set(-1.5, plateTop + 0.4, 0)
+  driver.group.position.set(-0.9, plateTop + 0.4, 0)
   car.add(driver.group)
-  for (const [x, z] of [[-3.4, 1.9], [-3.4, -1.9], [0.4, 1.9], [0.4, -1.9]]) car.add(cylinder(0.18, 0.4, brass, x, plateTop + 0.2, z, 6))
+  for (const [x, z] of [[-2.75, 1.85], [-2.75, -1.85], [0.95, 1.85], [0.95, -1.85]]) car.add(cylinder(0.15, 0.4, brass, x, plateTop + 0.2, z, 6))
 
   // The kit's Uno clone, across the plate at the front, USB and jack to the right.
   const uno = buildUnoClone()
@@ -245,32 +243,34 @@ function buildDetailedCar() {
     if (child.userData?.kind === 'pin') child.visible = false
   })
   uno.group.rotation.y = Math.PI / 2
-  uno.group.position.set(3.5, plateTop + 0.5, 0)
+  uno.group.position.set(4.2, plateTop + 0.5, 0)
   car.add(uno.group)
-  for (const [x, z] of [[1.2, 2.8], [1.2, -2.8], [5.8, 2.8], [5.8, -2.8]]) car.add(cylinder(0.18, 0.5, brass, x, plateTop + 0.25, z, 6))
+  for (const [x, z] of [[1.9, 2.8], [1.9, -2.8], [6.5, 2.8], [6.5, -2.8]]) car.add(cylinder(0.15, 0.5, brass, x, plateTop + 0.25, z, 6))
 
   // Wiring.
   const top = plateTop + 0.9
-  // Battery pack to the L298N's +12V and GND, motors to OUT1–OUT4.
-  car.add(wire([[-8.3, plateTop + 0.4, -3.1], [-6, top + 0.6, -2.2], [-3.4, top + 0.2, 0.5]], '#c81e1e'))
-  car.add(wire([[-8.0, plateTop + 0.4, -3.1], [-5.6, top + 0.4, -1.6], [-3.4, top + 0.2, 0]], '#141416'))
+  // Battery pack leads to the L298N's +12V and GND (its power terminal faces back).
+  car.add(wire([[-9.3, plateTop + 0.5, -4.6], [-7, top + 0.3, -5.05], [-3.6, top + 0.3, -3.6], [-2.75, plateTop + 1.1, 0.5]], '#c81e1e'))
+  car.add(wire([[-9.3, plateTop + 0.5, -4.3], [-7, top + 0.2, -4.85], [-3.9, top + 0.2, -3.2], [-2.75, plateTop + 1.1, 0]], '#141416'))
+  // Motor leads up through the cable slot to OUT1–OUT4 at the sides.
   for (const sign of [-1, 1]) {
-    car.add(wire([[-6.1, WHEEL_RADIUS * CM - 0.3, sign * 4.0], [-4.5, plateBottom - 0.3, sign * 1.5], [-1.0, plateBottom + 0.2, sign * 0.6], [-1.5, top, sign * 1.85]], '#c81e1e'))
-    car.add(wire([[-6.1, WHEEL_RADIUS * CM - 0.6, sign * 4.3], [-4.2, plateBottom - 0.4, sign * 1.8], [-0.6, plateBottom + 0.2, sign * 0.9], [-1.0, top, sign * 1.85]], '#141416'))
+    car.add(wire([[-6.1, WHEEL_RADIUS * CM - 0.3, sign * 4.0], [-3.5, plateBottom - 0.3, sign * 1.2], [-1.0, plateTop + 0.4, sign * 0.2], [-1.15, plateTop + 1.3, sign * 2.3], [-1.15, plateTop + 1.0, sign * 1.85]], '#c81e1e'))
+    car.add(wire([[-6.1, WHEEL_RADIUS * CM - 0.6, sign * 4.3], [-3.2, plateBottom - 0.4, sign * 1.5], [-0.8, plateTop + 0.4, sign * 0.5], [-0.65, plateTop + 1.3, sign * 2.3], [-0.65, plateTop + 1.0, sign * 1.85]], '#141416'))
   }
-  // 9 V snap to the Uno's barrel jack.
-  car.add(wire([[-7.8, plateBottom - 0.6, 0.3], [-9, plateBottom + 0.3, 2.5], [-2, top + 0.4, 4.4], [1.5, plateTop + 1.1, 3.9]], '#c81e1e'))
-  // Logic header (ENA, IN1–IN4, ENB) to the Uno's digital pins.
+  // 9 V snap to the Uno's barrel jack (front right of the board).
+  car.add(wire([[-3.4, plateTop + 0.9, 3.0], [-1.5, top + 0.9, 3.6], [1.5, top + 0.6, 3.9], [2.0, plateTop + 1.3, 3.4]], '#c81e1e'))
+  car.add(wire([[-3.4, plateTop + 0.9, 2.7], [-1.5, top + 0.7, 3.3], [1.5, top + 0.5, 3.6], [2.0, plateTop + 1.3, 3.1]], '#141416'))
+  // Logic header (ENA, IN1–IN4, ENB) to the Uno's digital pins, and the
+  // L298N's GND to the Uno's.
   const colours = ['#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899']
   colours.forEach((colour, i) => {
-    car.add(wire([[0.5, plateTop + 0.75, -0.65 + i * 0.254], [1.4, top + 1.3, -1.2 + i * 0.5], [3.5 + 2.4, plateTop + 1.4, -2.5 + i * 0.6]], colour))
+    car.add(wire([[1.05, plateTop + 1.15, -0.635 + i * 0.254], [2.0, top + 1.4, -1.2 + i * 0.4], [5.5, top + 1.2, -2.6 + i * 0.3], [6.85, plateTop + 1.5, -2.4 + i * 0.254]], colour))
   })
-
   // KH-09 sensors standing on a cardboard bracket ahead of the plate, their
   // IR pairs looking down at the floor.
   const card = mat('#b98b55', { roughness: 0.95 })
-  car.add(box(3.4, 0.25, 6.6, card, 7.4, plateTop + 0.12, 0))
-  car.add(box(0.3, plateTop - 0.9, 6.6, card, 8.55, (plateTop + 0.9) / 2, 0))
+  car.add(box(3.6, 0.25, 6.6, card, 6.9, plateBottom - 0.13, 0))
+  car.add(box(0.3, plateBottom - 1.0, 6.6, card, 8.55, (plateBottom + 1.0) / 2, 0))
   const sensorModels = {}
   for (const [side, z] of [['left', -2], ['center', 0], ['right', 2]]) {
     const model = carPart('irSensor', `ir-${side}`)
@@ -281,7 +281,7 @@ function buildDetailedCar() {
     upright.position.set(9 - 0.25, 2.0, z)
     car.add(upright)
     sensorModels[side] = model
-    car.add(wire([[3.5 - 2.4, plateTop + 1.3, z * 0.6], [6.5, top + 0.8, z * 0.9], [8.9, 3.75, z]], colours[side === 'left' ? 0 : side === 'center' ? 2 : 4]))
+    car.add(wire([[1.8, plateTop + 1.4, z * 0.6 - 1.5], [7.6, top + 0.6, z * 0.9], [9.1, plateTop - 0.2, z], [8.95, 3.75, z]], colours[side === 'left' ? 0 : side === 'center' ? 2 : 4]))
   }
   car.traverse((child) => {
     if (child.isMesh) child.castShadow = true

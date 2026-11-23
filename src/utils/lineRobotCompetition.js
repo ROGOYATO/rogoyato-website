@@ -12,7 +12,7 @@ export const lineRobotCompetition = {
   organizer: 'TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu (ROGOYATO)',
   sponsor: 'Westonya',
   summary:
-    'ROGOYATO Arduino Eğitimi katılımcılarının tek başına ya da en fazla üç kişilik takımlar hâlinde kendi kurdukları çizgi izleyen robotlarla parkurda yarıştığı ödüllü yarışma. Robotlar katılımcıların kendi zamanlarında hazırlanır; yarış günü tamamlanmış robotla gelinir.',
+    'Tek başına ya da en fazla üç kişilik takımlar hâlinde, kendi kurulan çizgi izleyen robotlarla parkurda yarışılan ödüllü yarışma. Arduino Eğitimi katılımcıları ile eğitime katılmayanlar ayrı kategorilerde değerlendirilir. Robotlar katılımcıların kendi zamanlarında hazırlanır; yarış günü tamamlanmış robotla gelinir.',
   facts: [
     { label: 'Hazırlık', value: 'Yarış gününe kadar', detail: 'Katılımcıların kendi zamanında' },
     { label: 'Yarış günü', value: '28 Kasım 2026 Cumartesi', detail: 'Sıralama turları 15:00’te' },
@@ -28,14 +28,15 @@ export const lineRobotCompetition = {
     { time: '14:45–15:00', title: 'Yoklama ve açılış', text: 'Robotların ve yarışmacıların kaydı, kuralların hatırlatılması.' },
     { time: '15:00–16:15', title: 'Sıralama turları', text: 'Her robot sırayla piste çıkar; her parkurda en fazla üç deneme.' },
     { time: '16:15–16:30', title: 'Sonuçların açıklanması', text: 'Derecelerin hesaplanması ve açıklanması.' },
-    { time: '16:30–16:45', title: 'Ödül töreni ve kapanış', text: 'İlk üç dereceye kupaların verilmesi, toplu fotoğraf.' },
+    { time: '16:30–16:45', title: 'Ödül töreni ve kapanış', text: 'Her kategoride ilk üç dereceye ödüllerin verilmesi, toplu fotoğraf.' },
   ],
   // The regulation, article by article.
   rules: [
     {
       title: 'Katılım',
       items: [
-        'Yarışmaya 2026 Güz Arduino Eğitimi’ne katılan öğrenciler katılabilir.',
+        'Yarışma iki kategoride yapılır: Eğitim kategorisi, 2026 Güz Arduino Eğitimi’ne katılanlar içindir; Açık kategori, eğitime katılmayanlar içindir. İki kategori ayrı sıralanır ve ayrı ödüllendirilir.',
+        'Takımda eğitime katılmamış bir üye varsa takım Açık kategoride yarışır.',
         'Yarışmaya katılmak için başvuru formunun doldurulması gerekir; takımlarda formu bir kişi takım adına doldurur.',
         'Yarışmaya tek başına ya da en fazla üç kişilik takımlar hâlinde katılınabilir. Bir kişi yalnızca bir takımda yer alabilir.',
         'Her yarışmacı ya da takım tek bir robotla yarışır; robotunu kendisi kurar ve kodlar.',
@@ -54,7 +55,8 @@ export const lineRobotCompetition = {
     {
       title: 'Robot',
       items: [
-        'Robot, eğitimde kullanılan malzemelerle kurulur: 2WD şasi, iki TT motor, Arduino Uno, L298N motor sürücü, en fazla üç KH-09 kızılötesi sensör, motorlar için 4×AA pil yuvası ve Arduino için ayrı bir 9V pil.',
+        'Robot, Malzemeler bölümündeki gerekli malzemelerle kurulur: 2WD şasi, iki TT motor, Arduino Uno, L298N motor sürücü, en fazla üç KH-09 kızılötesi sensör, motorlar için 4×AA pil yuvası ve Arduino için ayrı bir 9V pil.',
+        'Malzemelerin birebir aynı marka ve model olması gerekmez; aynı türde ve benzer özellikte (eşdeğer) parçalar kullanılabilir. Bir parçanın eşdeğer sayılıp sayılmadığına yarış günü yoklamada jüri karar verir; emin olmadığın bir parçayı yarıştan önce sorabilirsin.',
         'Ek motor, ek sensör, hazır çizgi izleme kartı veya uzaktan kumanda kullanılamaz.',
         'Kablo, bant, vida, kablo bağı, karton, yapıştırıcı, sıcak silikon ve sensör tutucu gibi bağlantı ve montaj malzemeleri serbesttir; şasi üzerinde yerleşim yarışmacıya bırakılmıştır.',
         'Robot tamamen otonom çalışır; deneme başladıktan sonra robota bilgisayar ya da kablo bağlanamaz.',
@@ -75,20 +77,30 @@ export const lineRobotCompetition = {
     },
     {
       title: 'Yarış ve puanlama',
+      example: {
+        caption: 'Örnek: üç parkurlu bir yarışmada üç robotun toplam süresi',
+        columns: ['Robot', '1. parkur', '2. parkur', '3. parkur', 'Toplam'],
+        rows: [
+          ['A', 'Bitirdi, 45 sn → 45', 'Bitirdi, 60 sn → 60', 'Bitirdi, 50 sn → 50', '155 sn (1.)'],
+          ['B', 'Bitirdi, 30 sn → 30', 'Bitirdi, 40 sn → 40', 'Bitiremedi, 0,75 → 180 + 45 = 225', '295 sn (2.)'],
+          ['C', 'Bitiremedi, 0,50 → 180 + 90 = 270', 'Bitiremedi, 0,90 → 180 + 18 = 198', 'Bitirdi, 80 sn → 80', '548 sn (3.)'],
+        ],
+      },
       items: [
-        'Robot başlangıç çizgisinin gerisine konur ve hakemin işaretiyle çalıştırılır. Süre hakemin işaretiyle başlar, robot parkuru tamamlayıp başlangıç çizgisini yeniden geçtiğinde durur. Bir deneme en fazla 3 dakika sürer.',
-        'Bitirme: Robot parkurun tamamını izleyip başlangıç çizgisine dönerse parkuru bitirmiş olur; bu denemenin sonucu süresidir.',
-        'Bitirememe: Robot çizgiyi tamamen kaybedip parkurdan çıkarsa, kesişmede başka kola saparsa, deneme sırasında robota dokunulursa ya da 3 dakika dolarsa deneme o noktada sona erer; bu denemenin sonucu, robotun ulaştığı en uzak noktanın başlangıçtan çizgi boyunca ölçülen mesafesidir.',
-        'Her robotun her parkurda üç deneme hakkı vardır ve o parkurdaki en iyi denemesi geçerli sayılır. Bitiren deneme, bitiremeyen her denemeden iyidir; iki bitirmeden süresi kısa olan, iki bitirememeden mesafesi uzun olan daha iyidir.',
-        'Sıralama şu ölçütlerle, sırayla yapılır: (1) bitirilen parkur sayısı, çok olan önde; (2) bitirilen parkurlardaki en iyi sürelerin toplamı, az olan önde; (3) bitirilemeyen parkurlarda ulaşılan mesafelerin toplamı, çok olan önde. Tek parkur kullanılırsa bu, o parkurdaki en iyi denemeye göre sıralamaktır.',
+        'Robot başlangıç çizgisinin gerisine konur ve hakemin işaretiyle çalıştırılır. Süre hakemin işaretiyle başlar, robot parkuru tamamlayıp başlangıç çizgisini yeniden geçtiğinde durur. Bir deneme en fazla 3 dakika (180 saniye) sürer.',
+        'Bitirme: Robot parkurun tamamını izleyip başlangıç çizgisine dönerse parkuru bitirmiş olur; denemenin sonucu ölçülen süredir.',
+        'Bitirememe: Robot çizgiyi tamamen kaybedip parkurdan çıkarsa, bir kesişmede düz gitmek yerine sağa ya da sola dönüp kesişen çizgiye geçerse, deneme sırasında robota dokunulursa ya da 180 saniye dolarsa deneme o noktada biter. Denemenin sonucu ilerleme oranıdır: robotun ulaştığı en uzak noktaya kadar parkur boyunca gittiği yolun, parkurun tüm uzunluğuna oranı (örneğin parkurun dörtte üçü = 0,75). Hakem bunu parkurdaki işaretlerden belirler.',
+        'Her robotun her parkurda üç deneme hakkı vardır; her parkurda robotun en iyi denemesi sayılır. Bitiren deneme bitiremeyenden, iki bitirmeden süresi kısa olan, iki bitirememeden ilerleme oranı yüksek olan daha iyidir.',
+        'Parkur süresi: Bitirilen parkurda en iyi denemenin süresidir. Bitirilemeyen parkurda 180 + 180 × (1 − ilerleme oranı) saniyedir; yani bitirilemeyen bir parkur, ne kadar ilerlendiyse o kadar az olmak üzere 180 ile 360 saniye arasında sayılır. Hiç deneme yapılmayan parkur 360 saniyedir.',
+        'Toplam süre, robotun bütün parkurlardaki parkur sürelerinin toplamıdır. Sıralama toplam süreye göre yapılır; toplam süresi en az olan birinci olur (bkz. örnek).',
         'Denemeler arasında kod, ayar ve pil değiştirilebilir; sırası gelen robotun en geç 2 dakika içinde piste çıkması gerekir.',
       ],
     },
     {
       title: 'Dereceler',
       items: [
-        'Dereceler sıralama turlarının sonucuna göre belirlenir; ayrıca final turu yapılmaz.',
-        'İlk üç dereceye giren yarışmacılara ya da takımlara kupa verilir.',
+        'Dereceler her kategoride ayrı olarak sıralama turlarının sonucuna göre belirlenir; ayrıca final turu yapılmaz.',
+        'Eğitim kategorisinde ilk üç dereceye giren yarışmacılara ya da takımlara kupa verilir. Açık kategorinin ödülleri ayrıca duyurulacaktır.',
         'Derece için eşitlik olması durumunda eşit robotlar kısa bir tekrar sürüşü yapar.',
       ],
     },
@@ -109,13 +121,14 @@ export const lineRobotCompetition = {
   ],
   faq: [
     { q: 'Nasıl başvururum?', a: 'Başvurular Google Form üzerinden alınır; bu sayfanın üstündeki “Başvuru formu” butonundan forma ulaşabilirsin. Takımlarda formu bir kişi, takım adına doldurur.' },
-    { q: 'Takım olarak katılabilir miyim?', a: 'Evet. Tek başına ya da en fazla üç kişilik bir takımla katılabilirsin. Takımın tüm üyeleri Arduino Eğitimi katılımcısı olmalı ve bir kişi yalnızca bir takımda yer alabilir.' },
+    { q: 'Arduino Eğitimi’ne katılmadım, katılabilir miyim?', a: 'Evet. Eğitime katılmayanlar Açık kategoride yarışır; Açık kategori, eğitime katılanlardan ayrı sıralanır ve ayrı ödüllendirilir. Robot, Malzemeler bölümündeki parçalarla ya da eşdeğerleriyle kurulur.' },
+    { q: 'Takım olarak katılabilir miyim?', a: 'Evet. Tek başına ya da en fazla üç kişilik bir takımla katılabilirsin; bir kişi yalnızca bir takımda yer alabilir. Takımda eğitime katılmamış biri varsa takım Açık kategoride yarışır.' },
     { q: 'Robotu nerede ve ne zaman yapacağım?', a: 'Robotunu yarış gününe kadar kendi zamanında, istediğin yerde hazırlarsın. Yarış gününe tamamlanmış robotla gelinir; robotlar yarış günü sıfırdan yapılmaz.' },
     { q: 'Takıldığım yerde yardım alabilir miyim?', a: 'Hazırlık haftasında teknik sorularını eğitim WhatsApp grubundan sorabilirsin. Yarış günü 10:00–14:45 arasında yarış alanında eğitmenler teknik sorunlarda yardım eder; kod yazmaz ve taktik vermez.' },
     { q: 'Parkur nasıl olacak?', a: 'Parkur bilgileri daha sonra duyurulacak; yarışmada birden fazla parkur olabilir. Beyaz zemin üzerinde yaklaşık 2 cm genişliğinde siyah bir çizgi olacak; çizgi kendisiyle kesişebilir, kesişmelerde robot düz devam eder (Şartname, Şekil 1).' },
     { q: 'Yarışma nerede yapılacak?', a: 'Yarışmanın yapılacağı yer kesinleştiğinde bu sayfada ve eğitim WhatsApp grubunda duyurulacak.' },
     { q: 'Malzemelerim yanımda değilken nasıl çalışırım?', a: 'Sitemizdeki Arduino simülatörü, robot kodunun genel mantığını kurmak için kullanılabilir.' },
-    { q: 'Sıralama nasıl belirlenir?', a: 'Her denemede robot ya parkuru bitirir ve sonucu süresi olur ya da bitiremez ve sonucu ulaştığı en uzak noktanın mesafesi olur. Bitiren deneme her zaman bitiremeyenden iyidir; bitirenler arasında kısa süre, bitiremeyenler arasında uzun mesafe öndedir. Her parkurda üç deneme hakkın var, en iyisi sayılır. Birden fazla parkur olursa önce bitirdiğin parkur sayısına, sonra bu parkurlardaki sürelerinin toplamına, sonra kalan parkurlarda ulaştığın mesafeye bakılır. Final yapılmaz; ilk üçe kupa verilir.' },
+    { q: 'Sıralama nasıl belirlenir?', a: 'Her parkurda üç deneme hakkın var ve en iyisi sayılır. Bitirdiğin parkurda süren sayılır; bitiremediğin parkurda 180 + 180 × (1 − ilerleme oranı) saniye sayılır, yani 180 ile 360 saniye arası: ne kadar ilerlersen o kadar az. Bütün parkurların süreleri toplanır, toplamı en az olan birinci olur. Şartnamenin 5. maddesinde örnek bir hesap var. Final yapılmaz; ilk üçe kupa verilir.' },
   ],
   contact: [
     { label: 'E-posta', value: 'rogoyato@gmail.com', href: 'mailto:rogoyato@gmail.com' },
@@ -125,13 +138,13 @@ export const lineRobotCompetition = {
   // The Materials tab: what a robot needs and what helps on the day.
   // Links go to Elektronikport, where the training's kit was bought.
   requiredMaterials: [
-    { name: '2WD robot araba kiti (şasi, 2 TT motor, 2 tekerlek, serbest teker, 4×AA pil yuvası, vida ve somunlar)', count: '1', url: 'https://www.elektronikport.com/urun/2wd-robot-araba-kiti-arduino' },
-    { name: 'Arduino Uno (eğitim setindeki CH340’lı kart) ve USB kablosu', count: '1', url: 'https://www.elektronikport.com/urun/arduino-uno-super-baslangic-seti-6040' },
-    { name: 'L298N motor sürücü modülü', count: '1', url: 'https://www.elektronikport.com/urun/l298n-motor-surucu-modulu-h-kopru' },
-    { name: 'KH-09 kızılötesi çizgi sensörü', count: '3 adede kadar', url: 'https://www.elektronikport.com/urun/ir-alici-verici-sensor-modulu-1' },
-    { name: 'AA pil (motorlar için)', count: '4', url: 'https://www.elektronikport.com/kategori/pil' },
-    { name: '9V pil ve DC jaklı pil başlığı (Arduino için, motorlardan ayrı)', count: '1', url: 'https://www.elektronikport.com/kategori/pil' },
-    { name: 'Jumper kablolar (erkek-dişi ve dişi-dişi)', count: 'Yeteri kadar', url: 'https://www.elektronikport.com/kategori/jumper-kablo' },
+    { name: '2WD robot araba kiti (şasi, 2 TT motor, 2 tekerlek, serbest teker, 4×AA pil yuvası, vida ve somunlar)', count: '1', url: 'https://www.elektronikport.com/urun/2wd-robot-araba-kiti-arduino', image: 'yarisma/cizgi-izleyen-robot/malzemeler/2wd-kit.webp' },
+    { name: 'Arduino Uno (R3 ya da CH340’lı klon) ve USB kablosu', count: '1', image: 'yarisma/cizgi-izleyen-robot/malzemeler/arduino-uno.webp' },
+    { name: 'L298N motor sürücü modülü', count: '1', url: 'https://www.elektronikport.com/urun/l298n-motor-surucu-modulu-h-kopru', image: 'yarisma/cizgi-izleyen-robot/malzemeler/l298n.webp' },
+    { name: 'KH-09 kızılötesi çizgi sensörü', count: '3 adede kadar', url: 'https://www.elektronikport.com/urun/ir-alici-verici-sensor-modulu-1', image: 'yarisma/cizgi-izleyen-robot/malzemeler/kh09.webp' },
+    { name: 'AA pil (motorlar için)', count: '4', url: 'https://www.elektronikport.com/kategori/pil', image: 'yarisma/cizgi-izleyen-robot/malzemeler/aa-pil.webp' },
+    { name: '9V pil ve DC jaklı pil başlığı (Arduino için, motorlardan ayrı)', count: '1', url: 'https://www.elektronikport.com/kategori/pil', image: 'yarisma/cizgi-izleyen-robot/malzemeler/9v-pil.webp' },
+    { name: 'Jumper kablolar (erkek-dişi ve dişi-dişi)', count: 'Yeteri kadar', url: 'https://www.elektronikport.com/kategori/jumper-kablo', image: 'yarisma/cizgi-izleyen-robot/malzemeler/jumper.webp' },
   ],
   recommendedMaterials: [
     { name: 'Karton, bant, yapıştırıcı ya da sıcak silikon', note: 'KH-09 sensörlerini şasiye monte etmek için; bunlardan biri yeterli.' },
@@ -144,5 +157,5 @@ export const lineRobotCompetition = {
     { name: 'Yedek jumper kablolar', note: 'Gevşeyen ya da kopan bağlantılar için.' },
     { name: 'Multimetre', note: 'İsteğe bağlı; pil gerilimini ve bağlantıları ölçmek için.' },
   ],
-  materials: ['2WD robot araba kiti', 'Arduino Uno', 'L298N', '3 adet KH-09', '4×AA pil', '9V pil (Arduino için)', 'Jumper kablolar'],
+  materials: ['2WD robot araba kiti', 'Arduino Uno', 'L298N', 'en fazla 3 adet KH-09', '4×AA pil', '9V pil (Arduino için)', 'Jumper kablolar'],
 }
