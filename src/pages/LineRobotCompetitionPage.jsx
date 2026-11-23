@@ -33,7 +33,6 @@ function General() {
     ['İkram', 'Çay ve kahve'],
     ['Parkur', 'Duyurulacak'],
     ['Katılım', 'Herkese açık; bireysel ya da en fazla 3 kişilik takım'],
-    ['Kategoriler', 'Eğitim kategorisi (Arduino Eğitimi katılımcıları) ve Açık kategori (eğitime katılmayanlar); ayrı sıralanır'],
     ['Robot hazırlığı', 'Yarış gününe kadar, katılımcıların kendi zamanında'],
     ['Teknik danışma', '28 Kasım, 10:00–14:45, yarış alanında'],
     ['Sıralama turları', '28 Kasım, 15:00'],
@@ -266,7 +265,7 @@ function Prizes() {
   return (
     <>
       <TabTitle>Ödüller</TabTitle>
-      <p className="mt-4 leading-relaxed text-slate-700 dark:text-slate-300">Eğitim kategorisinde ilk üç dereceye kupa verilir. {competition.prizeNote} Açık kategorinin ödülleri ayrıca duyurulacak.</p>
+      <p className="mt-4 leading-relaxed text-slate-700 dark:text-slate-300">İlk üç dereceye kupa verilir. {competition.prizeNote}</p>
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         {competition.prizes.map((prize) => (
           <figure key={prize.place} className="border border-slate-200 dark:border-white/10">
