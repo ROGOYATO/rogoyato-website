@@ -29,7 +29,8 @@ function General() {
   const rows = [
     ['Düzenleyen', competition.organizer],
     ['Yarış günü', '28 Kasım 2026 Cumartesi'],
-    ['Yer', 'Duyurulacak (TOBB ETÜ kampüsü)'],
+    ['Yer', 'TOBB ETÜ, TM 218'],
+    ['İkram', 'Çay ve kahve'],
     ['Parkur', 'Duyurulacak'],
     ['Katılım', 'Herkese açık; bireysel ya da en fazla 3 kişilik takım'],
     ['Kategoriler', 'Eğitim kategorisi (Arduino Eğitimi katılımcıları) ve Açık kategori (eğitime katılmayanlar); ayrı sıralanır'],
@@ -85,7 +86,7 @@ function Programme() {
       <h3 className="mt-6 font-semibold text-slate-900 dark:text-white">Yarış gününe kadar</h3>
       <p className="mt-1 leading-relaxed text-slate-700 dark:text-slate-300">{competition.beforeRaceDay}</p>
       <h3 className="mt-8 font-semibold text-slate-900 dark:text-white">Yarış günü: 28 Kasım 2026 Cumartesi</h3>
-      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Yer duyurulacak</p>
+      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">TOBB ETÜ, TM 218 · Çay ve kahve ikramı olacak</p>
       <table className="mt-4 w-full text-sm">
         <thead>
           <tr>
@@ -370,7 +371,7 @@ export default function LineRobotCompetitionPage() {
             <h1 className="mt-1 font-heading text-2xl text-slate-900 dark:text-white sm:text-4xl">
               {competition.title} <span className="text-slate-400">·</span> {competition.edition}
             </h1>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">28 Kasım 2026 Cumartesi · Yer duyurulacak · Bireysel veya en fazla 3 kişilik takım</p>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">28 Kasım 2026 Cumartesi · TM 218 · Bireysel veya en fazla 3 kişilik takım</p>
           </div>
           {/* The entry form, once it is out. */}
           {competition.applicationUrl ? (

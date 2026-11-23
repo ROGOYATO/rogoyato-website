@@ -16,7 +16,7 @@ export const lineRobotCompetition = {
   facts: [
     { label: 'Hazırlık', value: 'Yarış gününe kadar', detail: 'Katılımcıların kendi zamanında' },
     { label: 'Yarış günü', value: '28 Kasım 2026 Cumartesi', detail: 'Sıralama turları 15:00’te' },
-    { label: 'Yer', value: 'Duyurulacak', detail: 'TOBB ETÜ kampüsü' },
+    { label: 'Yer', value: 'TM 218', detail: 'TOBB ETÜ' },
     { label: 'Katılım', value: 'Bireysel veya takım', detail: 'Takımlar en fazla 3 kişi' },
   ],
   // When things happen; `highlight` marks what participants must not miss.
@@ -126,7 +126,7 @@ export const lineRobotCompetition = {
     { q: 'Robotu nerede ve ne zaman yapacağım?', a: 'Robotunu yarış gününe kadar kendi zamanında, istediğin yerde hazırlarsın. Yarış gününe tamamlanmış robotla gelinir; robotlar yarış günü sıfırdan yapılmaz.' },
     { q: 'Takıldığım yerde yardım alabilir miyim?', a: 'Hazırlık haftasında teknik sorularını eğitim WhatsApp grubundan sorabilirsin. Yarış günü 10:00–14:45 arasında yarış alanında eğitmenler teknik sorunlarda yardım eder; kod yazmaz ve taktik vermez.' },
     { q: 'Parkur nasıl olacak?', a: 'Parkur bilgileri daha sonra duyurulacak; yarışmada birden fazla parkur olabilir. Beyaz zemin üzerinde yaklaşık 2 cm genişliğinde siyah bir çizgi olacak; çizgi kendisiyle kesişebilir, kesişmelerde robot düz devam eder (Şartname, Şekil 1).' },
-    { q: 'Yarışma nerede yapılacak?', a: 'Yarışmanın yapılacağı yer kesinleştiğinde bu sayfada ve eğitim WhatsApp grubunda duyurulacak.' },
+    { q: 'Yarışma nerede yapılacak?', a: 'Yarışma TOBB ETÜ’de, TM 218’de yapılacak. Gün boyunca çay ve kahve ikramı olacak.' },
     { q: 'Malzemelerim yanımda değilken nasıl çalışırım?', a: 'Sitemizdeki Arduino simülatörü, robot kodunun genel mantığını kurmak için kullanılabilir.' },
     { q: 'Sıralama nasıl belirlenir?', a: 'Her parkurda üç deneme hakkın var ve en iyisi sayılır. Bitirdiğin parkurda süren sayılır; bitiremediğin parkurda 180 + 180 × (1 − ilerleme oranı) saniye sayılır, yani 180 ile 360 saniye arası: ne kadar ilerlersen o kadar az. Bütün parkurların süreleri toplanır, toplamı en az olan birinci olur. Şartnamenin 5. maddesinde örnek bir hesap var. Final yapılmaz; ilk üçe kupa verilir.' },
   ],

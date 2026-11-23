@@ -4,7 +4,7 @@ export const events = [
     title: 'Çizgi İzleyen Robot Yarışması',
     type: 'Yarışma',
     date: '28 Kasım 2026',
-    location: 'TOBB ETÜ (yer duyurulacak)',
+    location: 'TOBB ETÜ, TM 218',
     status: 'upcoming',
     requiresApplication: false,
     summary:
@@ -24,7 +24,7 @@ export const events = [
     ],
     notes: [
       'Yarışma herkese açık; tek başına ya da en fazla üç kişilik takımlarla katılınabilir. Arduino Eğitimi katılımcıları ve eğitime katılmayanlar ayrı kategorilerde değerlendirilir.',
-      'Yarışmanın yapılacağı yer ayrıca duyurulacak.',
+      'Yarışma TOBB ETÜ’de, TM 218’de yapılacak; çay ve kahve ikramı olacak.',
     ],
     link: { to: '/yarisma/cizgi-izleyen-robot', label: 'Yarışma sayfası: kurallar, program ve ödüller' },
     applicationDeadline: null,
