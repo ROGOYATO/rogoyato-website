@@ -143,7 +143,7 @@ export const lineRobotCompetition = {
     { name: 'L298N motor sürücü modülü', count: '1', url: 'https://www.elektronikport.com/urun/l298n-motor-surucu-modulu-h-kopru', image: 'yarisma/cizgi-izleyen-robot/malzemeler/l298n.webp' },
     { name: 'KH-09 kızılötesi çizgi sensörü', count: '3 adede kadar', url: 'https://www.elektronikport.com/urun/ir-alici-verici-sensor-modulu-1', image: 'yarisma/cizgi-izleyen-robot/malzemeler/kh09.webp' },
     { name: 'AA pil (motorlar için)', count: '4', url: 'https://www.elektronikport.com/kategori/pil', image: 'yarisma/cizgi-izleyen-robot/malzemeler/aa-pil.webp' },
-    { name: '9V pil ve DC jaklı pil başlığı (Arduino için, motorlardan ayrı)', count: '1', url: 'https://www.elektronikport.com/kategori/pil', image: 'yarisma/cizgi-izleyen-robot/malzemeler/9v-pil.webp' },
+    { name: '9V pil ve DC jaklı pil başlığı (Arduino için, motorlardan ayrı)', count: '1', url: 'https://www.elektronikport.com/kategori/pil', image: 'yarisma/cizgi-izleyen-robot/malzemeler/9v-pil.webp', image2: 'yarisma/cizgi-izleyen-robot/malzemeler/pil-basligi-dc-jak.webp' },
     { name: 'Jumper kablolar (erkek-dişi ve dişi-dişi)', count: 'Yeteri kadar', url: 'https://www.elektronikport.com/kategori/jumper-kablo', image: 'yarisma/cizgi-izleyen-robot/malzemeler/jumper.webp' },
   ],
   recommendedMaterials: [
