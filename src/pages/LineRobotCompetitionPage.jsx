@@ -209,11 +209,13 @@ function Materials() {
           {competition.requiredMaterials.map((item) => (
             <tr key={item.name}>
               <td className={cell}>
-                {item.image ? (
-                  <a href={`${publicBase}${item.image}`} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} görseli`}>
-                    <img src={`${publicBase}${item.image}`} alt={item.name} loading="lazy" className="h-16 w-20 rounded border border-slate-200 bg-white object-contain p-0.5 sm:h-24 sm:w-32 dark:border-white/10" />
-                  </a>
-                ) : null}
+                <div className="flex flex-col gap-1">
+                  {[item.image, item.image2].filter(Boolean).map((image) => (
+                    <a key={image} href={`${publicBase}${image}`} target="_blank" rel="noopener noreferrer" aria-label={`${item.name} görseli`}>
+                      <img src={`${publicBase}${image}`} alt={item.name} loading="lazy" className="h-16 w-20 rounded border border-slate-200 bg-white object-contain p-0.5 sm:h-24 sm:w-32 dark:border-white/10" />
+                    </a>
+                  ))}
+                </div>
               </td>
               <td className={`${cell} align-middle text-slate-800 dark:text-slate-200`}>
                 {item.url ? (
