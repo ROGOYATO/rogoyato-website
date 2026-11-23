@@ -1271,6 +1271,7 @@ const BUILDERS = {
     return {
       group,
       markers,
+      wheel, // turned by the robot car's view from the simulated wheel
       update(state, inputs, dt = 1 / 60) {
         wheel.rotation.x += (((state?.rpm ?? 0) * 2 * Math.PI) / 60) * dt
       },

@@ -173,6 +173,14 @@ export default function SimulatorPage() {
   const [drawing, setDrawing] = useState(false)
   const track = trackId === 'drawn' && drawnTrack ? drawnTrack : trackId
   const [carView, setCarView] = useState('follow')
+  // The 3D car's detail; 'low' for slow computers, remembered here.
+  const [carQuality, setCarQuality] = useState(() => {
+    try {
+      return window.localStorage.getItem('rogoyato-araba-kalitesi') === 'low' ? 'low' : 'high'
+    } catch {
+      return 'high'
+    }
+  })
   const [carResetToken, setCarResetToken] = useState(0)
   const hexRef = useRef(null)
   const [download, setDownload] = useState(null)
@@ -597,7 +605,7 @@ export default function SimulatorPage() {
           apiRef={benchApi}
         />
       ) : (
-        <CarView track={track} view={carView} dark={dark} subscribe={sim.subscribe} resetToken={carResetToken} />
+        <CarView track={track} view={carView} dark={dark} quality={carQuality} subscribe={sim.subscribe} resetToken={carResetToken} />
       )}
       {wide ? (
         <div {...paneBar('bench')} className="font-code absolute left-3 top-3 flex cursor-grab items-center gap-1 rounded-md bg-slate-900/70 py-1 pl-1 pr-2.5 text-xs text-white backdrop-blur-sm active:cursor-grabbing [&_button]:text-white/70 [&_button:hover]:text-white">
@@ -792,6 +800,23 @@ export default function SimulatorPage() {
                     </option>
                   ))}
                   {drawnTrack ? <option value="drawn">{drawnTrack.name}</option> : null}
+                </select>
+                <select
+                  aria-label="Görüntü kalitesi"
+                  title="Bilgisayar yavaşsa düşük kaliteyi seçin"
+                  value={carQuality}
+                  onChange={(event) => {
+                    setCarQuality(event.target.value)
+                    try {
+                      window.localStorage.setItem('rogoyato-araba-kalitesi', event.target.value)
+                    } catch {
+                      // Without storage the choice lasts for this visit.
+                    }
+                  }}
+                  className="font-code rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-white/15 dark:bg-[#0b1517] dark:text-slate-100"
+                >
+                  <option value="high">Yüksek kalite</option>
+                  <option value="low">Düşük kalite (yavaş bilgisayar)</option>
                 </select>
                 <button
                   type="button"
