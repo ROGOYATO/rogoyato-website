@@ -384,22 +384,22 @@ export default function LineRobotCompetitionPage() {
       </header>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[15rem_1fr]">
-        {/* Tabs: a column on the left on wide screens, a scrolling row on phones. */}
+        {/* Tabs: a column on the left on wide screens, a two-column grid on phones. */}
         <nav aria-label="Yarışma bölümleri" className="min-w-0 print:hidden">
-          <ul role="tablist" aria-orientation="vertical" className="flex gap-1 overflow-x-auto border border-slate-200 bg-white dark:border-white/10 dark:bg-zinc-900/80 lg:sticky lg:top-24 lg:flex-col lg:gap-0 lg:overflow-visible lg:py-1">
-            {TABS.map(([id, label]) => {
+          <ul role="tablist" aria-orientation="vertical" className="grid grid-cols-2 gap-px overflow-hidden border border-slate-200 bg-slate-200 dark:border-white/10 dark:bg-white/10 lg:sticky lg:top-24 lg:flex lg:flex-col lg:gap-0 lg:overflow-visible lg:bg-white lg:py-1 dark:lg:bg-zinc-900/80">
+            {TABS.map(([id, label], index) => {
               const selected = id === active
               return (
-                <li key={id} className="shrink-0">
+                <li key={id} className={index === TABS.length - 1 && TABS.length % 2 ? 'col-span-2' : undefined}>
                   <button
                     type="button"
                     role="tab"
                     aria-selected={selected}
                     onClick={() => open(id)}
-                    className={`w-full whitespace-nowrap px-4 py-2.5 text-left text-sm transition lg:border-l-2 ${
+                    className={`h-full w-full px-3 py-3 text-left text-sm leading-snug transition lg:whitespace-nowrap lg:border-l-2 lg:px-4 lg:py-2.5 ${
                       selected
-                        ? 'border-b-2 border-slate-900 font-semibold text-slate-900 dark:border-white dark:text-white lg:border-b-0 lg:bg-slate-100 dark:lg:bg-white/10'
-                        : 'border-b-2 border-transparent text-slate-600 lg:border-l-transparent hover:text-slate-900 dark:text-slate-300 dark:hover:text-white lg:border-b-0 lg:hover:bg-slate-50 dark:lg:hover:bg-white/5'
+                        ? 'bg-slate-900 font-semibold text-white dark:bg-white dark:text-slate-900 lg:border-slate-900 lg:bg-slate-100 lg:text-slate-900 dark:lg:border-white dark:lg:bg-white/10 dark:lg:text-white'
+                        : 'bg-white text-slate-600 hover:text-slate-900 dark:bg-zinc-900 dark:text-slate-300 dark:hover:text-white lg:border-transparent lg:bg-transparent lg:hover:bg-slate-50 dark:lg:bg-transparent dark:lg:hover:bg-white/5'
                     }`}
                   >
                     {label}
