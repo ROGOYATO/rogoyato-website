@@ -200,9 +200,9 @@ function Materials() {
       <table className="mt-2 w-full text-sm">
         <thead>
           <tr>
-            <th className={`${headCell} w-24 sm:w-36`}>Görsel</th>
+            <th className={`${headCell} w-[5.5rem] sm:w-36`}>Görsel</th>
             <th className={headCell}>Malzeme</th>
-            <th className={`${headCell} w-36`}>Adet</th>
+            <th className={`${headCell} w-20 sm:w-36`}>Adet</th>
           </tr>
         </thead>
         <tbody>
@@ -363,18 +363,18 @@ export default function LineRobotCompetitionPage() {
       {/* Title block. */}
       <header className="border-t-4 border-slate-900 bg-white px-6 py-6 dark:border-white dark:bg-zinc-900/80 sm:px-8 print:border-0 print:px-0">
         <div className="flex flex-wrap items-center gap-5">
-          <img src={logoImage} alt="ROGOYATO logosu" className="h-16 w-16 shrink-0 dark:hidden" />
-          <img src={logoDarkImage} alt="ROGOYATO logosu" className="hidden h-16 w-16 shrink-0 dark:block" />
-          <div className="min-w-0 flex-1">
+          <img src={logoImage} alt="ROGOYATO logosu" className="h-12 w-12 shrink-0 self-start dark:hidden sm:h-16 sm:w-16 sm:self-center" />
+          <img src={logoDarkImage} alt="ROGOYATO logosu" className="hidden h-12 w-12 shrink-0 self-start dark:block sm:h-16 sm:w-16 sm:self-center" />
+          <div className="min-w-0 flex-1 basis-[calc(100%-4.25rem)] sm:basis-0">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{competition.organizer}</p>
-            <h1 className="mt-1 font-heading text-3xl text-slate-900 dark:text-white sm:text-4xl">
+            <h1 className="mt-1 font-heading text-2xl text-slate-900 dark:text-white sm:text-4xl">
               {competition.title} <span className="text-slate-400">·</span> {competition.edition}
             </h1>
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">28 Kasım 2026 Cumartesi · Yer duyurulacak · Bireysel veya en fazla 3 kişilik takım</p>
           </div>
           {/* The entry form, once it is out. */}
           {competition.applicationUrl ? (
-            <a href={competition.applicationUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-md bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 print:hidden">
+            <a href={competition.applicationUrl} target="_blank" rel="noopener noreferrer" className="w-full shrink-0 rounded-md bg-slate-900 px-5 py-2.5 text-center text-sm font-semibold sm:w-auto text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 print:hidden">
               Başvuru formu
             </a>
           ) : (
