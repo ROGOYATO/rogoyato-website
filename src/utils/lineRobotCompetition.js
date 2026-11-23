@@ -75,12 +75,22 @@ export const lineRobotCompetition = {
     },
     {
       title: 'Yarış ve puanlama',
+      example: {
+        caption: 'Örnek: üç parkurlu bir yarışmada üç robotun toplam süresi',
+        columns: ['Robot', '1. parkur', '2. parkur', '3. parkur', 'Toplam'],
+        rows: [
+          ['A', 'Bitirdi, 45 sn → 45', 'Bitirdi, 60 sn → 60', 'Bitirdi, 50 sn → 50', '155 sn (1.)'],
+          ['B', 'Bitirdi, 30 sn → 30', 'Bitirdi, 40 sn → 40', 'Bitiremedi, 0,75 → 180 + 45 = 225', '295 sn (2.)'],
+          ['C', 'Bitiremedi, 0,50 → 180 + 90 = 270', 'Bitiremedi, 0,90 → 180 + 18 = 198', 'Bitirdi, 80 sn → 80', '548 sn (3.)'],
+        ],
+      },
       items: [
-        'Robot başlangıç çizgisinin gerisine konur ve hakemin işaretiyle çalıştırılır. Süre hakemin işaretiyle başlar, robot parkuru tamamlayıp başlangıç çizgisini yeniden geçtiğinde durur. Bir deneme en fazla 3 dakika sürer.',
-        'Bitirme: Robot parkurun tamamını izleyip başlangıç çizgisine dönerse parkuru bitirmiş olur; bu denemenin sonucu süresidir.',
-        'Bitirememe: Robot çizgiyi tamamen kaybedip parkurdan çıkarsa, kesişmede başka kola saparsa, deneme sırasında robota dokunulursa ya da 3 dakika dolarsa deneme o noktada sona erer; bu denemenin sonucu, robotun ulaştığı en uzak noktanın başlangıçtan çizgi boyunca ölçülen mesafesidir.',
-        'Her robotun her parkurda üç deneme hakkı vardır ve o parkurdaki en iyi denemesi geçerli sayılır. Bitiren deneme, bitiremeyen her denemeden iyidir; iki bitirmeden süresi kısa olan, iki bitirememeden mesafesi uzun olan daha iyidir.',
-        'Sıralama şu ölçütlerle, sırayla yapılır: (1) bitirilen parkur sayısı, çok olan önde; (2) bitirilen parkurlardaki en iyi sürelerin toplamı, az olan önde; (3) bitirilemeyen parkurlarda ulaşılan mesafelerin toplamı, çok olan önde. Tek parkur kullanılırsa bu, o parkurdaki en iyi denemeye göre sıralamaktır.',
+        'Robot başlangıç çizgisinin gerisine konur ve hakemin işaretiyle çalıştırılır. Süre hakemin işaretiyle başlar, robot parkuru tamamlayıp başlangıç çizgisini yeniden geçtiğinde durur. Bir deneme en fazla 3 dakika (180 saniye) sürer.',
+        'Bitirme: Robot parkurun tamamını izleyip başlangıç çizgisine dönerse parkuru bitirmiş olur; denemenin sonucu ölçülen süredir.',
+        'Bitirememe: Robot çizgiyi tamamen kaybedip parkurdan çıkarsa, bir kesişmede düz gitmek yerine sağa ya da sola dönüp kesişen çizgiye geçerse, deneme sırasında robota dokunulursa ya da 180 saniye dolarsa deneme o noktada biter. Denemenin sonucu ilerleme oranıdır: robotun ulaştığı en uzak noktaya kadar parkur boyunca gittiği yolun, parkurun tüm uzunluğuna oranı (örneğin parkurun dörtte üçü = 0,75). Hakem bunu parkurdaki işaretlerden belirler.',
+        'Her robotun her parkurda üç deneme hakkı vardır; her parkurda robotun en iyi denemesi sayılır. Bitiren deneme bitiremeyenden, iki bitirmeden süresi kısa olan, iki bitirememeden ilerleme oranı yüksek olan daha iyidir.',
+        'Parkur süresi: Bitirilen parkurda en iyi denemenin süresidir. Bitirilemeyen parkurda 180 + 180 × (1 − ilerleme oranı) saniyedir; yani bitirilemeyen bir parkur, ne kadar ilerlendiyse o kadar az olmak üzere 180 ile 360 saniye arasında sayılır. Hiç deneme yapılmayan parkur 360 saniyedir.',
+        'Toplam süre, robotun bütün parkurlardaki parkur sürelerinin toplamıdır. Sıralama toplam süreye göre yapılır; toplam süresi en az olan birinci olur (bkz. örnek).',
         'Denemeler arasında kod, ayar ve pil değiştirilebilir; sırası gelen robotun en geç 2 dakika içinde piste çıkması gerekir.',
       ],
     },
@@ -115,7 +125,7 @@ export const lineRobotCompetition = {
     { q: 'Parkur nasıl olacak?', a: 'Parkur bilgileri daha sonra duyurulacak; yarışmada birden fazla parkur olabilir. Beyaz zemin üzerinde yaklaşık 2 cm genişliğinde siyah bir çizgi olacak; çizgi kendisiyle kesişebilir, kesişmelerde robot düz devam eder (Şartname, Şekil 1).' },
     { q: 'Yarışma nerede yapılacak?', a: 'Yarışmanın yapılacağı yer kesinleştiğinde bu sayfada ve eğitim WhatsApp grubunda duyurulacak.' },
     { q: 'Malzemelerim yanımda değilken nasıl çalışırım?', a: 'Sitemizdeki Arduino simülatörü, robot kodunun genel mantığını kurmak için kullanılabilir.' },
-    { q: 'Sıralama nasıl belirlenir?', a: 'Her denemede robot ya parkuru bitirir ve sonucu süresi olur ya da bitiremez ve sonucu ulaştığı en uzak noktanın mesafesi olur. Bitiren deneme her zaman bitiremeyenden iyidir; bitirenler arasında kısa süre, bitiremeyenler arasında uzun mesafe öndedir. Her parkurda üç deneme hakkın var, en iyisi sayılır. Birden fazla parkur olursa önce bitirdiğin parkur sayısına, sonra bu parkurlardaki sürelerinin toplamına, sonra kalan parkurlarda ulaştığın mesafeye bakılır. Final yapılmaz; ilk üçe kupa verilir.' },
+    { q: 'Sıralama nasıl belirlenir?', a: 'Her parkurda üç deneme hakkın var ve en iyisi sayılır. Bitirdiğin parkurda süren sayılır; bitiremediğin parkurda 180 + 180 × (1 − ilerleme oranı) saniye sayılır, yani 180 ile 360 saniye arası: ne kadar ilerlersen o kadar az. Bütün parkurların süreleri toplanır, toplamı en az olan birinci olur. Şartnamenin 5. maddesinde örnek bir hesap var. Final yapılmaz; ilk üçe kupa verilir.' },
   ],
   contact: [
     { label: 'E-posta', value: 'rogoyato@gmail.com', href: 'mailto:rogoyato@gmail.com' },

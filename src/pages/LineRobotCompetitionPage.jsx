@@ -143,6 +143,33 @@ function Regulation() {
                 </li>
               ))}
             </ol>
+            {section.example ? (
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full min-w-[34rem] text-sm">
+                  <caption className="mb-2 text-left text-sm text-slate-600 dark:text-slate-400">{section.example.caption}</caption>
+                  <thead>
+                    <tr>
+                      {section.example.columns.map((column) => (
+                        <th key={column} className={headCell}>
+                          {column}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {section.example.rows.map((row) => (
+                      <tr key={row[0]}>
+                        {row.map((value, i) => (
+                          <td key={i} className={`${cell} ${i === 0 || i === row.length - 1 ? 'font-semibold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}>
+                            {value}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
             {section.figure ? (
               <figure className="mt-4">
                 <img src={`${publicBase}${section.figure.image}`} alt={section.figure.caption} className="w-full max-w-xl rounded-md border border-slate-200 dark:border-white/10" loading="lazy" />

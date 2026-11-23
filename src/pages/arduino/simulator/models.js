@@ -155,6 +155,7 @@ export function topTexture(canvas, width, depth, color = true) {
 
 export const metal = (color = '#c7ccd1', roughness = 0.28) => mat(color, { metalness: 1, roughness })
 export const GOLD = () => metal('#d6b25e', 0.3)
+const tin = () => metal('#d5d8db', 0.32)
 
 // Text printed on a chip's top, as a texture for a box of that size.
 const chipCache = new Map()
@@ -1133,13 +1134,19 @@ const BUILDERS = {
       lying.position.set(x, 0.42, 1.2)
       group.add(lying)
     }
-    // The sensitivity trimmer: a blue box with a brass screw.
-    group.add(box(0.45, 0.35, 0.45, mat('#2563eb', { roughness: 0.45 }), 0, 0.32, 0.2))
-    const screw = cylinder(0.08, 0.06, metal('#d9b45a', 0.3), 0.12, 0.52, 0.32, 16)
-    group.add(screw, box(0.12, 0.02, 0.02, mat('#6b5523'), 0.12, 0.555, 0.32))
-    group.add(box(0.5, 0.12, 0.4, chipTop(['LM393'], 0.5, 0.4), -0.2, 0.2, -0.6))
-    smd(group, [[0.4, -0.75, true, 'r'], [0.4, -0.15, true, 'r']], 0.14)
-    const led = box(0.16, 0.08, 0.1, new THREE.MeshStandardMaterial({ color: '#22c55e', emissive: '#22c55e', emissiveIntensity: 0 }), 0.45, 0.19, -0.4)
+    // The sensitivity trimmer (3296-style, 6.5 mm): a blue block with a
+    // brass adjusting screw and its cross slot.
+    group.add(box(0.62, 0.48, 0.62, mat('#2054d6', { roughness: 0.45 }), -0.32, 0.38, 0.05))
+    group.add(cylinder(0.13, 0.06, metal('#d9b45a', 0.3), -0.32, 0.65, 0.05, 20), box(0.2, 0.02, 0.035, mat('#6b5523'), -0.32, 0.685, 0.05), box(0.035, 0.02, 0.2, mat('#6b5523'), -0.32, 0.685, 0.05))
+    // The LM393 comparator (SOIC-8) beside it, with its gull-wing legs.
+    group.add(box(0.39, 0.15, 0.5, chipTop(['LM393'], 0.39, 0.5, undefined, true), 0.33, 0.215, 0.05))
+    for (let i = 0; i < 4; i += 1) for (const s of [-1, 1]) group.add(box(0.12, 0.03, 0.04, tin(), 0.33 + s * 0.24, 0.155, -0.14 + i * 0.127))
+    // The 3 mm mounting hole near the header.
+    group.add(cylinder(0.25, 0.012, tin(), 0, 0.146, -0.78, 24), cylinder(0.15, 0.016, mat('#0b1a3a', { roughness: 0.9 }), 0, 0.148, -0.78, 20))
+    smd(group, [[-0.45, 0.62, true, 'r'], [-0.15, 0.62, true, 'r'], [0.15, 0.62, true, 'r'], [0.45, 0.62, true, 'c'], [0.5, -0.45, true, 'r']], 0.14)
+    // Two SMD LEDs: red when powered, green when it sees the floor.
+    group.add(box(0.16, 0.08, 0.1, new THREE.MeshStandardMaterial({ color: '#ef4444', emissive: '#ef4444', emissiveIntensity: 0.9 }), -0.48, 0.19, -0.62))
+    const led = box(0.16, 0.08, 0.1, new THREE.MeshStandardMaterial({ color: '#22c55e', emissive: '#22c55e', emissiveIntensity: 0 }), 0.48, 0.19, -0.75)
     group.add(led)
     return {
       group,
@@ -1202,31 +1209,64 @@ const BUILDERS = {
   // terminal ends under its screw.
   motorDriver(part, definition) {
     const group = new THREE.Group()
-    const { markers } = breakout(group, part.id, definition.pins, { type: 'motorDriver', color: '#b91c1c' })
-    const sink = mat('#16161a', { metalness: 0.6, roughness: 0.45 })
-    group.add(box(2.4, 1.6, 0.4, sink, 0, 0.94, -0.1))
-    for (let i = 0; i < 7; i += 1) group.add(box(0.06, 0.4, 0.9, sink, -1.1 + i * 0.36, 1.9, -0.1))
-    const blue = mat('#1d4ed8', { roughness: 0.45 })
+    const { markers } = breakout(group, part.id, definition.pins, { type: 'motorDriver', color: '#c8161d' })
+    const top = 0.14
+    // Four 3 mm mounting holes in the corners, ringed with tin.
+    for (const x of [-1.85, 1.85]) {
+      for (const z of [-1.85, 1.85]) {
+        group.add(cylinder(0.24, 0.012, tin(), x, top + 0.006, z, 24), cylinder(0.15, 0.016, mat('#2a1a1a', { roughness: 0.9 }), x, top + 0.008, z, 20))
+      }
+    }
+    // The L298N in its 15-lead Multiwatt package, bolted to a black
+    // anodised finned heat sink (23 × 25 × 16 mm) that stands on the board.
+    const sink = mat('#1c1d22', { metalness: 0.7, roughness: 0.38 })
+    const sinkZ = -0.55
+    group.add(box(2.3, 2.5, 0.25, sink, 0, top + 1.25, sinkZ))
+    for (let i = 0; i < 7; i += 1) group.add(box(0.1, 2.4, 1.15, sink, -1.1 + i * (2.2 / 6), top + 1.3, sinkZ + 0.7))
+    const chip = box(2.0, 1.0, 0.45, chipTop(['L298N'], 2.0, 1.0), 0, top + 1.1, sinkZ - 0.35)
+    chip.rotation.x = -Math.PI / 2
+    group.add(chip, cylinder(0.2, 0.08, metal('#cfd4da', 0.3), 0, top + 2.0, sinkZ - 0.1, 16))
+    const lead = tin()
+    for (let i = 0; i < 15; i += 1) {
+      const x = -0.889 + i * 0.127
+      const back = i % 2 ? -0.25 : -0.1
+      group.add(box(0.05, 0.75, 0.025, lead, x, top + 0.75, sinkZ - 0.6), box(0.05, 0.025, Math.abs(back) + 0.05, lead, x, top + 0.38, sinkZ - 0.6 + back / 2), box(0.05, 0.38, 0.025, lead, x, top + 0.19, sinkZ - 0.6 + back))
+    }
+    // Screw terminals: blue, 5.08 mm pitch, 10 mm tall; the wire goes in at
+    // the side, the screw is on top.
+    const blue = mat('#2563eb', { roughness: 0.45 })
     const screw = metal('#cfd4da', 0.3)
-    for (const pin of definition.pins.filter((p) => p.terminal)) {
+    const terminals = definition.pins.filter((p) => p.terminal)
+    for (const pin of terminals) {
       const sideways = Math.abs(pin.x) > 1.5
-      group.add(box(sideways ? 0.75 : 0.5, 0.75, sideways ? 0.5 : 0.75, blue, pin.x, 0.52, pin.z))
-      group.add(cylinder(0.12, 0.04, screw, pin.x, 0.91, pin.z, 20), box(0.18, 0.02, 0.03, mat('#5b6168'), pin.x, 0.935, pin.z))
+      group.add(box(sideways ? 0.76 : 0.508, 1.0, sideways ? 0.508 : 0.76, blue, pin.x, top + 0.5, pin.z))
+      const mouth = box(sideways ? 0.02 : 0.3, 0.28, sideways ? 0.3 : 0.02, mat('#0b0f1a'), pin.x + (sideways ? Math.sign(pin.x) * 0.385 : 0), top + 0.35, pin.z + (sideways ? 0 : 0.385))
+      group.add(mouth)
+      group.add(cylinder(0.16, 0.04, screw, pin.x, top + 1.0, pin.z, 20), box(0.24, 0.02, 0.04, mat('#5b6168'), pin.x, top + 1.025, pin.z))
       const hit = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 8), new THREE.MeshBasicMaterial({ color: '#22d3ee', transparent: true, opacity: 0, depthWrite: false }))
-      hit.position.set(pin.x, 0.98, pin.z)
+      hit.position.set(pin.x, top + 1.05, pin.z)
       hit.userData = { kind: 'pin', owner: 'part', partId: part.id, pin: pin.id, seat: -0.05 }
       group.add(hit)
       markers.push(hit)
       const text = silk(pin.label, 0.11)
       text.rotation.set(-Math.PI / 2, 0, 0)
-      text.position.set(pin.x + (sideways ? -Math.sign(pin.x) * 0.62 : 0), 0.145, pin.z + (sideways ? 0 : -0.52))
+      text.position.set(pin.x + (sideways ? -Math.sign(pin.x) * 0.62 : 0), top + 0.005, pin.z + (sideways ? 0 : -0.52))
       group.add(text)
     }
-    electrolytic(group, 1.0, 0.14, 1.0, 0.3, 0.8)
-    electrolytic(group, -1.0, 0.14, 1.0, 0.3, 0.8)
-    smd(group, [[-1.2, -1.1, false, 'r'], [-0.8, -1.1, false, 'r']], 0.14)
-    // The 5V-EN jumper behind the power terminal.
-    group.add(box(0.25, 0.3, 0.5, mat('#141416'), 1.3, 0.3, 1.9))
+    // Two 220 µF 35 V capacitors (8 × 10 mm), the 78M05 regulator, the
+    // eight flyback diodes, the power LED and the 5V-EN jumper.
+    electrolytic(group, 1.15, top, 0.95, 0.4, 1.0, ['220µF', '35V'])
+    electrolytic(group, -1.15, top, 0.95, 0.4, 1.0, ['220µF', '35V'])
+    group.add(box(0.65, 0.23, 0.6, chipTop(['78M05'], 0.65, 0.6), 0.75, top + 0.115, 1.25), box(0.5, 0.05, 0.3, tin(), 0.75, top + 0.03, 1.62))
+    for (let i = 0; i < 4; i += 1) {
+      for (const x of [-1.65, 1.65]) {
+        const z = -1.25 + i * 0.38
+        group.add(box(0.42, 0.2, 0.26, mat('#1a1a1c', { roughness: 0.6 }), x, top + 0.1, z), box(0.06, 0.205, 0.265, mat('#d1d5db'), x + 0.15, top + 0.1, z))
+      }
+    }
+    group.add(box(0.16, 0.06, 0.08, new THREE.MeshStandardMaterial({ color: '#ef4444', emissive: '#ef4444', emissiveIntensity: 0.8 }), -0.5, top + 0.03, 1.6))
+    group.add(box(0.25, 0.55, 0.5, mat('#141416'), 1.6, top + 0.27, 1.85), box(0.25, 0.08, 0.5, metal('#d6b25e', 0.3), 1.6, top + 0.56, 1.85))
+    smd(group, [[-0.3, 1.2, false, 'r'], [0.1, 1.2, false, 'r'], [-0.6, -1.5, true, 'c']], top)
     return { group, markers, update() {} }
   },
 
