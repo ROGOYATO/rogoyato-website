@@ -12,7 +12,7 @@ export const lineRobotCompetition = {
   organizer: 'TOBB ETÜ Robotik ve Gömülü Yazılım Topluluğu (ROGOYATO)',
   sponsor: 'Westonya',
   summary:
-    'Tek başına ya da en fazla üç kişilik takımlar hâlinde, kendi kurulan çizgi izleyen robotlarla parkurda yarışılan ödüllü yarışma. Arduino Eğitimi katılımcıları ile eğitime katılmayanlar ayrı kategorilerde değerlendirilir. Robotlar katılımcıların kendi zamanlarında hazırlanır; yarış günü tamamlanmış robotla gelinir.',
+    'Tek başına ya da en fazla üç kişilik takımlar hâlinde, kendi kurulan çizgi izleyen robotlarla parkurda yarışılan ödüllü yarışma. Robotlar katılımcıların kendi zamanlarında hazırlanır; yarış günü tamamlanmış robotla gelinir.',
   facts: [
     { label: 'Hazırlık', value: 'Yarış gününe kadar', detail: 'Katılımcıların kendi zamanında' },
     { label: 'Yarış günü', value: '28 Kasım 2026 Cumartesi', detail: 'Sıralama turları 15:00’te' },
@@ -28,15 +28,14 @@ export const lineRobotCompetition = {
     { time: '14:45–15:00', title: 'Yoklama ve açılış', text: 'Robotların ve yarışmacıların kaydı, kuralların hatırlatılması.' },
     { time: '15:00–16:15', title: 'Sıralama turları', text: 'Her robot sırayla piste çıkar; her parkurda en fazla üç deneme.' },
     { time: '16:15–16:30', title: 'Sonuçların açıklanması', text: 'Derecelerin hesaplanması ve açıklanması.' },
-    { time: '16:30–16:45', title: 'Ödül töreni ve kapanış', text: 'Her kategoride ilk üç dereceye ödüllerin verilmesi, toplu fotoğraf.' },
+    { time: '16:30–16:45', title: 'Ödül töreni ve kapanış', text: 'İlk üç dereceye kupaların verilmesi, toplu fotoğraf.' },
   ],
   // The regulation, article by article.
   rules: [
     {
       title: 'Katılım',
       items: [
-        'Yarışma iki kategoride yapılır: Eğitim kategorisi, 2026 Güz Arduino Eğitimi’ne katılanlar içindir; Açık kategori, eğitime katılmayanlar içindir. İki kategori ayrı sıralanır ve ayrı ödüllendirilir.',
-        'Takımda eğitime katılmamış bir üye varsa takım Açık kategoride yarışır.',
+        'Yarışma herkese açıktır. Bütün yarışmacılar ve takımlar tek bir sıralamada yarışır.',
         'Yarışmaya katılmak için başvuru formunun doldurulması gerekir; takımlarda formu bir kişi takım adına doldurur.',
         'Yarışmaya tek başına ya da en fazla üç kişilik takımlar hâlinde katılınabilir. Bir kişi yalnızca bir takımda yer alabilir.',
         'Her yarışmacı ya da takım tek bir robotla yarışır; robotunu kendisi kurar ve kodlar.',
@@ -99,8 +98,8 @@ export const lineRobotCompetition = {
     {
       title: 'Dereceler',
       items: [
-        'Dereceler her kategoride ayrı olarak sıralama turlarının sonucuna göre belirlenir; ayrıca final turu yapılmaz.',
-        'Eğitim kategorisinde ilk üç dereceye giren yarışmacılara ya da takımlara kupa verilir. Açık kategorinin ödülleri ayrıca duyurulacaktır.',
+        'Dereceler sıralama turlarının sonucuna göre belirlenir; ayrıca final turu yapılmaz.',
+        'İlk üç dereceye giren yarışmacılara ya da takımlara kupa verilir.',
         'Derece için eşitlik olması durumunda eşit robotlar kısa bir tekrar sürüşü yapar.',
       ],
     },
@@ -121,8 +120,8 @@ export const lineRobotCompetition = {
   ],
   faq: [
     { q: 'Nasıl başvururum?', a: 'Başvurular Google Form üzerinden alınır; bu sayfanın üstündeki “Başvuru formu” butonundan forma ulaşabilirsin. Takımlarda formu bir kişi, takım adına doldurur.' },
-    { q: 'Arduino Eğitimi’ne katılmadım, katılabilir miyim?', a: 'Evet. Eğitime katılmayanlar Açık kategoride yarışır; Açık kategori, eğitime katılanlardan ayrı sıralanır ve ayrı ödüllendirilir. Robot, Malzemeler bölümündeki parçalarla ya da eşdeğerleriyle kurulur.' },
-    { q: 'Takım olarak katılabilir miyim?', a: 'Evet. Tek başına ya da en fazla üç kişilik bir takımla katılabilirsin; bir kişi yalnızca bir takımda yer alabilir. Takımda eğitime katılmamış biri varsa takım Açık kategoride yarışır.' },
+    { q: 'Arduino Eğitimi’ne katılmadım, katılabilir miyim?', a: 'Evet, yarışma herkese açık ve herkes aynı sıralamada yarışır. Robot, Malzemeler bölümündeki parçalarla ya da eşdeğerleriyle kurulur.' },
+    { q: 'Takım olarak katılabilir miyim?', a: 'Evet. Tek başına ya da en fazla üç kişilik bir takımla katılabilirsin; bir kişi yalnızca bir takımda yer alabilir.' },
     { q: 'Robotu nerede ve ne zaman yapacağım?', a: 'Robotunu yarış gününe kadar kendi zamanında, istediğin yerde hazırlarsın. Yarış gününe tamamlanmış robotla gelinir; robotlar yarış günü sıfırdan yapılmaz.' },
     { q: 'Takıldığım yerde yardım alabilir miyim?', a: 'Hazırlık haftasında teknik sorularını eğitim WhatsApp grubundan sorabilirsin. Yarış günü 10:00–14:45 arasında yarış alanında eğitmenler teknik sorunlarda yardım eder; kod yazmaz ve taktik vermez.' },
     { q: 'Parkur nasıl olacak?', a: 'Parkur bilgileri daha sonra duyurulacak; yarışmada birden fazla parkur olabilir. Beyaz zemin üzerinde yaklaşık 2 cm genişliğinde siyah bir çizgi olacak; çizgi kendisiyle kesişebilir, kesişmelerde robot düz devam eder (Şartname, Şekil 1).' },
