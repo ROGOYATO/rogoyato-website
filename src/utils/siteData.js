@@ -4,7 +4,7 @@ export const events = [
     title: 'Çizgi İzleyen Robot Yarışması',
     type: 'Yarışma',
     date: '28 Kasım 2026',
-    location: 'TOBB ETÜ, ST1',
+    location: 'TOBB ETÜ, ST-1 (Sosyal Tesisler Binası)',
     status: 'upcoming',
     requiresApplication: false,
     summary:
@@ -24,7 +24,7 @@ export const events = [
     ],
     notes: [
       'Yarışma herkese açık; tek başına ya da en fazla üç kişilik takımlarla katılınabilir.',
-      'Yarışma TOBB ETÜ’de, ST1’de yapılacak; çay ve kahve ikramı olacak.',
+      'Yarışma TOBB ETÜ’de, Sosyal Tesisler Binası’nda (ST-1) yapılacak; çay ve kahve ikramı olacak.',
     ],
     link: { to: '/yarisma/cizgi-izleyen-robot', label: 'Yarışma sayfası: kurallar, program ve ödüller' },
     applicationDeadline: null,
