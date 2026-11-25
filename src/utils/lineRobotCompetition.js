@@ -16,7 +16,7 @@ export const lineRobotCompetition = {
   facts: [
     { label: 'Hazırlık', value: 'Yarış gününe kadar', detail: 'Katılımcıların kendi zamanında' },
     { label: 'Yarış günü', value: '28 Kasım 2026 Cumartesi', detail: 'Sıralama turları 15:00’te' },
-    { label: 'Yer', value: 'TM 218', detail: 'TOBB ETÜ' },
+    { label: 'Yer', value: 'ST1', detail: 'TOBB ETÜ' },
     { label: 'Katılım', value: 'Bireysel veya takım', detail: 'Takımlar en fazla 3 kişi' },
   ],
   // When things happen; `highlight` marks what participants must not miss.
@@ -86,8 +86,9 @@ export const lineRobotCompetition = {
         ],
       },
       items: [
-        'Robot başlangıç çizgisinin gerisine konur ve hakemin işaretiyle çalıştırılır. Süre hakemin işaretiyle başlar, robot parkuru tamamlayıp başlangıç çizgisini yeniden geçtiğinde durur. Bir deneme en fazla 3 dakika (180 saniye) sürer.',
+        'Robot, en ön noktası başlangıç/bitiş çizgisinin hemen gerisinde, çizgiye hizalı olacak şekilde konur ve hakemin işaretiyle çalıştırılır (örneğin düğmesine basılır). Süre hakemin işaretiyle başlar; robot parkuru tamamlayıp en ön noktası başlangıç/bitiş çizgisini yeniden geçtiğinde hakem kronometreyi durdurur. Bir deneme en fazla 3 dakika (180 saniye) sürer.',
         'Bitirme: Robot parkurun tamamını izleyip başlangıç çizgisine dönerse parkuru bitirmiş olur; denemenin sonucu ölçülen süredir.',
+        'Robotun bitişte kendiliğinden durması gerekmez; süreyi hakem kronometreyle ölçer ve robot çizgiyi geçtikten sonra yarışmacı robotunu alır. Kesişmelerde üç sensör birden siyah görebileceğinden, “üç sensör de siyahsa dur” gibi bir kod robotu yarı yolda durdurabilir.',
         'Bitirememe: Robot çizgiyi tamamen kaybedip parkurdan çıkarsa, bir kesişmede düz gitmek yerine sağa ya da sola dönüp kesişen çizgiye geçerse, deneme sırasında robota dokunulursa ya da 180 saniye dolarsa deneme o noktada biter. Denemenin sonucu ilerleme oranıdır: robotun ulaştığı en uzak noktaya kadar parkur boyunca gittiği yolun, parkurun tüm uzunluğuna oranı (örneğin parkurun dörtte üçü = 0,75). Hakem bunu parkurdaki işaretlerden belirler.',
         'Her robotun her parkurda üç deneme hakkı vardır; her parkurda robotun en iyi denemesi sayılır. Bitiren deneme bitiremeyenden, iki bitirmeden süresi kısa olan, iki bitirememeden ilerleme oranı yüksek olan daha iyidir.',
         'Parkur süresi: Bitirilen parkurda en iyi denemenin süresidir. Bitirilemeyen parkurda 180 + 180 × (1 − ilerleme oranı) saniyedir; yani bitirilemeyen bir parkur, ne kadar ilerlendiyse o kadar az olmak üzere 180 ile 360 saniye arasında sayılır. Hiç deneme yapılmayan parkur 360 saniyedir.',
@@ -125,8 +126,9 @@ export const lineRobotCompetition = {
     { q: 'Robotu nerede ve ne zaman yapacağım?', a: 'Robotunu yarış gününe kadar kendi zamanında, istediğin yerde hazırlarsın. Yarış gününe tamamlanmış robotla gelinir; robotlar yarış günü sıfırdan yapılmaz.' },
     { q: 'Takıldığım yerde yardım alabilir miyim?', a: 'Hazırlık haftasında teknik sorularını eğitim WhatsApp grubundan sorabilirsin. Yarış günü 10:00–14:45 arasında yarış alanında eğitmenler teknik sorunlarda yardım eder; kod yazmaz ve taktik vermez.' },
     { q: 'Parkur nasıl olacak?', a: 'Parkur bilgileri daha sonra duyurulacak; yarışmada birden fazla parkur olabilir. Beyaz zemin üzerinde yaklaşık 2 cm genişliğinde siyah bir çizgi olacak; çizgi kendisiyle kesişebilir, kesişmelerde robot düz devam eder (Şartname, Şekil 1).' },
-    { q: 'Yarışma nerede yapılacak?', a: 'Yarışma TOBB ETÜ’de, TM 218’de yapılacak. Gün boyunca çay ve kahve ikramı olacak.' },
+    { q: 'Yarışma nerede yapılacak?', a: 'Yarışma TOBB ETÜ’de, ST1’de yapılacak. Gün boyunca çay ve kahve ikramı olacak.' },
     { q: 'Malzemelerim yanımda değilken nasıl çalışırım?', a: 'Sitemizdeki Arduino simülatörü, robot kodunun genel mantığını kurmak için kullanılabilir.' },
+    { q: 'Robot bitişte durmalı mı?', a: 'Hayır. Robot, önü başlangıç/bitiş çizgisine hizalı olarak başlar; turu tamamlayıp önü çizgiyi yeniden geçtiğinde hakem kronometreyi durdurur ve robotunu alırsın. Kesişmelerde üç sensör birden siyah görebilir; bu durumda robotun düz devam etmesi gerekir, durursa deneme orada biter.' },
     { q: 'Sıralama nasıl belirlenir?', a: 'Her parkurda üç deneme hakkın var ve en iyisi sayılır. Bitirdiğin parkurda süren sayılır; bitiremediğin parkurda 180 + 180 × (1 − ilerleme oranı) saniye sayılır, yani 180 ile 360 saniye arası: ne kadar ilerlersen o kadar az. Bütün parkurların süreleri toplanır, toplamı en az olan birinci olur. Şartnamenin 5. maddesinde örnek bir hesap var. Final yapılmaz; ilk üçe kupa verilir.' },
   ],
   contact: [
