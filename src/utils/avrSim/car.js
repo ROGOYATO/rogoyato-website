@@ -2,16 +2,19 @@
 // with three KH-09 IR sensors looking at a black-tape track. Units are
 // metres, seconds and radians. Physics runs every 1 ms of simulated time so
 // the sketch's control loop sees the sensors change at its real speed.
+import { COMPETITION_TRACKS, buildTrack } from '../competitionTracks.js'
 import { CYCLES_PER_US, PinState } from './uno.js'
 
 const STEP_S = 0.001
 // The 2WD kit's TT gear motor: 6 V, 250 rpm unloaded, 66 mm wheels
-// (Elektronikport's kit page). It runs from the kit's 4×AA pack (6 V)
-// through an L298N, whose two transistors in series drop about 1.8 V, so
-// at full PWM the motor gets about 4.2 V. Against its gearbox it needs
-// about 1.2 V to turn at all (below ~30% PWM it stands still), and
-// carrying the robot costs it some 15% of its speed.
-const BATTERY_VOLTS = 6
+// (Elektronikport's kit page). It runs from the kit's 4×AA pack: 6 V on
+// the label, but alkaline cells give about 1.3 V each while the motors
+// draw their half an ampere or so, 5.2 V in all. The L298N's two
+// transistors in series drop about 1.8 V, so at full PWM the motor gets
+// about 3.4 V. Against its gearbox it needs about 1.2 V to turn at all
+// (below ~35% PWM it stands still), and carrying the robot costs it some
+// 15% of its speed: at full PWM the robot does about 0.35 m/s.
+const BATTERY_VOLTS = 5.2
 const L298N_DROP_VOLTS = 1.8
 const MOTOR = { ratedVolts: 6, ratedRpm: 250, startVolts: 1.2 }
 const LOADED = 0.85
@@ -21,40 +24,9 @@ const WHEEL_TRACK = 0.13
 const SENSOR_AHEAD = 0.09
 const SENSOR_SPACING = 0.02
 const LINE_WIDTH = 0.019 // black electrical tape
-export const ARENA = { width: 2.0, height: 1.4 }
+export const ARENA = { width: 2.4, height: 1.7 }
 export const CAR_SIZE = { length: 0.2, width: 0.14 }
 export const WHEEL_RADIUS = 0.033
-
-// Lays out a track the way real line-follower tracks are built: straights
-// and arcs of a known radius. ['S', metres] or ['A', radius, degrees], where
-// positive degrees turn right.
-function buildTrack(start, headingDegrees, segments) {
-  let [x, y] = start
-  let heading = (headingDegrees * Math.PI) / 180
-  const points = [[x, y]]
-  for (const [kind, a, b] of segments) {
-    if (kind === 'S') {
-      const steps = Math.max(1, Math.round(a / 0.01))
-      for (let i = 0; i < steps; i += 1) {
-        x += (Math.cos(heading) * a) / steps
-        y += (Math.sin(heading) * a) / steps
-        points.push([x, y])
-      }
-    } else {
-      const turn = (b * Math.PI) / 180
-      const steps = Math.max(2, Math.round((Math.abs(turn) * a) / 0.01))
-      const chord = (Math.abs(turn) * a) / steps
-      for (let i = 0; i < steps; i += 1) {
-        heading += turn / steps
-        x += Math.cos(heading - turn / steps / 2) * chord
-        y += Math.sin(heading - turn / steps / 2) * chord
-        points.push([x, y])
-      }
-    }
-  }
-  points.pop() // the loop ends where it started
-  return points
-}
 
 function oval() {
   const points = []
@@ -76,15 +48,32 @@ function figureEight() {
   return points
 }
 
+// Moves a track to the middle of the arena.
+function centered(points) {
+  const xs = points.map(([x]) => x)
+  const ys = points.map(([, y]) => y)
+  const dx = ARENA.width / 2 - (Math.min(...xs) + Math.max(...xs)) / 2
+  const dy = ARENA.height / 2 - (Math.min(...ys) + Math.max(...ys)) / 2
+  return points.map(([x, y]) => [x + dx, y + dy])
+}
+
 export const TRACKS = {
-  oval: { name: 'Oval', points: oval() },
-  sekiz: { name: 'Sekiz (kesişmeli)', points: figureEight() },
+  // Orta and zor are printed standing up; here they lie a quarter turn round
+  // to fit the arena.
+  ...Object.fromEntries(
+    Object.entries(COMPETITION_TRACKS).map(([id, { name, points }]) => [
+      id,
+      { name: `Yarışma: ${name}${id === 'zor' ? ' (kesişmeli)' : ''}`, points: centered(id === 'kolay' ? points : points.map(([x, y]) => [y, -x])) },
+    ]),
+  ),
+  oval: { name: 'Oval', points: centered(oval()) },
+  sekiz: { name: 'Sekiz (kesişmeli)', points: centered(figureEight()) },
   race: {
     name: 'Yarış parkuru',
-    points: buildTrack([0.65, 0.27], 0, [
+    points: centered(buildTrack([0.65, 0.27], 0, [
       ['S', 0.95], ['A', 0.22, 90], ['S', 0.18], ['A', 0.22, 90], ['S', 0.15], ['A', 0.15, -90], ['A', 0.15, 90],
       ['S', 0.65], ['A', 0.22, 90], ['S', 0.1], ['A', 0.15, 60], ['A', 0.15, -60], ['S', 0.12], ['A', 0.22, 90],
-    ]),
+    ])),
   },
 }
 

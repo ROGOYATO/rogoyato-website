@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import logoDarkImage from '../assets/logo-dark.webp'
 import logoImage from '../assets/logo.webp'
 import { lineRobotCompetition as competition } from '../utils/lineRobotCompetition'
+import ScoreCalculator from './ScoreCalculator'
 
 const publicBase = import.meta.env.BASE_URL
 
@@ -12,6 +13,7 @@ const TABS = [
   ['genel', 'Genel Bilgi'],
   ['program', 'Takvim ve Program'],
   ['sartname', 'Yarışma Şartnamesi'],
+  ['puan', 'Puan Hesaplayıcı'],
   ['malzemeler', 'Malzemeler'],
   ['oduller', 'Ödüller'],
   ['sss', 'Sıkça Sorulan Sorular'],
@@ -29,7 +31,7 @@ function General() {
   const rows = [
     ['Düzenleyen', competition.organizer],
     ['Yarış günü', '28 Kasım 2026 Cumartesi'],
-    ['Yer', 'TOBB ETÜ, ST1'],
+    ['Yer', 'TOBB ETÜ, ST-1 (Sosyal Tesisler Binası)'],
     ['İkram', 'Çay ve kahve'],
     ['Parkur', 'Duyurulacak'],
     ['Katılım', 'Herkese açık; bireysel ya da en fazla 3 kişilik takım'],
@@ -70,7 +72,7 @@ function General() {
       <div className="mt-6 border-l-4 border-slate-800 bg-slate-50 px-5 py-4 text-sm leading-relaxed text-slate-700 dark:border-white/50 dark:bg-white/5 dark:text-slate-300">
         <p className="font-semibold text-slate-900 dark:text-white">Önemli</p>
         <p className="mt-1">
-          Robotlar yarış gününden önce, katılımcıların kendi zamanında hazırlanır; yarış gününe tamamlanmış robotla gelinir. Yarış günü 10:00–14:45 arasında eğitmenlere teknik sorular sorulabilir ve deneme sürüşü yapılabilir. Eğitmenler kod
+          Robotlar yarış gününden önce, katılımcıların kendi zamanında hazırlanır; yarış gününe tamamlanmış robotla gelinir. Yarış günü 10:00–14:45 arasında eğitmenlere teknik sorular sorulabilir; pistler kurulduktan sonra deneme sürüşü de yapılabilir. Eğitmenler kod
           yazmaz, taktik vermez.
         </p>
       </div>
@@ -85,7 +87,7 @@ function Programme() {
       <h3 className="mt-6 font-semibold text-slate-900 dark:text-white">Yarış gününe kadar</h3>
       <p className="mt-1 leading-relaxed text-slate-700 dark:text-slate-300">{competition.beforeRaceDay}</p>
       <h3 className="mt-8 font-semibold text-slate-900 dark:text-white">Yarış günü: 28 Kasım 2026 Cumartesi</h3>
-      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">TOBB ETÜ, ST1 · Çay ve kahve ikramı olacak</p>
+      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">TOBB ETÜ, ST-1 (Sosyal Tesisler Binası) · Çay ve kahve ikramı olacak</p>
       <table className="mt-4 w-full text-sm">
         <thead>
           <tr>
@@ -171,11 +173,17 @@ function Regulation() {
                 </table>
               </div>
             ) : null}
-            {section.figure ? (
-              <figure className="mt-4">
-                <img src={`${publicBase}${section.figure.image}`} alt={section.figure.caption} className="w-full max-w-xl rounded-md border border-slate-200 dark:border-white/10" loading="lazy" />
-                <figcaption className="mt-2 text-sm text-slate-600 dark:text-slate-400">{section.figure.caption}</figcaption>
-              </figure>
+            {section.figures ? (
+              <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                {section.figures.map((figure) => (
+                  <figure key={figure.image}>
+                    <a href={`${publicBase}${figure.image}`} target="_blank" rel="noreferrer">
+                      <img src={`${publicBase}${figure.image}`} alt={figure.caption} className="w-full rounded-md border border-slate-200 dark:border-white/10" loading="lazy" />
+                    </a>
+                    <figcaption className="mt-2 text-sm text-slate-600 dark:text-slate-400">{figure.caption}</figcaption>
+                  </figure>
+                ))}
+              </div>
             ) : null}
           </section>
         ))}
@@ -340,7 +348,16 @@ function Contact() {
   )
 }
 
-const PANELS = { genel: General, program: Programme, sartname: Regulation, malzemeler: Materials, oduller: Prizes, sss: Faq, iletisim: Contact }
+function Score() {
+  return (
+    <div className="space-y-5">
+      <TabTitle>Puan Hesaplayıcı ve Kontrol Noktaları</TabTitle>
+      <ScoreCalculator limit={competition.attemptSeconds} />
+    </div>
+  )
+}
+
+const PANELS = { genel: General, program: Programme, sartname: Regulation, puan: Score, malzemeler: Materials, oduller: Prizes, sss: Faq, iletisim: Contact }
 
 export default function LineRobotCompetitionPage() {
   const [params, setParams] = useSearchParams()
@@ -370,7 +387,7 @@ export default function LineRobotCompetitionPage() {
             <h1 className="mt-1 font-heading text-2xl text-slate-900 dark:text-white sm:text-4xl">
               {competition.title} <span className="text-slate-400">·</span> {competition.edition}
             </h1>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">28 Kasım 2026 Cumartesi · ST1 · Bireysel veya en fazla 3 kişilik takım</p>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">28 Kasım 2026 Cumartesi · ST-1 · Bireysel veya en fazla 3 kişilik takım</p>
           </div>
           {/* The entry form, once it is out. */}
           {competition.applicationUrl ? (

@@ -427,10 +427,10 @@ export class Car3D {
     this.controls.enabled = view === 'free'
     this.zoom.cancel()
     if (view === 'top') {
-      this.camera.position.set(ARENA.width * 50, 230, ARENA.height * 50 + 1)
+      this.camera.position.set(ARENA.width * 50, ARENA.width * 115, ARENA.height * 50 + 1)
       this.controls.target.set(ARENA.width * 50, 0, ARENA.height * 50)
     } else if (view === 'free') {
-      this.camera.position.set(ARENA.width * 50, 140, ARENA.height * 50 + 170)
+      this.camera.position.set(ARENA.width * 50, ARENA.width * 70, ARENA.height * 50 + ARENA.width * 85)
       this.controls.target.set(ARENA.width * 50, 0, ARENA.height * 50)
     }
   }

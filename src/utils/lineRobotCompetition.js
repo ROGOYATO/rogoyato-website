@@ -1,6 +1,8 @@
 // The line-following robot competition: its own event, apart from the
 // Arduino training whose participants take part.
 export const lineRobotCompetition = {
+  // An attempt's time limit; an unfinished track counts this + this × (1 − progress).
+  attemptSeconds: 120,
   title: 'Çizgi İzleyen Robot Yarışması',
   path: '/yarisma/cizgi-izleyen-robot',
   // When the races start (Türkiye time); the countdown runs to it.
@@ -16,7 +18,7 @@ export const lineRobotCompetition = {
   facts: [
     { label: 'Hazırlık', value: 'Yarış gününe kadar', detail: 'Katılımcıların kendi zamanında' },
     { label: 'Yarış günü', value: '28 Kasım 2026 Cumartesi', detail: 'Sıralama turları 15:00’te' },
-    { label: 'Yer', value: 'ST1', detail: 'TOBB ETÜ' },
+    { label: 'Yer', value: 'ST-1', detail: 'TOBB ETÜ, Sosyal Tesisler Binası' },
     { label: 'Katılım', value: 'Bireysel veya takım', detail: 'Takımlar en fazla 3 kişi' },
   ],
   // When things happen; `highlight` marks what participants must not miss.
@@ -24,7 +26,7 @@ export const lineRobotCompetition = {
     'Robotunu kendi zamanında, istediğin yerde kur, kodla ve dene. Teknik sorularını eğitim WhatsApp grubundan sorabilirsin. Robot yarış günü sıfırdan yapılmaz; hazır getirilir.',
   dayPlan: [
     { time: '09:30–10:00', title: 'Hazırlık', text: 'Yarış alanının hazırlanması (ROGOYATO ekibi).' },
-    { time: '10:00–14:45', title: 'Teknik danışma ve pist denemesi', text: 'Yarışmacılar deneme sürüşü yapar, eğitmenlere teknik sorularını sorar.' },
+    { time: '10:00–14:45', title: 'Teknik danışma ve pist denemesi', text: 'Yarışmacılar eğitmenlere teknik sorularını sorar; pistler kurulduktan sonra deneme sürüşü yapar.' },
     { time: '14:45–15:00', title: 'Yoklama ve açılış', text: 'Robotların ve yarışmacıların kaydı, kuralların hatırlatılması.' },
     { time: '15:00–16:15', title: 'Sıralama turları', text: 'Her robot sırayla piste çıkar; her parkurda en fazla üç deneme.' },
     { time: '16:15–16:30', title: 'Sonuçların açıklanması', text: 'Derecelerin hesaplanması ve açıklanması.' },
@@ -63,15 +65,18 @@ export const lineRobotCompetition = {
     },
     {
       title: 'Parkur',
-      figure: {
-        image: 'yarisma/cizgi-izleyen-robot/ornek-parkur-kesisme.svg',
-        caption: 'Şekil 1 – Örnek parkur: çizgi kendisiyle kesişebilir, robot kesişmede düz devam eder. Yarışmada birden fazla parkur olabilir; parkurlar bu örnekten farklı olabilir.',
-      },
+      figures: [
+        { image: 'yarisma/cizgi-izleyen-robot/parkur-kolay.svg', caption: 'Şekil 1 – Kolay parkur: 5,8 m, geniş virajlar.' },
+        { image: 'yarisma/cizgi-izleyen-robot/parkur-orta.svg', caption: 'Şekil 2 – Orta parkur: 8,7 m, saç tokası virajlar ve bir dalga.' },
+        { image: 'yarisma/cizgi-izleyen-robot/parkur-zor.svg', caption: 'Şekil 3 – Zor parkur: 9,8 m, dar saç tokaları, keskin kırılmalar, dalgalar ve kesişme.' },
+      ],
       items: [
-        'Parkur bilgileri daha sonra duyurulacaktır. Yarışmada birden fazla parkur kullanılabilir.',
-        'Parkur, beyaz zemin üzerinde yaklaşık 2 cm genişliğinde siyah bir çizgiden oluşur.',
-        'Parkur çizgisi kendisiyle kesişebilir; kesişme noktalarında robot düz devam eder (Şekil 1).',
-        'Yarış günü 10:00–14:45 arasında yarış alanında deneme sürüşü yapılabilir.',
+        'Yarışmada üç parkur var: Kolay, Orta ve Zor (Şekil 1–3). Her robot üç parkurda da yarışır. Şekillerdeki kareler 10 cm’dir; şekle tıklayınca büyük hâli açılır.',
+        'Parkurlar beyaz kâğıda gerçek boyutunda basılır; çizgi 19 mm genişliğinde siyahtır. Kolay parkur yaklaşık 1,7 m × 1,0 m, Orta 1,4 m × 1,6 m, Zor 1,4 m × 2,0 m’lik bir alan kaplar.',
+        'Başlangıç ve bitiş, kareli çizgiyle işaretli aynı yerdir; robot oktaki yönde gider.',
+        'Zor parkurda çizgi kendisiyle dik açıyla kesişir; kesişme noktasında robot düz devam eder.',
+        'Üç parkur sitemizdeki Arduino simülatöründe de var (Yarışma: Kolay, Orta, Zor); kodunu yarıştan önce orada deneyebilirsin. Simülatör gerçeğin yaklaşık bir modelidir; gerçek robotta hız ve ayarlar farklı çıkabilir.',
+        'Yarış günü 10:00–14:45 arasında, pistler kurulduktan sonra yarış alanında deneme sürüşü yapılabilir.',
       ],
     },
     {
@@ -81,17 +86,17 @@ export const lineRobotCompetition = {
         columns: ['Robot', '1. parkur', '2. parkur', '3. parkur', 'Toplam'],
         rows: [
           ['A', 'Bitirdi, 45 sn → 45', 'Bitirdi, 60 sn → 60', 'Bitirdi, 50 sn → 50', '155 sn (1.)'],
-          ['B', 'Bitirdi, 30 sn → 30', 'Bitirdi, 40 sn → 40', 'Bitiremedi, 0,75 → 180 + 45 = 225', '295 sn (2.)'],
-          ['C', 'Bitiremedi, 0,50 → 180 + 90 = 270', 'Bitiremedi, 0,90 → 180 + 18 = 198', 'Bitirdi, 80 sn → 80', '548 sn (3.)'],
+          ['B', 'Bitirdi, 30 sn → 30', 'Bitirdi, 40 sn → 40', 'Bitiremedi, 0,75 → 120 + 30 = 150', '220 sn (2.)'],
+          ['C', 'Bitiremedi, 0,50 → 120 + 60 = 180', 'Bitiremedi, 0,90 → 120 + 12 = 132', 'Bitirdi, 80 sn → 80', '392 sn (3.)'],
         ],
       },
       items: [
-        'Robot, en ön noktası başlangıç/bitiş çizgisinin hemen gerisinde, çizgiye hizalı olacak şekilde konur ve hakemin işaretiyle çalıştırılır (örneğin düğmesine basılır). Süre hakemin işaretiyle başlar; robot parkuru tamamlayıp en ön noktası başlangıç/bitiş çizgisini yeniden geçtiğinde hakem kronometreyi durdurur. Bir deneme en fazla 3 dakika (180 saniye) sürer.',
+        'Robot, en ön noktası başlangıç/bitiş çizgisinin hemen gerisinde, çizgiye hizalı olacak şekilde konur ve hakemin işaretiyle çalıştırılır (örneğin düğmesine basılır). Süre hakemin işaretiyle başlar; robot parkuru tamamlayıp en ön noktası başlangıç/bitiş çizgisini yeniden geçtiğinde hakem kronometreyi durdurur. Bir deneme en fazla 2 dakika (120 saniye) sürer.',
         'Bitirme: Robot parkurun tamamını izleyip başlangıç çizgisine dönerse parkuru bitirmiş olur; denemenin sonucu ölçülen süredir.',
         'Robotun bitişte kendiliğinden durması gerekmez; süreyi hakem kronometreyle ölçer ve robot çizgiyi geçtikten sonra yarışmacı robotunu alır. Kesişmelerde üç sensör birden siyah görebileceğinden, “üç sensör de siyahsa dur” gibi bir kod robotu yarı yolda durdurabilir.',
-        'Bitirememe: Robot çizgiyi tamamen kaybedip parkurdan çıkarsa, bir kesişmede düz gitmek yerine sağa ya da sola dönüp kesişen çizgiye geçerse, deneme sırasında robota dokunulursa ya da 180 saniye dolarsa deneme o noktada biter. Denemenin sonucu ilerleme oranıdır: robotun ulaştığı en uzak noktaya kadar parkur boyunca gittiği yolun, parkurun tüm uzunluğuna oranı (örneğin parkurun dörtte üçü = 0,75). Hakem bunu parkurdaki işaretlerden belirler.',
+        'Bitirememe: Robot çizgiyi tamamen kaybedip parkurdan çıkarsa, bir kesişmede düz gitmek yerine sağa ya da sola dönüp kesişen çizgiye geçerse, deneme sırasında robota dokunulursa ya da 120 saniye dolarsa deneme o noktada biter. Denemenin sonucu ilerleme oranıdır: robotun ulaştığı en uzak noktaya kadar parkur boyunca gittiği yolun, parkurun tüm uzunluğuna oranı (örneğin parkurun dörtte üçü = 0,75). Hakem bunu parkurdaki işaretlerden belirler.',
         'Her robotun her parkurda üç deneme hakkı vardır; her parkurda robotun en iyi denemesi sayılır. Bitiren deneme bitiremeyenden, iki bitirmeden süresi kısa olan, iki bitirememeden ilerleme oranı yüksek olan daha iyidir.',
-        'Parkur süresi: Bitirilen parkurda en iyi denemenin süresidir. Bitirilemeyen parkurda 180 + 180 × (1 − ilerleme oranı) saniyedir; yani bitirilemeyen bir parkur, ne kadar ilerlendiyse o kadar az olmak üzere 180 ile 360 saniye arasında sayılır. Hiç deneme yapılmayan parkur 360 saniyedir.',
+        'Parkur süresi: Bitirilen parkurda en iyi denemenin süresidir. Bitirilemeyen parkurda 120 + 120 × (1 − ilerleme oranı) saniyedir; yani bitirilemeyen bir parkur, ne kadar ilerlendiyse o kadar az olmak üzere 120 ile 240 saniye arasında sayılır. Hiç deneme yapılmayan parkur 240 saniyedir.',
         'Toplam süre, robotun bütün parkurlardaki parkur sürelerinin toplamıdır. Sıralama toplam süreye göre yapılır; toplam süresi en az olan birinci olur (bkz. örnek).',
         'Denemeler arasında kod, ayar ve pil değiştirilebilir; sırası gelen robotun en geç 2 dakika içinde piste çıkması gerekir.',
       ],
@@ -125,11 +130,11 @@ export const lineRobotCompetition = {
     { q: 'Takım olarak katılabilir miyim?', a: 'Evet. Tek başına ya da en fazla üç kişilik bir takımla katılabilirsin; bir kişi yalnızca bir takımda yer alabilir.' },
     { q: 'Robotu nerede ve ne zaman yapacağım?', a: 'Robotunu yarış gününe kadar kendi zamanında, istediğin yerde hazırlarsın. Yarış gününe tamamlanmış robotla gelinir; robotlar yarış günü sıfırdan yapılmaz.' },
     { q: 'Takıldığım yerde yardım alabilir miyim?', a: 'Hazırlık haftasında teknik sorularını eğitim WhatsApp grubundan sorabilirsin. Yarış günü 10:00–14:45 arasında yarış alanında eğitmenler teknik sorunlarda yardım eder; kod yazmaz ve taktik vermez.' },
-    { q: 'Parkur nasıl olacak?', a: 'Parkur bilgileri daha sonra duyurulacak; yarışmada birden fazla parkur olabilir. Beyaz zemin üzerinde yaklaşık 2 cm genişliğinde siyah bir çizgi olacak; çizgi kendisiyle kesişebilir, kesişmelerde robot düz devam eder (Şartname, Şekil 1).' },
-    { q: 'Yarışma nerede yapılacak?', a: 'Yarışma TOBB ETÜ’de, ST1’de yapılacak. Gün boyunca çay ve kahve ikramı olacak.' },
-    { q: 'Malzemelerim yanımda değilken nasıl çalışırım?', a: 'Sitemizdeki Arduino simülatörü, robot kodunun genel mantığını kurmak için kullanılabilir.' },
+    { q: 'Parkur nasıl olacak?', a: 'Üç parkur var: Kolay (5,8 m), Orta (8,7 m) ve Zor (9,8 m); çizimleri Şartname’nin Parkur bölümünde. Parkurlar beyaz kâğıda gerçek boyutunda basılır, çizgi 19 mm genişliğinde siyahtır. Zor parkurda çizgi kendisiyle kesişir; kesişmede robot düz devam eder.' },
+    { q: 'Yarışma nerede yapılacak?', a: 'Yarışma TOBB ETÜ’de, Sosyal Tesisler Binası’nda (ST-1) yapılacak. Gün boyunca çay ve kahve ikramı olacak.' },
+    { q: 'Malzemelerim yanımda değilken nasıl çalışırım?', a: 'Sitemizdeki Arduino simülatöründe yarışmanın üç parkuru da var; robot kodunun genel mantığını orada kurabilirsin. Simülatör yaklaşık bir modeldir, hız ve ayarları gerçek robotta yeniden denemelisin.' },
     { q: 'Robot bitişte durmalı mı?', a: 'Hayır. Robot, önü başlangıç/bitiş çizgisine hizalı olarak başlar; turu tamamlayıp önü çizgiyi yeniden geçtiğinde hakem kronometreyi durdurur ve robotunu alırsın. Kesişmelerde üç sensör birden siyah görebilir; bu durumda robotun düz devam etmesi gerekir, durursa deneme orada biter.' },
-    { q: 'Sıralama nasıl belirlenir?', a: 'Her parkurda üç deneme hakkın var ve en iyisi sayılır. Bitirdiğin parkurda süren sayılır; bitiremediğin parkurda 180 + 180 × (1 − ilerleme oranı) saniye sayılır, yani 180 ile 360 saniye arası: ne kadar ilerlersen o kadar az. Bütün parkurların süreleri toplanır, toplamı en az olan birinci olur. Şartnamenin 5. maddesinde örnek bir hesap var. Final yapılmaz; ilk üçe kupa verilir.' },
+    { q: 'Sıralama nasıl belirlenir?', a: 'Her parkurda üç deneme hakkın var ve en iyisi sayılır. Bitirdiğin parkurda süren sayılır; bitiremediğin parkurda 120 + 120 × (1 − ilerleme oranı) saniye sayılır, yani 120 ile 240 saniye arası: ne kadar ilerlersen o kadar az. Bütün parkurların süreleri toplanır, toplamı en az olan birinci olur. Şartnamenin 5. maddesinde örnek bir hesap var. Final yapılmaz; ilk üçe kupa verilir.' },
   ],
   contact: [
     { label: 'E-posta', value: 'rogoyato@gmail.com', href: 'mailto:rogoyato@gmail.com' },
