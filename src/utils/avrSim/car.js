@@ -2,6 +2,7 @@
 // with three KH-09 IR sensors looking at a black-tape track. Units are
 // metres, seconds and radians. Physics runs every 1 ms of simulated time so
 // the sketch's control loop sees the sensors change at its real speed.
+import { COMPETITION_TRACKS, buildTrack } from '../competitionTracks.js'
 import { CYCLES_PER_US, PinState } from './uno.js'
 
 const STEP_S = 0.001
@@ -26,37 +27,6 @@ const LINE_WIDTH = 0.019 // black electrical tape
 export const ARENA = { width: 2.4, height: 1.7 }
 export const CAR_SIZE = { length: 0.2, width: 0.14 }
 export const WHEEL_RADIUS = 0.033
-
-// Lays out a track the way real line-follower tracks are built: straights
-// and arcs of a known radius. ['S', metres] or ['A', radius, degrees], where
-// positive degrees turn right.
-function buildTrack(start, headingDegrees, segments) {
-  let [x, y] = start
-  let heading = (headingDegrees * Math.PI) / 180
-  const points = [[x, y]]
-  for (const [kind, a, b] of segments) {
-    if (kind === 'S') {
-      const steps = Math.max(1, Math.round(a / 0.01))
-      for (let i = 0; i < steps; i += 1) {
-        x += (Math.cos(heading) * a) / steps
-        y += (Math.sin(heading) * a) / steps
-        points.push([x, y])
-      }
-    } else {
-      const turn = (b * Math.PI) / 180
-      const steps = Math.max(2, Math.round((Math.abs(turn) * a) / 0.01))
-      const chord = (Math.abs(turn) * a) / steps
-      for (let i = 0; i < steps; i += 1) {
-        heading += turn / steps
-        x += Math.cos(heading - turn / steps / 2) * chord
-        y += Math.sin(heading - turn / steps / 2) * chord
-        points.push([x, y])
-      }
-    }
-  }
-  points.pop() // the loop ends where it started
-  return points
-}
 
 function oval() {
   const points = []
@@ -87,17 +57,15 @@ function centered(points) {
   return points.map(([x, y]) => [x + dx, y + dy])
 }
 
-// The competition's three tracks, as printed (lengths of the two straights
-// that close each loop worked out to 0.01 mm). Orta and zor are printed
-// standing up; here they lie a quarter turn round to fit the arena.
-const COMPETITION = {
-  kolay: { name: 'Yarışma: Kolay', heading: 0, segments: [['S', 1.24], ['A', 0.2, -90], ['S', 0.55], ['A', 0.2, -90], ['S', 0.3], ['A', 0.16, -90], ['S', 0.3], ['A', 0.16, 180], ['S', 0.3], ['A', 0.16, -90], ['S', 0.3], ['A', 0.2, -90], ['S', 0.55], ['A', 0.2, -90]] },
-  orta: { name: 'Yarışma: Orta', heading: -90, segments: [['S', 1.05], ['A', 0.15, 90], ['S', 1.3], ['A', 0.15, 90], ['S', 0.35], ['A', 0.09, 60], ['A', 0.09, -120], ['A', 0.09, 60], ['S', 0.15], ['A', 0.15, 90], ['S', 0.12], ['A', 0.15, 90], ['S', 0.6], ['A', 0.13, -180], ['S', 0.6], ['A', 0.13, 180], ['S', 0.6], ['A', 0.13, -180], ['S', 0.83823], ['A', 0.15, 90], ['S', 0.1], ['A', 0.15, 90]] },
-  zor: { name: 'Yarışma: Zor (kesişmeli)', heading: -90, segments: [['S', 0.35], ['A', 0.14, -270], ['S', 0.28], ['A', 0.14, -90], ['S', 0.25], ['A', 0.12, 90], ['S', 0.1], ['A', 0.04, 45], ['S', 0.28], ['A', 0.04, -45], ['S', 0.84544], ['A', 0.12, 90], ['S', 0.2], ['A', 0.08, 60], ['A', 0.08, -120], ['A', 0.08, 60], ['S', 0.06], ['A', 0.08, 60], ['A', 0.08, -120], ['A', 0.08, 60], ['S', 0.1], ['A', 0.12, 90], ['S', 0.08], ['A', 0.12, 90], ['S', 0.55], ['A', 0.11, -180], ['S', 0.55], ['A', 0.11, 180], ['S', 0.55], ['A', 0.11, -180], ['S', 0.55], ['A', 0.11, 180], ['S', 0.55], ['A', 0.11, -180], ['S', 0.01432], ['A', 0.12, 90], ['S', 0.06], ['A', 0.12, 90]] },
-}
-
 export const TRACKS = {
-  ...Object.fromEntries(Object.entries(COMPETITION).map(([id, { name, heading, segments }]) => [id, { name, points: centered(buildTrack([0, 0], heading, segments)) }])),
+  // Orta and zor are printed standing up; here they lie a quarter turn round
+  // to fit the arena.
+  ...Object.fromEntries(
+    Object.entries(COMPETITION_TRACKS).map(([id, { name, points }]) => [
+      id,
+      { name: `Yarışma: ${name}${id === 'zor' ? ' (kesişmeli)' : ''}`, points: centered(id === 'kolay' ? points : points.map(([x, y]) => [y, -x])) },
+    ]),
+  ),
   oval: { name: 'Oval', points: centered(oval()) },
   sekiz: { name: 'Sekiz (kesişmeli)', points: centered(figureEight()) },
   race: {

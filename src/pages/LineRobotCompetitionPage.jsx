@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import logoDarkImage from '../assets/logo-dark.webp'
 import logoImage from '../assets/logo.webp'
 import { lineRobotCompetition as competition } from '../utils/lineRobotCompetition'
+import ScoreCalculator from './ScoreCalculator'
 
 const publicBase = import.meta.env.BASE_URL
 
@@ -12,6 +13,7 @@ const TABS = [
   ['genel', 'Genel Bilgi'],
   ['program', 'Takvim ve Program'],
   ['sartname', 'Yarışma Şartnamesi'],
+  ['puan', 'Puan Hesaplayıcı'],
   ['malzemeler', 'Malzemeler'],
   ['oduller', 'Ödüller'],
   ['sss', 'Sıkça Sorulan Sorular'],
@@ -346,7 +348,16 @@ function Contact() {
   )
 }
 
-const PANELS = { genel: General, program: Programme, sartname: Regulation, malzemeler: Materials, oduller: Prizes, sss: Faq, iletisim: Contact }
+function Score() {
+  return (
+    <div className="space-y-5">
+      <TabTitle>Puan Hesaplayıcı ve Kontrol Noktaları</TabTitle>
+      <ScoreCalculator limit={competition.attemptSeconds} />
+    </div>
+  )
+}
+
+const PANELS = { genel: General, program: Programme, sartname: Regulation, puan: Score, malzemeler: Materials, oduller: Prizes, sss: Faq, iletisim: Contact }
 
 export default function LineRobotCompetitionPage() {
   const [params, setParams] = useSearchParams()

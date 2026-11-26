@@ -1,6 +1,8 @@
 // The line-following robot competition: its own event, apart from the
 // Arduino training whose participants take part.
 export const lineRobotCompetition = {
+  // An attempt's time limit; an unfinished track counts this + this × (1 − progress).
+  attemptSeconds: 120,
   title: 'Çizgi İzleyen Robot Yarışması',
   path: '/yarisma/cizgi-izleyen-robot',
   // When the races start (Türkiye time); the countdown runs to it.
