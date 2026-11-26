@@ -171,11 +171,17 @@ function Regulation() {
                 </table>
               </div>
             ) : null}
-            {section.figure ? (
-              <figure className="mt-4">
-                <img src={`${publicBase}${section.figure.image}`} alt={section.figure.caption} className="w-full max-w-xl rounded-md border border-slate-200 dark:border-white/10" loading="lazy" />
-                <figcaption className="mt-2 text-sm text-slate-600 dark:text-slate-400">{section.figure.caption}</figcaption>
-              </figure>
+            {section.figures ? (
+              <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                {section.figures.map((figure) => (
+                  <figure key={figure.image}>
+                    <a href={`${publicBase}${figure.image}`} target="_blank" rel="noreferrer">
+                      <img src={`${publicBase}${figure.image}`} alt={figure.caption} className="w-full rounded-md border border-slate-200 dark:border-white/10" loading="lazy" />
+                    </a>
+                    <figcaption className="mt-2 text-sm text-slate-600 dark:text-slate-400">{figure.caption}</figcaption>
+                  </figure>
+                ))}
+              </div>
             ) : null}
           </section>
         ))}

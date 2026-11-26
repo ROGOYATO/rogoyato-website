@@ -6,12 +6,14 @@ import { CYCLES_PER_US, PinState } from './uno.js'
 
 const STEP_S = 0.001
 // The 2WD kit's TT gear motor: 6 V, 250 rpm unloaded, 66 mm wheels
-// (Elektronikport's kit page). It runs from the kit's 4×AA pack (6 V)
-// through an L298N, whose two transistors in series drop about 1.8 V, so
-// at full PWM the motor gets about 4.2 V. Against its gearbox it needs
-// about 1.2 V to turn at all (below ~30% PWM it stands still), and
-// carrying the robot costs it some 15% of its speed.
-const BATTERY_VOLTS = 6
+// (Elektronikport's kit page). It runs from the kit's 4×AA pack: 6 V on
+// the label, but alkaline cells give about 1.3 V each while the motors
+// draw their half an ampere or so, 5.2 V in all. The L298N's two
+// transistors in series drop about 1.8 V, so at full PWM the motor gets
+// about 3.4 V. Against its gearbox it needs about 1.2 V to turn at all
+// (below ~35% PWM it stands still), and carrying the robot costs it some
+// 15% of its speed: at full PWM the robot does about 0.35 m/s.
+const BATTERY_VOLTS = 5.2
 const L298N_DROP_VOLTS = 1.8
 const MOTOR = { ratedVolts: 6, ratedRpm: 250, startVolts: 1.2 }
 const LOADED = 0.85
@@ -21,7 +23,7 @@ const WHEEL_TRACK = 0.13
 const SENSOR_AHEAD = 0.09
 const SENSOR_SPACING = 0.02
 const LINE_WIDTH = 0.019 // black electrical tape
-export const ARENA = { width: 2.0, height: 1.4 }
+export const ARENA = { width: 2.4, height: 1.7 }
 export const CAR_SIZE = { length: 0.2, width: 0.14 }
 export const WHEEL_RADIUS = 0.033
 
@@ -76,15 +78,34 @@ function figureEight() {
   return points
 }
 
+// Moves a track to the middle of the arena.
+function centered(points) {
+  const xs = points.map(([x]) => x)
+  const ys = points.map(([, y]) => y)
+  const dx = ARENA.width / 2 - (Math.min(...xs) + Math.max(...xs)) / 2
+  const dy = ARENA.height / 2 - (Math.min(...ys) + Math.max(...ys)) / 2
+  return points.map(([x, y]) => [x + dx, y + dy])
+}
+
+// The competition's three tracks, as printed (lengths of the two straights
+// that close each loop worked out to 0.01 mm). Orta and zor are printed
+// standing up; here they lie a quarter turn round to fit the arena.
+const COMPETITION = {
+  kolay: { name: 'Yarışma: Kolay', heading: 0, segments: [['S', 1.24], ['A', 0.2, -90], ['S', 0.55], ['A', 0.2, -90], ['S', 0.3], ['A', 0.16, -90], ['S', 0.3], ['A', 0.16, 180], ['S', 0.3], ['A', 0.16, -90], ['S', 0.3], ['A', 0.2, -90], ['S', 0.55], ['A', 0.2, -90]] },
+  orta: { name: 'Yarışma: Orta', heading: -90, segments: [['S', 1.05], ['A', 0.15, 90], ['S', 1.3], ['A', 0.15, 90], ['S', 0.35], ['A', 0.09, 60], ['A', 0.09, -120], ['A', 0.09, 60], ['S', 0.15], ['A', 0.15, 90], ['S', 0.12], ['A', 0.15, 90], ['S', 0.6], ['A', 0.13, -180], ['S', 0.6], ['A', 0.13, 180], ['S', 0.6], ['A', 0.13, -180], ['S', 0.83823], ['A', 0.15, 90], ['S', 0.1], ['A', 0.15, 90]] },
+  zor: { name: 'Yarışma: Zor (kesişmeli)', heading: -90, segments: [['S', 0.35], ['A', 0.14, -270], ['S', 0.28], ['A', 0.14, -90], ['S', 0.25], ['A', 0.12, 90], ['S', 0.1], ['A', 0.04, 45], ['S', 0.28], ['A', 0.04, -45], ['S', 0.84544], ['A', 0.12, 90], ['S', 0.2], ['A', 0.08, 60], ['A', 0.08, -120], ['A', 0.08, 60], ['S', 0.06], ['A', 0.08, 60], ['A', 0.08, -120], ['A', 0.08, 60], ['S', 0.1], ['A', 0.12, 90], ['S', 0.08], ['A', 0.12, 90], ['S', 0.55], ['A', 0.11, -180], ['S', 0.55], ['A', 0.11, 180], ['S', 0.55], ['A', 0.11, -180], ['S', 0.55], ['A', 0.11, 180], ['S', 0.55], ['A', 0.11, -180], ['S', 0.01432], ['A', 0.12, 90], ['S', 0.06], ['A', 0.12, 90]] },
+}
+
 export const TRACKS = {
-  oval: { name: 'Oval', points: oval() },
-  sekiz: { name: 'Sekiz (kesişmeli)', points: figureEight() },
+  ...Object.fromEntries(Object.entries(COMPETITION).map(([id, { name, heading, segments }]) => [id, { name, points: centered(buildTrack([0, 0], heading, segments)) }])),
+  oval: { name: 'Oval', points: centered(oval()) },
+  sekiz: { name: 'Sekiz (kesişmeli)', points: centered(figureEight()) },
   race: {
     name: 'Yarış parkuru',
-    points: buildTrack([0.65, 0.27], 0, [
+    points: centered(buildTrack([0.65, 0.27], 0, [
       ['S', 0.95], ['A', 0.22, 90], ['S', 0.18], ['A', 0.22, 90], ['S', 0.15], ['A', 0.15, -90], ['A', 0.15, 90],
       ['S', 0.65], ['A', 0.22, 90], ['S', 0.1], ['A', 0.15, 60], ['A', 0.15, -60], ['S', 0.12], ['A', 0.22, 90],
-    ]),
+    ])),
   },
 }
 

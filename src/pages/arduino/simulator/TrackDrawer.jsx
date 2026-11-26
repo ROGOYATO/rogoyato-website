@@ -96,7 +96,7 @@ export default function TrackDrawer({ initial, onUse, onClose }) {
           </button>
         </div>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-          Basılı tutup alanın içinde bir tur çiz ve bırak; bitiş, başladığın yere birleştirilir. Araba yeşil noktadan, çizdiğin yönde başlar. Çizgi kendisiyle kesişebilir. Alan 2 m × 1,4 m, kareler 10 cm.
+          Basılı tutup alanın içinde bir tur çiz ve bırak; bitiş, başladığın yere birleştirilir. Araba yeşil noktadan, çizdiğin yönde başlar. Çizgi kendisiyle kesişebilir. Alan {ARENA.width.toLocaleString('tr')} m × {ARENA.height.toLocaleString('tr')} m, kareler 10 cm.
         </p>
         <canvas
           ref={canvasRef}
