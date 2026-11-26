@@ -24,7 +24,7 @@ export const lineRobotCompetition = {
     'Robotunu kendi zamanında, istediğin yerde kur, kodla ve dene. Teknik sorularını eğitim WhatsApp grubundan sorabilirsin. Robot yarış günü sıfırdan yapılmaz; hazır getirilir.',
   dayPlan: [
     { time: '09:30–10:00', title: 'Hazırlık', text: 'Yarış alanının hazırlanması (ROGOYATO ekibi).' },
-    { time: '10:00–14:45', title: 'Teknik danışma ve pist denemesi', text: 'Yarışmacılar deneme sürüşü yapar, eğitmenlere teknik sorularını sorar.' },
+    { time: '10:00–14:45', title: 'Teknik danışma ve pist denemesi', text: 'Yarışmacılar eğitmenlere teknik sorularını sorar; pistler kurulduktan sonra deneme sürüşü yapar.' },
     { time: '14:45–15:00', title: 'Yoklama ve açılış', text: 'Robotların ve yarışmacıların kaydı, kuralların hatırlatılması.' },
     { time: '15:00–16:15', title: 'Sıralama turları', text: 'Her robot sırayla piste çıkar; her parkurda en fazla üç deneme.' },
     { time: '16:15–16:30', title: 'Sonuçların açıklanması', text: 'Derecelerin hesaplanması ve açıklanması.' },
@@ -74,7 +74,7 @@ export const lineRobotCompetition = {
         'Başlangıç ve bitiş, kareli çizgiyle işaretli aynı yerdir; robot oktaki yönde gider.',
         'Zor parkurda çizgi kendisiyle dik açıyla kesişir; kesişme noktasında robot düz devam eder.',
         'Üç parkur sitemizdeki Arduino simülatöründe de var (Yarışma: Kolay, Orta, Zor); kodunu yarıştan önce orada deneyebilirsin. Simülatör gerçeğin yaklaşık bir modelidir; gerçek robotta hız ve ayarlar farklı çıkabilir.',
-        'Yarış günü 10:00–14:45 arasında yarış alanında deneme sürüşü yapılabilir.',
+        'Yarış günü 10:00–14:45 arasında, pistler kurulduktan sonra yarış alanında deneme sürüşü yapılabilir.',
       ],
     },
     {

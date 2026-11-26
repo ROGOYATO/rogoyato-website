@@ -70,7 +70,7 @@ function General() {
       <div className="mt-6 border-l-4 border-slate-800 bg-slate-50 px-5 py-4 text-sm leading-relaxed text-slate-700 dark:border-white/50 dark:bg-white/5 dark:text-slate-300">
         <p className="font-semibold text-slate-900 dark:text-white">Önemli</p>
         <p className="mt-1">
-          Robotlar yarış gününden önce, katılımcıların kendi zamanında hazırlanır; yarış gününe tamamlanmış robotla gelinir. Yarış günü 10:00–14:45 arasında eğitmenlere teknik sorular sorulabilir ve deneme sürüşü yapılabilir. Eğitmenler kod
+          Robotlar yarış gününden önce, katılımcıların kendi zamanında hazırlanır; yarış gününe tamamlanmış robotla gelinir. Yarış günü 10:00–14:45 arasında eğitmenlere teknik sorular sorulabilir; pistler kurulduktan sonra deneme sürüşü de yapılabilir. Eğitmenler kod
           yazmaz, taktik vermez.
         </p>
       </div>
