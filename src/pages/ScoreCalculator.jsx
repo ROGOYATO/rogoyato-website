@@ -5,8 +5,7 @@ const CM = 100
 const MARGIN = 12 // cm round the line
 const number = (value, digits = 1) => value.toLocaleString('tr', { maximumFractionDigits: digits })
 
-// Each track in centimetres with the distance to every point, and the
-// checkpoints every 10% of its length.
+// Each track in centimetres with the distance to every point.
 function prepare(id) {
   const { name, points: metres } = COMPETITION_TRACKS[id]
   const points = metres.map(([x, y]) => [x * CM, y * CM])
@@ -21,14 +20,13 @@ function prepare(id) {
     const j = (i + 1) % points.length
     return { point: points[i], direction: Math.atan2(points[j][1] - points[i][1], points[j][0] - points[i][0]) }
   }
-  const checkpoints = Array.from({ length: 9 }, (_, k) => ({ percent: (k + 1) * 10, ...at((k + 1) / 10) }))
-  return { id, name, points, box, distances, length, at, checkpoints }
+  return { id, name, points, box, distances, length, at }
 }
 
 const TRACKS = Object.keys(COMPETITION_TRACKS).map(prepare)
 
 function TrackPicker({ track, progress, onPick }) {
-  const { points, box, distances, length, at, checkpoints } = track
+  const { points, box, distances, length, at } = track
   const robot = at(progress)
   const start = at(0)
   // A click on the drawing picks the nearest point of the line.
@@ -50,7 +48,7 @@ function TrackPicker({ track, progress, onPick }) {
   }
   const deg = (radians) => (radians * 180) / Math.PI
   return (
-    <svg viewBox={`${box.x} ${box.y} ${box.w} ${box.h}`} onClick={pick} className="w-full cursor-crosshair touch-manipulation rounded-md border border-slate-200 bg-white dark:border-white/10" role="img" aria-label={`${track.name} parkur: robotun ulaştığı en uzak noktaya dokun`}>
+    <svg viewBox={`${box.x} ${box.y} ${box.w} ${box.h}`} onClick={pick} className="w-full cursor-crosshair touch-manipulation rounded-md border border-slate-200 bg-white dark:border-white/10" role="img" aria-label={`${track.name} parkur: robotun çizgiden ayrıldığı noktaya dokun`}>
       <polyline points={points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')} fill="none" stroke="#111" strokeWidth="1.9" strokeLinejoin="round" />
       {/* the part covered, from the start to the picked point */}
       <polyline
@@ -65,15 +63,6 @@ function TrackPicker({ track, progress, onPick }) {
         {[-3, -2, -1, 0, 1, 2].flatMap((r) => [0, 1].map((c) => <rect key={`${r}${c}`} x={c * 1.5 - 1.5} y={r * 1.5} width="1.5" height="1.5" fill={(r + c) % 2 ? '#fff' : '#111'} />))}
         <path d="M4 -4.2h7m-2.2 -1.8l2.2 1.8l-2.2 1.8" fill="none" stroke="#0f766e" strokeWidth="0.7" strokeLinecap="round" strokeLinejoin="round" />
       </g>
-      {/* checkpoints every 10% */}
-      {checkpoints.map(({ percent, point: [x, y], direction }) => (
-        <g key={percent} transform={`translate(${x},${y}) rotate(${deg(direction)})`}>
-          <line x1="0" y1="-3" x2="0" y2="3" stroke="#e11d48" strokeWidth="0.6" />
-          <text x="0" y="-4" fontSize="3.6" textAnchor="middle" fill="#be123c" fontWeight="700" transform={`rotate(${-deg(direction)} 0 -5)`}>
-            %{percent}
-          </text>
-        </g>
-      ))}
       <circle cx={robot.point[0]} cy={robot.point[1]} r="2.4" fill="#0f766e" stroke="#fff" strokeWidth="0.6" />
     </svg>
   )
@@ -111,7 +100,7 @@ export default function ScoreCalculator({ limit }) {
   return (
     <div className="space-y-5">
       <p className="text-sm text-slate-600 dark:text-slate-300">
-        Her parkur için robotun en iyi denemesini gir: bitirdiyse süresini, bitiremediyse ulaştığı en uzak noktayı parkur çiziminde işaretle. Kırmızı çizgiler parkurun %10, %20 … %90’ını gösterir; yarış günü kontrol noktaları bunlardır. Kesişmeye yakın bir yere dokununca yanlış kol seçilirse kaydırıcıyla düzelt.
+        Her parkur için robotun en iyi denemesini gir: bitirdiyse süresini, bitiremediyse çizgiden ayrıldığı ilk noktayı parkur çiziminde işaretle (atladıysa atladığı yer). Kesişmeye yakın bir yere dokununca yanlış kol seçilirse kaydırıcıyla düzelt.
       </p>
 
       <div role="tablist" aria-label="Parkur" className="flex flex-wrap gap-2">
