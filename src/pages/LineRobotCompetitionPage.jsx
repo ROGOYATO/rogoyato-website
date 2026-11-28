@@ -282,9 +282,6 @@ function Prizes() {
             </div>
             <figcaption className="border-t border-slate-200 px-4 py-3 dark:border-white/10">
               <p className="font-semibold text-slate-900 dark:text-white">{prize.title}</p>
-              <p className="text-sm text-slate-600 dark:text-slate-300">
-                {prize.trophy} kupası, {prize.base.toLocaleLowerCase('tr')}, {prize.height}
-              </p>
             </figcaption>
           </figure>
         ))}
