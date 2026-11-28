@@ -351,7 +351,7 @@ function Contact() {
 function Score() {
   return (
     <div className="space-y-5">
-      <TabTitle>Puan Hesaplayıcı ve Kontrol Noktaları</TabTitle>
+      <TabTitle>Puan Hesaplayıcı</TabTitle>
       <ScoreCalculator limit={competition.attemptSeconds} />
     </div>
   )
