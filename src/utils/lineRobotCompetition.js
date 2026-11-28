@@ -120,8 +120,8 @@ export const lineRobotCompetition = {
     },
   ],
   prizes: [
-    { place: 1, title: 'Birincilik', trophy: 'Baymax', base: 'Altın rengi kaide', height: '26 cm', image: 'yarisma/cizgi-izleyen-robot/kupa-baymax.webp' },
-    { place: 2, title: 'İkincilik', trophy: 'Megabot', base: 'Gümüş rengi kaide', height: '24 cm', image: 'yarisma/cizgi-izleyen-robot/kupa-megabot.webp' },
+    { place: 1, title: 'Birincilik', trophy: 'Megabot', base: 'Gümüş rengi kaide', height: '24 cm', image: 'yarisma/cizgi-izleyen-robot/kupa-megabot.webp' },
+    { place: 2, title: 'İkincilik', trophy: 'Baymax', base: 'Altın rengi kaide', height: '26 cm', image: 'yarisma/cizgi-izleyen-robot/kupa-baymax.webp' },
     { place: 3, title: 'Üçüncülük', trophy: 'Microbot', base: 'Bronz rengi kaide', height: '21 cm', image: 'yarisma/cizgi-izleyen-robot/kupa-microbot.webp' },
   ],
   faq: [
