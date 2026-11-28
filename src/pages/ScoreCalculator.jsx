@@ -48,7 +48,7 @@ function TrackPicker({ track, progress, onPick }) {
   }
   const deg = (radians) => (radians * 180) / Math.PI
   return (
-    <svg viewBox={`${box.x} ${box.y} ${box.w} ${box.h}`} onClick={pick} className="w-full cursor-crosshair touch-manipulation rounded-md border border-slate-200 bg-white dark:border-white/10" role="img" aria-label={`${track.name} parkur: robotun ulaştığı en uzak noktaya dokun`}>
+    <svg viewBox={`${box.x} ${box.y} ${box.w} ${box.h}`} onClick={pick} className="w-full cursor-crosshair touch-manipulation rounded-md border border-slate-200 bg-white dark:border-white/10" role="img" aria-label={`${track.name} parkur: robotun çizgiden ayrıldığı noktaya dokun`}>
       <polyline points={points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')} fill="none" stroke="#111" strokeWidth="1.9" strokeLinejoin="round" />
       {/* the part covered, from the start to the picked point */}
       <polyline
@@ -100,7 +100,7 @@ export default function ScoreCalculator({ limit }) {
   return (
     <div className="space-y-5">
       <p className="text-sm text-slate-600 dark:text-slate-300">
-        Her parkur için robotun en iyi denemesini gir: bitirdiyse süresini, bitiremediyse ulaştığı en uzak noktayı parkur çiziminde işaretle. Kesişmeye yakın bir yere dokununca yanlış kol seçilirse kaydırıcıyla düzelt.
+        Her parkur için robotun en iyi denemesini gir: bitirdiyse süresini, bitiremediyse çizgiden ayrıldığı ilk noktayı parkur çiziminde işaretle (atladıysa atladığı yer). Kesişmeye yakın bir yere dokununca yanlış kol seçilirse kaydırıcıyla düzelt.
       </p>
 
       <div role="tablist" aria-label="Parkur" className="flex flex-wrap gap-2">
